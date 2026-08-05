@@ -1,14 +1,16 @@
 {
   "name": "obserra-academy-production-studio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "validate": "node studio/validate.mjs",
     "build:course": "node studio/build-course.mjs",
+    "build:all": "node studio/build-all-courses.mjs",
     "catalog": "node studio/generate-catalog.mjs",
     "import:website": "node studio/import-website-courses.mjs",
     "media:course": "node studio/generate-media.mjs",
+    "sync:website": "npm run import:website -- ./tmp/courseData.ts && npm run build:all && npm run validate && npm run catalog",
     "verify": "npm run validate && npm run catalog"
   },
   "engines": {
