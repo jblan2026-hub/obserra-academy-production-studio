@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
+const legalName = "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC";
+const proprietaryNotice = "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.";
+const brandHeader = `> **${legalName}**  \\n> **${proprietaryNotice}**\n\n`;
+const brandFooter = `\n---\n\n© ${new Date().getUTCFullYear()} ${legalName}. All rights reserved. ${proprietaryNotice}\n`;
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -21,17 +25,17 @@ function moduleManuscript(course, module, index) {
 
 function buildManuscript(manifest) {
   const course = manifest.course;
-  return `# ${course.title}\n\n## Instructor Manuscript\n\n**Department:** ${course.department}\n\n**Track:** ${course.track}\n\n**Level:** ${course.level}\n\n**Audience:** ${course.audience}\n\n**Course length:** ${course.duration}\n\n## Course description\n\n${course.description}\n\n## Learning outcomes\n\n${course.outcomes.map((item) => `- ${item}`).join("\n")}\n\n## Instructional approach\n\nThis course uses evidence-based explanation, decision scenarios, practical exercises, knowledge checks, and a final assessment. Content must be reviewed for technical accuracy, accessibility, brand consistency, and defensible claims before commercial release.\n\n${course.modules.map((module, index) => moduleManuscript(course, module, index)).join("\n")}\n\n## Final assessment preparation\n\nReview the course outcomes, decision frameworks, control expectations, escalation requirements, and documentation practices. The final assessment requires a score of ${manifest.completion.passingScore} percent or higher.\n`;
+  return `${brandHeader}# ${course.title}\n\n## Instructor Manuscript\n\n**Department:** ${course.department}\n\n**Track:** ${course.track}\n\n**Level:** ${course.level}\n\n**Audience:** ${course.audience}\n\n**Course length:** ${course.duration}\n\n## Course description\n\n${course.description}\n\n## Learning outcomes\n\n${course.outcomes.map((item) => `- ${item}`).join("\n")}\n\n## Instructional approach\n\nThis course uses evidence-based explanation, decision scenarios, practical exercises, knowledge checks, and a final assessment. Content must be reviewed for technical accuracy, accessibility, brand consistency, and defensible claims before commercial release.\n\n${course.modules.map((module, index) => moduleManuscript(course, module, index)).join("\n")}\n\n## Final assessment preparation\n\nReview the course outcomes, decision frameworks, control expectations, escalation requirements, and documentation practices. The final assessment requires a score of ${manifest.completion.passingScore} percent or higher.\n${brandFooter}`;
 }
 
 function buildLearnerGuide(manifest) {
   const course = manifest.course;
-  return `# ${course.title}\n\n## Learner Guide\n\n**Length:** ${course.duration}\n\n**Audience:** ${course.audience}\n\n## Description\n\n${course.description}\n\n## Outcomes\n\n${course.outcomes.map((item) => `- ${item}`).join("\n")}\n\n## Course map\n\n${course.modules.map((module, index) => `${index + 1}. **${module.title}**. ${module.duration}. ${module.description}`).join("\n")}\n\n## Completion requirements\n\n- Complete every module.\n- Complete all required activities.\n- Achieve ${manifest.completion.passingScore} percent or higher on the final assessment.\n- Maintain an authenticated learner record.\n\n## Access and certificate\n\nEnrollment is a one-time purchase. Access remains active until completion. After successful completion, the platform retains the learner transcript and certificate record.\n`;
+  return `${brandHeader}# ${course.title}\n\n## Learner Guide\n\n**Length:** ${course.duration}\n\n**Audience:** ${course.audience}\n\n## Description\n\n${course.description}\n\n## Outcomes\n\n${course.outcomes.map((item) => `- ${item}`).join("\n")}\n\n## Course map\n\n${course.modules.map((module, index) => `${index + 1}. **${module.title}**. ${module.duration}. ${module.description}`).join("\n")}\n\n## Completion requirements\n\n- Complete every module.\n- Complete all required activities.\n- Achieve ${manifest.completion.passingScore} percent or higher on the final assessment.\n- Maintain an authenticated learner record.\n\n## Access and certificate\n\nEnrollment is a one-time purchase. Access remains active until completion. After successful completion, the platform retains the learner transcript and certificate record.\n${brandFooter}`;
 }
 
 function buildWorkbook(manifest) {
   const course = manifest.course;
-  return `# ${course.title}\n\n## Learner Workbook\n\n${course.modules.map((module, index) => `## Module ${index + 1}: ${module.title}\n\n1. What is the decision or problem?\n2. What facts are verified?\n3. What information is missing?\n4. Which stakeholders are affected?\n5. Which policies, controls, laws, or standards apply?\n6. Who has decision authority?\n7. What is the proportionate next action?\n8. What evidence will demonstrate completion?\n9. What outcome should be measured?\n\n`).join("\n")}## Final action plan\n\nSummarize the three practices you will apply within 30 days, the accountable owner for each action, the evidence that will confirm completion, and the expected organizational benefit.\n`;
+  return `${brandHeader}# ${course.title}\n\n## Learner Workbook\n\n${course.modules.map((module, index) => `## Module ${index + 1}: ${module.title}\n\n1. What is the decision or problem?\n2. What facts are verified?\n3. What information is missing?\n4. Which stakeholders are affected?\n5. Which policies, controls, laws, or standards apply?\n6. Who has decision authority?\n7. What is the proportionate next action?\n8. What evidence will demonstrate completion?\n9. What outcome should be measured?\n\n`).join("\n")}## Final action plan\n\nSummarize the three practices you will apply within 30 days, the accountable owner for each action, the evidence that will confirm completion, and the expected organizational benefit.\n${brandFooter}`;
 }
 
 function buildAssessment(manifest) {
@@ -65,12 +69,18 @@ function buildAssessment(manifest) {
       number += 1;
     }
   }
-  return { courseId: course.id, passingScore: manifest.completion.passingScore, questions };
+  return {
+    courseId: course.id,
+    owner: legalName,
+    classification: proprietaryNotice,
+    passingScore: manifest.completion.passingScore,
+    questions,
+  };
 }
 
 function buildVisualBrief(manifest) {
   const course = manifest.course;
-  return `# Visual Production Brief: ${course.title}\n\n## Brand direction\n\nUse the official Obserra black, dark navy, gold, and restrained holographic blue visual system. Use the official Obserra logo. Avoid generic stock imagery that implies unsupported operational claims.\n\n## Course length\n\n${course.duration}\n\n## Required visuals\n\n${course.modules.map((module, index) => `- Module ${index + 1}: one opening title visual, one explanatory diagram, one scenario visual, and one decision-summary visual for **${module.title}**.`).join("\n")}\n\n## Video requirements\n\n- 16:9 1080p master.\n- Professional narration.\n- Closed captions and transcript.\n- On-screen source attribution when external standards or public data are referenced.\n- No asset moves to FINAL until accessibility, brand, technical, and subject-matter reviews are approved.\n`;
+  return `${brandHeader}# Visual Production Brief: ${course.title}\n\n## Mandatory brand direction\n\nUse the official Obserra logo and the official black, dark navy, gold, and restrained holographic blue visual system. The Obserra eye-key shield mark is the primary identity. Do not substitute generic logos, marks, colors, or decorative themes.\n\nEvery storyboard, slide, animation, video frame, caption file, and downloadable asset must include the classification **${proprietaryNotice}** during draft and internal review. Public release assets may remove the internal classification only through an explicit approved release decision.\n\n## Course length\n\n${course.duration}\n\n## Required visuals\n\n${course.modules.map((module, index) => `- Module ${index + 1}: one branded opening title visual, one explanatory diagram, one scenario visual, and one decision-summary visual for **${module.title}**.`).join("\n")}\n\n## Video requirements\n\n- Official Obserra branded opening and closing frames.\n- 16:9 1080p master.\n- Professional narration.\n- Closed captions and transcript.\n- On-screen source attribution when external standards or public data are referenced.\n- Persistent internal-review watermark: ${proprietaryNotice}\n- No asset moves to FINAL until accessibility, brand, technical, and subject-matter reviews are approved.\n${brandFooter}`;
 }
 
 if (!fs.existsSync(coursesRoot)) {
@@ -91,12 +101,12 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true })) {
   if (writeIfMissing(path.join(courseDir, "learner-guide.md"), buildLearnerGuide(manifest))) created.push("learner-guide.md");
   if (writeIfMissing(path.join(courseDir, "workbook.md"), buildWorkbook(manifest))) created.push("workbook.md");
   if (writeIfMissing(path.join(courseDir, "assessment-bank.json"), `${JSON.stringify(assessment, null, 2)}\n`)) created.push("assessment-bank.json");
-  if (writeIfMissing(path.join(courseDir, "answer-key.json"), `${JSON.stringify({ courseId: manifest.course.id, answers: Object.fromEntries(assessment.questions.map((q) => [q.id, q.correctOption])) }, null, 2)}\n`)) created.push("answer-key.json");
+  if (writeIfMissing(path.join(courseDir, "answer-key.json"), `${JSON.stringify({ courseId: manifest.course.id, owner: legalName, classification: proprietaryNotice, answers: Object.fromEntries(assessment.questions.map((q) => [q.id, q.correctOption])) }, null, 2)}\n`)) created.push("answer-key.json");
   if (writeIfMissing(path.join(courseDir, "visual-brief.md"), buildVisualBrief(manifest))) created.push("visual-brief.md");
   results.push({ courseId: manifest.course.id, created, status: created.length ? "draft-assets-created" : "preserved-existing" });
 }
 
 const reportPath = path.join(root, "catalog", "bulk-build-report.json");
 fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-fs.writeFileSync(reportPath, `${JSON.stringify({ generatedAt: new Date().toISOString(), courses: results }, null, 2)}\n`);
+fs.writeFileSync(reportPath, `${JSON.stringify({ generatedAt: new Date().toISOString(), owner: legalName, classification: proprietaryNotice, courses: results }, null, 2)}\n`);
 console.log(`[Academy Studio] Built or preserved draft assets for ${results.length} course(s)`);
