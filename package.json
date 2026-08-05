@@ -7,6 +7,7 @@
     "validate": "node studio/validate.mjs",
     "build:course": "node studio/build-course.mjs",
     "catalog": "node studio/generate-catalog.mjs",
+    "import:website": "node studio/import-website-courses.mjs",
     "media:course": "node studio/generate-media.mjs",
     "verify": "npm run validate && npm run catalog"
   },
