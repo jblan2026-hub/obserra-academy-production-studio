@@ -1,0 +1,15 @@
+{
+  "name": "obserra-academy-production-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node studio/validate.mjs",
+    "build:course": "node studio/build-course.mjs",
+    "catalog": "node studio/generate-catalog.mjs",
+    "verify": "npm run validate && npm run catalog"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
