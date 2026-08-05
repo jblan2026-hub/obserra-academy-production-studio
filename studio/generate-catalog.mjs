@@ -6,6 +6,7 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
 const outputDir = path.join(root, "catalog");
 const outputPath = path.join(outputDir, "academy-course-catalog.json");
+const legalName = "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC";
 
 fs.mkdirSync(outputDir, { recursive: true });
 
@@ -26,20 +27,62 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true })) {
     audience: manifest.course.audience,
     description: manifest.course.description,
     duration: manifest.course.duration,
+    prerequisites: manifest.course.prerequisites || [],
     outcomes: manifest.course.outcomes,
+    modules: manifest.course.modules.map((module, index) => ({
+      id: module.id,
+      sequence: index + 1,
+      title: module.title,
+      duration: module.duration,
+      format: module.format,
+      description: module.description,
+    })),
     moduleCount: manifest.course.modules.length,
-    price: manifest.commerce.price,
-    currency: manifest.commerce.currency,
-    paymentLink: manifest.commerce.paymentLink ?? null,
-    stripePriceId: manifest.commerce.stripePriceId ?? null,
-    accessPolicy: manifest.commerce.accessPolicy,
-    passingScore: manifest.completion.passingScore,
-    certificateIssued: manifest.completion.certificateIssued,
+    commerce: {
+      model: manifest.commerce.model,
+      price: manifest.commerce.price,
+      currency: manifest.commerce.currency,
+      paymentLink: manifest.commerce.paymentLink ?? null,
+      stripePriceId: manifest.commerce.stripePriceId ?? null,
+    },
+    licensing: {
+      entitlementType: "course-enrollment",
+      entitlementCode: `ACADEMY_${manifest.course.id.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}`,
+      accessPolicy: manifest.commerce.accessPolicy,
+      recurring: false,
+      seatScope: "named-learner",
+      transferable: false,
+      expiresAtCompletion: true,
+      completionRecordRetained: true,
+    },
+    completion: {
+      allLessonsRequired: manifest.completion.allLessonsRequired,
+      assessmentRequired: manifest.completion.assessmentRequired,
+      passingScore: manifest.completion.passingScore,
+      certificateIssued: manifest.completion.certificateIssued,
+    },
+    certificate: {
+      issuer: legalName,
+      templateId: "obserra-academy-certificate-v1",
+      certificateIdPattern: `OBS-${manifest.course.id.toUpperCase().replace(/[^A-Z0-9]+/g, "")}-{UNIQUE}`,
+      verificationRequired: true,
+      transcriptRetained: true,
+    },
+    branding: {
+      legalName,
+      logo: "official-obserra-logo",
+      palette: ["black", "dark navy", "gold", "holographic blue"],
+    },
     version: manifest.release.version,
     releaseStatus: manifest.release.status,
   });
 }
 
 courses.sort((a, b) => a.title.localeCompare(b.title));
-fs.writeFileSync(outputPath, `${JSON.stringify({ schemaVersion: "1.0", generatedAt: new Date().toISOString(), courses }, null, 2)}\n`);
+fs.writeFileSync(outputPath, `${JSON.stringify({
+  schemaVersion: "1.1",
+  generatedAt: new Date().toISOString(),
+  publisher: legalName,
+  courses,
+}, null, 2)}\n`);
 console.log(`[Academy Studio] Generated catalog with ${courses.length} approved course(s)`);
