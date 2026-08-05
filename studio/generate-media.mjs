@@ -5,6 +5,8 @@ import { generateWithSynthesia } from "./providers/synthesia.mjs";
 import { generateWithHeyGen } from "./providers/heygen.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const legalName = "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC";
+const proprietaryNotice = "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.";
 const arg = (name) => {
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : null;
@@ -36,7 +38,8 @@ for (const module of manifest.course.modules.filter((item) => item.format !== "A
   const start = manuscript.indexOf(heading);
   const remainder = start >= 0 ? manuscript.slice(start + heading.length) : manuscript;
   const nextHeading = remainder.indexOf("\n## ");
-  const script = (nextHeading >= 0 ? remainder.slice(0, nextHeading) : remainder).trim();
+  const body = (nextHeading >= 0 ? remainder.slice(0, nextHeading) : remainder).trim();
+  const script = `${legalName}. ${proprietaryNotice}\n\nCourse: ${manifest.course.title}. Module: ${module.title}.\n\n${body}\n\nEnd of module. ${proprietaryNotice}`;
 
   const result = await provider({
     courseId,
@@ -46,11 +49,27 @@ for (const module of manifest.course.modules.filter((item) => item.format !== "A
     artifactKind: "training-video",
     script,
     outputDirectory,
+    branding: {
+      legalName,
+      logoAsset: "official-obserra-logo",
+      palette: ["black", "dark navy", "gold", "holographic blue"],
+      openingCardRequired: true,
+      closingCardRequired: true,
+      watermark: proprietaryNotice,
+    },
+    classification: proprietaryNotice,
   });
-  results.push({ lessonId: module.id, ...result });
+  results.push({ lessonId: module.id, classification: proprietaryNotice, ...result });
 }
 
 fs.mkdirSync(outputDirectory, { recursive: true });
 const batchPath = path.join(outputDirectory, "batch-summary.json");
-fs.writeFileSync(batchPath, `${JSON.stringify({ courseId, provider: providerName, generatedAt: new Date().toISOString(), results }, null, 2)}\n`);
-console.log(`[Academy Studio] Submitted ${results.length} lesson video job(s) through ${providerName}`);
+fs.writeFileSync(batchPath, `${JSON.stringify({
+  courseId,
+  provider: providerName,
+  owner: legalName,
+  classification: proprietaryNotice,
+  generatedAt: new Date().toISOString(),
+  results,
+}, null, 2)}\n`);
+console.log(`[Academy Studio] Submitted ${results.length} branded lesson video job(s) through ${providerName}`);
