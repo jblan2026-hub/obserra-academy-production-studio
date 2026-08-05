@@ -1,0 +1,50 @@
+name: Sync Website Courses and Build Drafts
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: academy-website-course-sync
+  cancel-in-progress: false
+
+jobs:
+  synchronize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Production Studio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Download current website course catalog source
+        run: |
+          mkdir -p tmp
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/jblan2026-hub/obserra-website/main/app/academy/courseData.ts \
+            --output tmp/courseData.ts
+
+      - name: Import website offerings and build draft course assets
+        run: npm run sync:website
+
+      - name: Commit generated course projects and catalog updates
+        run: |
+          rm -rf tmp
+          git config user.name "Obserra Academy Production Studio"
+          git config user.email "academy-studio@users.noreply.github.com"
+          git add courses catalog
+          if git diff --cached --quiet; then
+            echo "No website course changes detected."
+            exit 0
+          fi
+          git commit -m "Synchronize website course offerings and generated drafts"
+          git push
