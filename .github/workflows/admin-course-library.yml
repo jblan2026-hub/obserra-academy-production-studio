@@ -1,0 +1,73 @@
+name: Obserra Academy Admin Course Library
+
+on:
+  workflow_dispatch:
+    inputs:
+      course_id:
+        description: Course ID or all
+        required: true
+        default: all
+        type: string
+      package_type:
+        description: Package type
+        required: true
+        default: source
+        type: choice
+        options:
+          - source
+          - final
+          - both
+      regenerate_library:
+        description: Refresh the admin library index before export
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: academy-admin-export-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    name: Build protected administrator downloads
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Production Studio
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Generate admin library index
+        if: ${{ inputs.regenerate_library }}
+        run: npm run library:admin
+
+      - name: Build administrator export packages
+        run: npm run export:admin -- --course "${{ inputs.course_id }}" --type "${{ inputs.package_type }}"
+
+      - name: Upload protected course downloads
+        uses: actions/upload-artifact@v4
+        with:
+          name: obserra-academy-admin-${{ inputs.course_id }}-${{ inputs.package_type }}-${{ github.run_number }}
+          path: |
+            admin-exports/*.zip
+            admin-exports/export-summary.json
+            catalog/admin-course-library.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Write administrator summary
+        run: |
+          echo "## Obserra Academy Admin Course Library" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Course selection: ${{ inputs.course_id }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Package type: ${{ inputs.package_type }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Classification: OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download the generated ZIP package from the Artifacts section of this workflow run." >> "$GITHUB_STEP_SUMMARY"
