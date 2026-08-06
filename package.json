@@ -1,6 +1,6 @@
 {
   "name": "obserra-academy-production-studio",
-  "version": "1.0.0-alpha.5",
+  "version": "1.0.0-alpha.6",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,6 +16,8 @@
     "collect:sources": "node studio/collect-authoritative-sources.mjs",
     "import:website": "node studio/import-website-courses.mjs",
     "media:course": "node studio/generate-media.mjs",
+    "load:courses:check": "node studio/load-courses-to-lcms.mjs --dry-run",
+    "load:courses": "node studio/load-courses-to-lcms.mjs",
     "sync:website": "npm run import:website -- ./tmp/courseData.ts && npm run build:all && npm run validate && npm run catalog",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
@@ -23,7 +25,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "verify": "npm run test && npm run validate && npm run catalog && npm run db:validate",
+    "verify": "npm run test && npm run validate && npm run build:all && npm run catalog && npm run load:courses:check && npm run db:validate",
     "ci": "npm run verify && npm run build"
   },
   "prisma": {
