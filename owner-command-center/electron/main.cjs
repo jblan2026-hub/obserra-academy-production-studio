@@ -6,6 +6,7 @@ const crypto = require("node:crypto");
 const Store = require("electron-store");
 const { resolvedConnectors, normalizeBaseUrl } = require("./connectors.cjs");
 const { getStudioSnapshot, updateCourseMetadata, runStudioAction } = require("./academy-studio.cjs");
+const { previewCourse, previewMaterials, previewCertificate } = require("./academy-preview.cjs");
 
 const store = new Store({ name: "owner-command-center" });
 const REQUEST_TIMEOUT_MS = 10000;
@@ -146,6 +147,9 @@ app.whenReady().then(async () => {
   ipcMain.handle("academy:getSnapshot", async () => getStudioSnapshot());
   ipcMain.handle("academy:updateCourse", async (_event, payload) => updateCourseMetadata(payload));
   ipcMain.handle("academy:runAction", async (_event, payload) => runStudioAction(payload?.action, payload?.courseId));
+  ipcMain.handle("academy:previewCourse", async (_event, courseId) => previewCourse(courseId));
+  ipcMain.handle("academy:previewMaterials", async (_event, courseId) => previewMaterials(courseId));
+  ipcMain.handle("academy:previewCertificate", async (_event, courseId) => previewCertificate(courseId));
 
   ipcMain.handle("recovery:export", async (_event, passphrase) => {
     if (typeof passphrase !== "string" || passphrase.length < 14) throw new Error("Recovery passphrase must contain at least 14 characters");
