@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.0",
+  "legalName": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+  "brandName": "Obserra",
+  "academyName": "Obserra Academy",
+  "studioName": "Obserra Academy Production Studio",
+  "officialLogo": {
+    "assetPath": "brand/assets/obserra-official-logo.png",
+    "sourceFileSha256": "a8f2a51a6a96364262b736978d9c2ff4ff48060ed5b80a0291bba064b39be8a8",
+    "description": "Official gold Obserra key-eye shield mark supplied by the owner on August 5, 2026.",
+    "required": true,
+    "minimumClearSpace": "One quarter of the mark width on every side",
+    "approvedBackgrounds": ["black", "dark-navy", "transparent"]
+  },
+  "visualSystem": {
+    "primaryColors": {
+      "black": "#05070B",
+      "darkNavy": "#0B1017",
+      "gold": "#D7B56D",
+      "lightGold": "#F0D28E",
+      "holographicBlue": "#5A9DFF",
+      "white": "#F5F7FB"
+    },
+    "style": [
+      "premium executive",
+      "dark navy and black",
+      "gold accents",
+      "restrained holographic blue",
+      "board-ready",
+      "accessible",
+      "high contrast"
+    ],
+    "prohibited": [
+      "unapproved logo substitutions",
+      "generic shield marks",
+      "generic key marks",
+      "bright consumer palettes",
+      "unapproved gradients",
+      "decorative fonts that reduce readability"
+    ]
+  },
+  "ownership": {
+    "copyrightOwner": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+    "defaultClassification": "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.",
+    "publicReleaseRequiresApproval": true
+  },
+  "requiredCourseTags": [
+    "industry",
+    "domain",
+    "audience",
+    "level",
+    "frameworks",
+    "deliveryFormat",
+    "commercialModel",
+    "brand",
+    "classification"
+  ],
+  "requiredBrandTagValues": ["obserra", "obserra-academy", "official-obserra-brand"],
+  "requiredClassificationTagValues": ["proprietary", "internal-review", "public-release-approved"]
+}
