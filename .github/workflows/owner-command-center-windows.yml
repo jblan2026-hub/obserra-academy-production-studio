@@ -126,10 +126,10 @@ jobs:
           }
 
           $bootstrap = Get-Content (Join-Path $media "Obserra-Command-Center-Bootstrap.json") -Raw | ConvertFrom-Json
-          if ($bootstrap.schemaVersion -ne "1.0") { throw "Unsupported bootstrap schema" }
+          if ($bootstrap.schemaVersion -ne "1.1") { throw "Unsupported bootstrap schema" }
           if ($bootstrap.targetHostname -ne "obserra") { throw "Bootstrap target must be machine 'obserra'" }
-          if (@($bootstrap.connectors).Count -lt 9) { throw "Bootstrap connector inventory is incomplete" }
-          $requiredConnectorIds = @("lcms","academy","website","store","stripe","github","vercel","clerk","localAi")
+          if (@($bootstrap.connectors).Count -lt 10) { throw "Bootstrap connector inventory is incomplete" }
+          $requiredConnectorIds = @("lcms","academy","website","store","eios","stripe","github","vercel","clerk","localAi")
           foreach ($connectorId in $requiredConnectorIds) {
             if (-not (@($bootstrap.connectors) | Where-Object { $_.id -eq $connectorId })) { throw "Bootstrap connector missing: $connectorId" }
           }
