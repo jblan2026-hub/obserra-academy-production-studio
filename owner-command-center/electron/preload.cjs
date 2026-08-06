@@ -12,6 +12,11 @@ contextBridge.exposeInMainWorld("obserraOwner", {
   previewAcademyCourse: (courseId) => ipcRenderer.invoke("academy:previewCourse", courseId),
   previewAcademyMaterials: (courseId) => ipcRenderer.invoke("academy:previewMaterials", courseId),
   previewAcademyCertificate: (courseId) => ipcRenderer.invoke("academy:previewCertificate", courseId),
+  getOwnerAISnapshot: () => ipcRenderer.invoke("ownerAI:getSnapshot"),
+  analyzeOwnerAINow: () => ipcRenderer.invoke("ownerAI:analyzeNow"),
+  rememberOwnerAI: (payload) => ipcRenderer.invoke("ownerAI:remember", payload),
+  decideOwnerAIApproval: (payload) => ipcRenderer.invoke("ownerAI:decideApproval", payload),
+  acknowledgeOwnerAIRecommendation: (id) => ipcRenderer.invoke("ownerAI:acknowledgeRecommendation", id),
   exportRecoveryBundle: (passphrase) => ipcRenderer.invoke("recovery:export", passphrase),
   importRecoveryBundle: (passphrase) => ipcRenderer.invoke("recovery:import", passphrase)
 });
