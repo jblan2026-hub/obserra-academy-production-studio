@@ -1,0 +1,277 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CourseStatus {
+  IDEA
+  RESEARCH
+  GENERATING
+  REVIEW
+  MEDIA
+  APPROVAL
+  READY
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ReviewStatus {
+  PENDING
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+  CHANGES_REQUIRED
+}
+
+enum BuildStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+enum SourceStatus {
+  HEALTHY
+  REVIEW_REQUIRED
+  OUTDATED
+  FAILED
+}
+
+enum ReleaseStatus {
+  DRAFT
+  STAGED
+  APPROVED
+  PUBLISHED
+  ROLLED_BACK
+}
+
+model Course {
+  id                 String          @id @default(cuid())
+  slug               String          @unique
+  title              String
+  summary            String?
+  status             CourseStatus    @default(IDEA)
+  version            Int             @default(1)
+  qualityScore       Int             @default(0)
+  productionOwner    String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  lessons            Lesson[]
+  reviews            CourseReview[]
+  qualityAssessments QualityScore[]
+  builds             Build[]
+  releases           Release[]
+  sourceLinks        CourseSource[]
+  expertContributions ExpertContribution[]
+
+  @@index([status])
+  @@index([updatedAt])
+}
+
+model Lesson {
+  id          String       @id @default(cuid())
+  courseId    String
+  title       String
+  position    Int
+  objective   String?
+  content     Json?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  citations   Citation[]
+  assessments Assessment[]
+  mediaAssets MediaAsset[]
+
+  @@unique([courseId, position])
+  @@index([courseId])
+}
+
+model ExpertAgent {
+  id            String               @id @default(cuid())
+  name          String               @unique
+  domain        String
+  description   String?
+  active        Boolean              @default(true)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  contributions ExpertContribution[]
+}
+
+model ExpertContribution {
+  id          String      @id @default(cuid())
+  courseId    String
+  expertId    String
+  contributionType String
+  payload     Json
+  confidence  Float?
+  createdAt   DateTime    @default(now())
+  course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  expert      ExpertAgent @relation(fields: [expertId], references: [id], onDelete: Restrict)
+
+  @@index([courseId])
+  @@index([expertId])
+}
+
+model SourceDocument {
+  id             String        @id @default(cuid())
+  authority      String
+  title          String
+  canonicalUrl   String        @unique
+  version        String?
+  effectiveDate  DateTime?
+  status         SourceStatus  @default(HEALTHY)
+  contentHash    String?
+  lastCollectedAt DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  citations      Citation[]
+  courseLinks    CourseSource[]
+
+  @@index([authority])
+  @@index([status])
+}
+
+model CourseSource {
+  id          String         @id @default(cuid())
+  courseId    String
+  sourceId    String
+  applicability String?
+  binding     Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  source      SourceDocument @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, sourceId])
+  @@index([sourceId])
+}
+
+model Citation {
+  id          String         @id @default(cuid())
+  lessonId    String
+  sourceId    String
+  locator     String?
+  quotation   String?
+  createdAt   DateTime       @default(now())
+  lesson      Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  source      SourceDocument @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+
+  @@index([lessonId])
+  @@index([sourceId])
+}
+
+model Assessment {
+  id          String   @id @default(cuid())
+  lessonId    String
+  kind        String
+  prompt      String
+  options     Json?
+  answerKey   Json?
+  rationale   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+model MediaAsset {
+  id          String   @id @default(cuid())
+  lessonId    String?
+  type        String
+  title       String
+  storageKey  String
+  mimeType    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lesson      Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  @@index([lessonId])
+}
+
+model CourseReview {
+  id          String       @id @default(cuid())
+  courseId    String
+  reviewerRole String
+  reviewerId  String?
+  status      ReviewStatus @default(PENDING)
+  notes       String?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, status])
+}
+
+model QualityScore {
+  id            String   @id @default(cuid())
+  courseId      String
+  category      String
+  score         Int
+  threshold     Int
+  passed        Boolean
+  evidence      Json?
+  evaluatedAt   DateTime @default(now())
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([passed])
+}
+
+model Build {
+  id          String      @id @default(cuid())
+  courseId    String?
+  buildType   String
+  status      BuildStatus @default(QUEUED)
+  commitSha   String?
+  artifactUrl String?
+  logs        Json?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+  course      Course?     @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([courseId])
+}
+
+model Release {
+  id            String        @id @default(cuid())
+  courseId      String
+  version       String
+  status        ReleaseStatus @default(DRAFT)
+  packageUrl    String?
+  approvedBy    String?
+  approvedAt    DateTime?
+  publishedAt   DateTime?
+  rollbackOfId  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  course        Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, version])
+  @@index([status])
+}
+
+model AuditEvent {
+  id            String   @id @default(cuid())
+  actorId       String?
+  actorType     String
+  action        String
+  resourceType  String
+  resourceId    String?
+  correlationId String?
+  outcome       String
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  @@index([resourceType, resourceId])
+  @@index([correlationId])
+  @@index([createdAt])
+}
