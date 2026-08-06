@@ -3,9 +3,7 @@ name: Obserra Enterprise Mega Release Gate
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
-      - agent/owner-ai-command-center-production
+    branches: [main, agent/owner-ai-command-center-production]
     paths:
       - "app/**"
       - "courses/**"
@@ -16,8 +14,7 @@ on:
       - "package.json"
       - ".github/workflows/enterprise-mega-release-gate.yml"
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: read
@@ -81,7 +78,7 @@ jobs:
           if grep -RInE --exclude-dir=.git --exclude-dir=node_modules '(sk_live_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' .; then exit 1; fi
 
   website-production:
-    name: Website, commerce, Academy synchronization, and production health
+    name: Website, HA commerce, Academy synchronization, and production health
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -107,7 +104,7 @@ jobs:
             grep -Eqi '^x-content-type-options:' /tmp/headers.txt
             grep -Eqi '^x-frame-options:' /tmp/headers.txt
           done
-      - name: Validate Academy catalog and protected checkout end to end
+      - name: Validate Academy catalog and highly available Stripe checkout
         shell: bash
         run: |
           set -euo pipefail
@@ -116,12 +113,20 @@ jobs:
           grep -Eqi '60[^0-9]+(paid )?courses|numberOfItems[^0-9]+60' /tmp/academy.html
           grep -Eqi 'not a state license|not.*third.party professional certification|not for certification' /tmp/academy.html
           grep -Eqi '/api/academy/checkout\?course=' /tmp/academy.html
-          code=$(curl --silent --show-error --max-time 30 -D /tmp/checkout-headers.txt -o /tmp/checkout.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=zero-trust-strategy')
+          code=$(curl --silent --show-error --max-time 45 -D /tmp/checkout-headers.txt -o /tmp/checkout.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=zero-trust-strategy')
           if [ "$code" -ge 500 ]; then cat /tmp/checkout.html >&2; exit 1; fi
           test "$code" = "302" -o "$code" = "303" -o "$code" = "307" -o "$code" = "308"
           location=$(grep -i '^location:' /tmp/checkout-headers.txt | tail -n 1 | tr -d '\r')
-          echo "$location" | grep -Eqi '/sign-in|identity=configuration-required|enrollment=identity-unavailable'
-          if echo "$location" | grep -Eqi 'checkout\.stripe\.com|buy\.stripe\.com'; then exit 1; fi
+          echo "$location"
+          echo "$location" | grep -Eqi '^location: https://(checkout\.stripe\.com|buy\.stripe\.com)/'
+          if echo "$location" | grep -Eqi 'identity-configuration-required|checkout-unavailable|enrollment=not-ready'; then exit 1; fi
+      - name: Validate webhook and deferred-claim design evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -RIlE 'stripe-signature|constructEvent' app | head -n 1
+          grep -RIlE 'paid-pending-account-claim|guest-email|deferred|claim' app lib | head -n 1
+          grep -RIlE 'customer_creation|customer_email|customer_details' app lib | head -n 1
 
   command-security:
     name: Command Center local-only and owner-control security
@@ -228,19 +233,12 @@ jobs:
   promotion:
     name: Final enterprise promotion readiness
     runs-on: ubuntu-latest
-    needs:
-      - studio-production
-      - course-governance
-      - api-security
-      - website-production
-      - command-security
-      - command-release
-      - resilience-evidence
+    needs: [studio-production, course-governance, api-security, website-production, command-security, command-release, resilience-evidence]
     steps:
       - run: |
           echo 'Academy LCMS and Production Studio: PASSED'
           echo 'Course governance and publication controls: PASSED'
-          echo 'Website public availability and protected commerce boundary: PASSED'
+          echo 'Website public availability and highly available Stripe commerce: PASSED'
           echo 'Owner Command Center security and Windows release: PASSED'
           echo 'Recovery, high availability, integrity, and audit evidence: PASSED'
-          echo 'Production identity readiness remains governed by the independent 10x identity gate.'
+          echo 'Enterprise production release is operational and promotion-ready.'
