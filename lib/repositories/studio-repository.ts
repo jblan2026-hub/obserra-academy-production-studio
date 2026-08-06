@@ -60,12 +60,16 @@ function fallbackSnapshot(): StudioStatusSnapshot {
   };
 }
 
-export async function getStudioStatusSnapshot(): Promise<StudioStatusSnapshot> {
+export async function getStudioStatusSnapshot(organizationId?: string): Promise<StudioStatusSnapshot> {
   if (!process.env.DATABASE_URL) return fallbackSnapshot();
 
   try {
     const [courses, experts, sources] = await Promise.all([
-      prisma.course.findMany({ orderBy: { updatedAt: "desc" }, take: 50 }),
+      prisma.course.findMany({
+        where: organizationId ? { organization: { clerkOrganizationId: organizationId } } : undefined,
+        orderBy: { updatedAt: "desc" },
+        take: 50,
+      }),
       prisma.expertAgent.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
       prisma.sourceDocument.findMany({ orderBy: { updatedAt: "desc" }, take: 50 }),
     ]);
