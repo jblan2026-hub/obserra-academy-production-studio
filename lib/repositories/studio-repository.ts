@@ -1,9 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import { expertPanel, metrics, productionQueue, sourceSystems } from "@/lib/studio-data";
 
+type StudioMetrics = {
+  activeCourses: number;
+  averageQuality: number;
+  reviewQueue: number;
+  expertAgents: number;
+  sourceSystems: number;
+  releaseReadiness: number;
+};
+
 export type StudioStatusSnapshot = {
   source: "database" | "fallback";
-  metrics: typeof metrics;
+  metrics: StudioMetrics;
   queues: {
     total: number;
     byStage: Record<string, number>;
@@ -40,7 +49,7 @@ function fallbackSnapshot(): StudioStatusSnapshot {
 
   return {
     source: "fallback",
-    metrics,
+    metrics: { ...metrics },
     queues: { total: productionQueue.length, byStage, items: productionQueue },
     expertPanel: { active: expertPanel.length, members: expertPanel },
     sourceIntelligence: {
