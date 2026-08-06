@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateBrandAndTags } from "./brand-policy.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
@@ -53,6 +54,8 @@ function validateManifest(manifest, file) {
     }
   }
 
+  errors.push(...validateBrandAndTags(manifest));
+
   if (errors.length) {
     for (const error of errors) fail(`${file}: ${error}`);
     return false;
@@ -74,5 +77,5 @@ if (!fs.existsSync(coursesRoot)) {
     const manifest = readJson(file);
     if (manifest && validateManifest(manifest, file)) valid += 1;
   }
-  if (!process.exitCode) console.log(`[Academy Studio] Validated ${valid} course manifest(s)`);
+  if (!process.exitCode) console.log(`[Academy Studio] Validated ${valid} officially branded, tagged, informational-only course manifest(s)`);
 }
