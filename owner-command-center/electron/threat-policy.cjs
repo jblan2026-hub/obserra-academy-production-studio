@@ -18,8 +18,20 @@ function mapThreatEvidence(payload) {
   return MAPPINGS.filter((mapping) => mapping.terms.some((term) => text.includes(term))).map(({ terms, ...mapping }) => mapping);
 }
 
-function shouldRecommendBlock({ severity, mappings, authorized, sensitiveScope }) {
-  return Boolean(sensitiveScope && !authorized && ["high", "critical"].includes(severity) && Array.isArray(mappings) && mappings.length > 0);
+function classifyResponse({ severity, mappings = [], confidence = 0, authorized = false, sensitiveScope = false }) {
+  const mapped = Array.isArray(mappings) && mappings.length > 0;
+  const knownBad = mapped && ["high", "critical"].includes(severity) && Number(confidence) >= 0.85;
+  if (knownBad && sensitiveScope && !authorized) {
+    return { action: "block", knownBad: true, alert: true, recommend: true, ownerOverrideAllowed: true };
+  }
+  if (["medium", "high", "critical"].includes(severity) || mapped) {
+    return { action: "recommend", knownBad: false, alert: true, recommend: true, ownerOverrideAllowed: false };
+  }
+  return { action: "alert", knownBad: false, alert: true, recommend: false, ownerOverrideAllowed: false };
 }
 
-module.exports = { MAPPINGS, mapThreatEvidence, shouldRecommendBlock };
+function shouldRecommendBlock(input) {
+  return classifyResponse({ ...input, confidence: input.confidence ?? 1 }).action === "block";
+}
+
+module.exports = { MAPPINGS, mapThreatEvidence, classifyResponse, shouldRecommendBlock };
