@@ -1,0 +1,72 @@
+{
+  "courseId": "cybersecurity-foundations",
+  "version": "0.1.0",
+  "passingScore": 80,
+  "questions": [
+    {
+      "id": "q1",
+      "type": "multiple-choice",
+      "prompt": "You receive several unexpected multifactor authentication prompts. What is the safest response?",
+      "options": [
+        "Approve one prompt to stop the notifications",
+        "Deny the prompts, secure the account through the approved process, and report the event",
+        "Ignore the prompts permanently",
+        "Ask a coworker to approve the prompt"
+      ],
+      "correctOption": 1,
+      "rationale": "Unexpected prompts can indicate attempted account access and require denial, account protection, and escalation."
+    },
+    {
+      "id": "q2",
+      "type": "multiple-choice",
+      "prompt": "Which incident report statement is most appropriate?",
+      "options": [
+        "The attacker definitely stole everything",
+        "At 10:14 a.m., I opened an unexpected attachment and immediately disconnected from the network and contacted the service desk",
+        "Nothing important happened",
+        "The sender looked suspicious, so I deleted all messages"
+      ],
+      "correctOption": 1,
+      "rationale": "Effective reporting separates known facts from assumptions and records time, action, and escalation."
+    },
+    {
+      "id": "q3",
+      "type": "multiple-choice",
+      "prompt": "A payment request appears to come from an executive and asks you to bypass the normal approval process. What should you do?",
+      "options": [
+        "Complete the payment because the executive is senior",
+        "Reply to the message and request the password",
+        "Verify the request through an approved independent channel and follow established payment controls",
+        "Forward the request to external contacts"
+      ],
+      "correctOption": 2,
+      "rationale": "Independent verification and established controls reduce fraud and social-engineering risk."
+    },
+    {
+      "id": "q4",
+      "type": "multiple-choice",
+      "prompt": "What is the primary purpose of least privilege?",
+      "options": [
+        "Give everyone administrator access",
+        "Limit access to what is required for authorized work",
+        "Eliminate the need for identity verification",
+        "Allow shared accounts"
+      ],
+      "correctOption": 1,
+      "rationale": "Least privilege reduces unnecessary access and limits potential harm."
+    },
+    {
+      "id": "q5",
+      "type": "multiple-choice",
+      "prompt": "Which action best preserves evidence after a suspected security event?",
+      "options": [
+        "Delete the suspicious message",
+        "Modify the file to test it",
+        "Preserve the original context and follow authorized reporting procedures",
+        "Post the evidence publicly"
+      ],
+      "correctOption": 2,
+      "rationale": "Original context should be preserved and handled through authorized channels."
+    }
+  ]
+}

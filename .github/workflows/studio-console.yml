@@ -1,0 +1,153 @@
+name: Obserra Academy Studio Console
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Studio operation"
+        required: true
+        type: choice
+        options:
+          - sync_website_catalog
+          - build_all_drafts
+          - validate_all
+          - generate_course_media
+          - build_course_release
+          - publish_approved_catalog
+      course_id:
+        description: "Required for media or release operations"
+        required: false
+        type: string
+      video_provider:
+        description: "External AI video provider"
+        required: false
+        default: "synthesia"
+        type: choice
+        options:
+          - synthesia
+          - heygen
+      commit_generated_changes:
+        description: "Commit generated Studio files back to the selected branch"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+env:
+  OBSERRA_LEGAL_NAME: OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC
+  OBSERRA_CLASSIFICATION: OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.
+
+jobs:
+  operate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout Production Studio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate required course input
+        shell: bash
+        run: |
+          case "${{ inputs.operation }}" in
+            generate_course_media|build_course_release)
+              if [ -z "${{ inputs.course_id }}" ]; then
+                echo "course_id is required for ${{ inputs.operation }}"
+                exit 1
+              fi
+              ;;
+          esac
+
+      - name: Import current website offerings
+        if: inputs.operation == 'sync_website_catalog'
+        env:
+          GH_TOKEN: ${{ secrets.ACADEMY_STUDIO_TOKEN }}
+        shell: bash
+        run: |
+          mkdir -p tmp
+          gh api repos/jblan2026-hub/obserra-website/contents/app/academy/courseData.ts \
+            -H "Accept: application/vnd.github.raw+json" > tmp/courseData.ts
+          npm run sync:website
+
+      - name: Build all draft course assets
+        if: inputs.operation == 'build_all_drafts'
+        run: npm run build:all
+
+      - name: Validate all course manifests and catalog
+        if: inputs.operation == 'validate_all'
+        run: npm run verify
+
+      - name: Generate branded AI course media
+        if: inputs.operation == 'generate_course_media'
+        env:
+          ACADEMY_VIDEO_PROVIDER: ${{ inputs.video_provider }}
+          SYNTHESIA_API_KEY: ${{ secrets.SYNTHESIA_API_KEY }}
+          SYNTHESIA_TEMPLATE_ID: ${{ secrets.SYNTHESIA_TEMPLATE_ID }}
+          SYNTHESIA_TEST_MODE: ${{ vars.SYNTHESIA_TEST_MODE || 'true' }}
+          HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
+          HEYGEN_AVATAR_ID: ${{ secrets.HEYGEN_AVATAR_ID }}
+          HEYGEN_VOICE_ID: ${{ secrets.HEYGEN_VOICE_ID }}
+        run: npm run media:course -- --course "${{ inputs.course_id }}" --provider "${{ inputs.video_provider }}"
+
+      - name: Enforce release approval and source grounding
+        if: inputs.operation == 'build_course_release'
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const id = process.env.COURSE_ID;
+          const manifest = JSON.parse(fs.readFileSync(`courses/${id}/course-manifest.json`, 'utf8'));
+          const allowed = ['approved', 'published'];
+          if (!allowed.includes(manifest.release?.status) || manifest.release?.publishToAcademy !== true) {
+            throw new Error(`Course ${id} is not approved and enabled for Academy publication.`);
+          }
+          const reviews = Object.entries(manifest.reviews || {});
+          const failed = reviews.filter(([, value]) => value?.required && value?.status !== 'approved');
+          if (failed.length) throw new Error(`Required reviews are incomplete: ${failed.map(([name]) => name).join(', ')}`);
+          NODE
+          if [ -f "courses/${{ inputs.course_id }}/generated/authoring/course-package.json" ]; then
+            node studio/source-grounding-gate.mjs --course "${{ inputs.course_id }}"
+          fi
+          npm run validate
+          npm run build:course -- --course "${{ inputs.course_id }}"
+        env:
+          COURSE_ID: ${{ inputs.course_id }}
+
+      - name: Generate approved Academy publication catalog
+        if: inputs.operation == 'publish_approved_catalog'
+        run: |
+          npm run validate
+          npm run catalog
+
+      - name: Upload generated artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-studio-${{ inputs.operation }}-${{ github.run_number }}
+          path: |
+            catalog/
+            releases/
+            courses/*/generated/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Commit generated Studio changes
+        if: inputs.commit_generated_changes
+        shell: bash
+        run: |
+          git config user.name "Obserra Academy Studio"
+          git config user.email "academy-studio@users.noreply.github.com"
+          git add catalog courses releases
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+            exit 0
+          fi
+          git commit -m "Generate Academy Studio output: ${{ inputs.operation }}"
+          git push

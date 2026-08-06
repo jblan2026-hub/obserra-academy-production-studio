@@ -1,0 +1,213 @@
+{
+  "schemaVersion": "1.1",
+  "updatedAt": "2026-08-05",
+  "policy": {
+    "primarySourcesRequired": true,
+    "bindingAuthorityPreferred": true,
+    "guidanceMustBeDistinguishedFromLaw": true,
+    "draftsMustBeLabeled": true,
+    "unsupportedNormativeClaimsBlocked": true,
+    "quoteLimitPerSourceWords": 25,
+    "citationStyle": "Source title, issuing body, publication identifier, publication date, section or control identifier, canonical URL, access date",
+    "authorityOrder": ["statute", "regulation", "final-rule", "contract-clause", "official-guidance", "official-advisory", "consensus-standard"]
+  },
+  "domainRequirements": {
+    "board-ciso-leadership": {
+      "requiredAuthorityTopics": ["board oversight", "management responsibility", "materiality", "incident disclosure", "risk governance"],
+      "preferredSources": ["sec-cyber-rule-33-11216", "sec-reg-sk-item-106", "nist-csf-2.0", "nydfs-23-nycrr-500", "ftc-safeguards-16-cfr-314"]
+    },
+    "business-leadership": {
+      "requiredAuthorityTopics": ["organizational accountability", "risk management", "consumer protection", "sector obligations"],
+      "preferredSources": ["sec-cyber-rule-33-11216", "ftc-safeguards-16-cfr-314", "nydfs-23-nycrr-500", "nist-csf-2.0"]
+    },
+    "executive-protection": {
+      "requiredAuthorityTopics": ["recognized hazards", "workplace violence", "employee safety", "travel risk", "local law"],
+      "preferredSources": ["osh-act-29-usc-654", "california-labor-code-6401-9", "state-department-travel-advisories"]
+    }
+  },
+  "sources": [
+    {
+      "id": "nist-csf-2.0",
+      "title": "The NIST Cybersecurity Framework (CSF) 2.0",
+      "issuer": "National Institute of Standards and Technology",
+      "publication": "NIST CSWP 29",
+      "authorityType": "official-guidance",
+      "binding": false,
+      "status": "final",
+      "published": "2024-02-26",
+      "canonicalUrl": "https://www.nist.gov/publications/nist-cybersecurity-framework-csf-20",
+      "topics": ["cybersecurity", "risk", "governance", "enterprise risk management", "profiles", "tiers", "board oversight"]
+    },
+    {
+      "id": "nist-sp-800-218",
+      "title": "Secure Software Development Framework (SSDF) Version 1.1: Recommendations for Mitigating the Risk of Software Vulnerabilities",
+      "issuer": "National Institute of Standards and Technology",
+      "publication": "NIST SP 800-218",
+      "authorityType": "official-guidance",
+      "binding": false,
+      "status": "final",
+      "published": "2022-02-03",
+      "canonicalUrl": "https://csrc.nist.gov/pubs/sp/800/218/final",
+      "topics": ["secure software development", "SSDF", "software supply chain", "vulnerability management", "SDLC"]
+    },
+    {
+      "id": "nist-sp-800-218-r1-ipd",
+      "title": "Secure Software Development Framework (SSDF) Version 1.2: Recommendations for Mitigating the Risk of Software Vulnerabilities",
+      "issuer": "National Institute of Standards and Technology",
+      "publication": "NIST SP 800-218 Rev. 1 Initial Public Draft",
+      "authorityType": "official-guidance",
+      "binding": false,
+      "status": "draft",
+      "published": "2025-12-17",
+      "canonicalUrl": "https://csrc.nist.gov/pubs/sp/800/218/r1/ipd",
+      "topics": ["secure software development", "SSDF", "draft guidance"]
+    },
+    {
+      "id": "nist-sp-800-207",
+      "title": "Zero Trust Architecture",
+      "issuer": "National Institute of Standards and Technology",
+      "publication": "NIST SP 800-207",
+      "authorityType": "official-guidance",
+      "binding": false,
+      "status": "final",
+      "published": "2020-08-11",
+      "canonicalUrl": "https://csrc.nist.gov/pubs/sp/800/207/final",
+      "topics": ["zero trust", "identity", "access control", "architecture", "risk management"]
+    },
+    {
+      "id": "sec-cyber-rule-33-11216",
+      "title": "Cybersecurity Risk Management, Strategy, Governance, and Incident Disclosure",
+      "issuer": "U.S. Securities and Exchange Commission",
+      "publication": "Release Nos. 33-11216 and 34-97989",
+      "authorityType": "final-rule",
+      "binding": true,
+      "status": "final",
+      "published": "2023-07-26",
+      "effective": "2023-09-05",
+      "canonicalUrl": "https://www.sec.gov/rules-regulations/2023/07/s7-09-22",
+      "topics": ["board oversight", "management role", "cybersecurity governance", "material incidents", "materiality", "Form 8-K", "Form 10-K", "public companies"]
+    },
+    {
+      "id": "sec-reg-sk-item-106",
+      "title": "Regulation S-K Item 106 Cybersecurity",
+      "issuer": "U.S. Securities and Exchange Commission",
+      "publication": "17 CFR 229.106",
+      "authorityType": "regulation",
+      "binding": true,
+      "status": "current-regulation",
+      "published": "2023-08-04",
+      "canonicalUrl": "https://www.ecfr.gov/current/title-17/chapter-II/part-229/subpart-229.100/section-229.106",
+      "topics": ["board oversight", "management responsibility", "risk management", "strategy", "governance", "annual disclosure"]
+    },
+    {
+      "id": "ftc-safeguards-16-cfr-314",
+      "title": "Standards for Safeguarding Customer Information",
+      "issuer": "Federal Trade Commission",
+      "publication": "16 CFR Part 314",
+      "authorityType": "regulation",
+      "binding": true,
+      "status": "current-regulation",
+      "published": "2002-05-23",
+      "canonicalUrl": "https://www.ftc.gov/legal-library/browse/rules/safeguards-rule",
+      "topics": ["financial institutions", "customer information", "information security program", "qualified individual", "service providers", "breach notification", "executive accountability"]
+    },
+    {
+      "id": "nydfs-23-nycrr-500",
+      "title": "Cybersecurity Requirements for Financial Services Companies",
+      "issuer": "New York State Department of Financial Services",
+      "publication": "23 NYCRR Part 500",
+      "authorityType": "regulation",
+      "binding": true,
+      "status": "current-regulation",
+      "published": "2017-03-01",
+      "amended": "2023-11-01",
+      "canonicalUrl": "https://www.dfs.ny.gov/industry_guidance/cybersecurity",
+      "topics": ["financial services", "cybersecurity program", "CISO", "senior governing body", "risk assessment", "incident notification", "certification"]
+    },
+    {
+      "id": "fda-medical-device-cybersecurity-2026",
+      "title": "Cybersecurity in Medical Devices: Quality Management System Considerations and Content of Premarket Submissions",
+      "issuer": "U.S. Food and Drug Administration",
+      "publication": "Guidance for Industry and Food and Drug Administration Staff",
+      "authorityType": "official-guidance",
+      "binding": false,
+      "status": "final",
+      "published": "2026-02-01",
+      "canonicalUrl": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/cybersecurity-medical-devices-quality-management-system-considerations-and-content-premarket",
+      "topics": ["medical device cybersecurity", "premarket submissions", "quality management system", "section 524B", "SBOM", "TPLC"]
+    },
+    {
+      "id": "fda-medical-device-cybersecurity-faq",
+      "title": "Cybersecurity in Medical Devices Frequently Asked Questions",
+      "issuer": "U.S. Food and Drug Administration",
+      "publication": "FDA FAQ",
+      "authorityType": "official-guidance",
+      "binding": false,
+      "status": "current-web-guidance",
+      "published": null,
+      "canonicalUrl": "https://www.fda.gov/medical-devices/digital-health-center-excellence/cybersecurity-medical-devices-frequently-asked-questions-faqs",
+      "topics": ["section 524B", "cyber device", "premarket submission", "vulnerability management", "patching", "SBOM"]
+    },
+    {
+      "id": "cmmc-32-cfr-170",
+      "title": "Cybersecurity Maturity Model Certification Program",
+      "issuer": "U.S. Department of Defense",
+      "publication": "32 CFR Part 170",
+      "authorityType": "regulation",
+      "binding": true,
+      "status": "final-rule",
+      "published": "2024-10-15",
+      "canonicalUrl": "https://www.ecfr.gov/current/title-32/subtitle-A/chapter-I/subchapter-D/part-170",
+      "topics": ["CMMC", "FCI", "CUI", "assessment", "affirmation", "defense industrial base"]
+    },
+    {
+      "id": "dfars-252.204-7021",
+      "title": "Contractor Compliance With the Cybersecurity Maturity Model Certification Level Requirements",
+      "issuer": "U.S. Department of Defense",
+      "publication": "DFARS 252.204-7021",
+      "authorityType": "contract-clause",
+      "binding": true,
+      "status": "current-clause",
+      "published": "2025-11-01",
+      "canonicalUrl": "https://www.acq.osd.mil/DPAP/dars/dfars/html/current/252204.htm",
+      "topics": ["CMMC", "contracts", "FCI", "CUI", "assessment status", "SPRS"]
+    },
+    {
+      "id": "osh-act-29-usc-654",
+      "title": "Duties of Employers and Employees",
+      "issuer": "Occupational Safety and Health Administration",
+      "publication": "Occupational Safety and Health Act Section 5, 29 U.S.C. 654",
+      "authorityType": "statute",
+      "binding": true,
+      "status": "current-statute",
+      "published": "1970-12-29",
+      "canonicalUrl": "https://www.osha.gov/laws-regs/oshact/section5-duties",
+      "topics": ["general duty clause", "recognized hazards", "employee safety", "workplace violence", "feasible abatement", "executive protection"]
+    },
+    {
+      "id": "california-labor-code-6401-9",
+      "title": "Workplace Violence Prevention Plan Requirements",
+      "issuer": "California Division of Occupational Safety and Health",
+      "publication": "California Labor Code Section 6401.9",
+      "authorityType": "statute",
+      "binding": true,
+      "status": "current-statute",
+      "published": "2023-09-30",
+      "effective": "2024-07-01",
+      "canonicalUrl": "https://www.dir.ca.gov/dosh/Workplace-Violence/Laws-in-General-Industry.html",
+      "topics": ["workplace violence prevention", "written plan", "employee training", "incident logs", "hazard assessment", "executive protection"]
+    },
+    {
+      "id": "state-department-travel-advisories",
+      "title": "U.S. Department of State Travel Advisories",
+      "issuer": "U.S. Department of State",
+      "publication": "Official Travel Advisory System",
+      "authorityType": "official-advisory",
+      "binding": false,
+      "status": "current-dynamic-advisory",
+      "published": null,
+      "canonicalUrl": "https://travel.state.gov/en/international-travel/travel-advisories.html",
+      "topics": ["travel risk", "crime", "terrorism", "unrest", "kidnapping", "wrongful detention", "health", "local law", "executive travel"]
+    }
+  ]
+}

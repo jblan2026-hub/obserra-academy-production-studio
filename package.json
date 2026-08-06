@@ -1,0 +1,53 @@
+{
+  "name": "obserra-academy-production-studio",
+  "version": "1.0.0-alpha.7",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "tsx --test tests/**/*.test.ts",
+    "apply:course-policy": "node studio/apply-course-policy.mjs",
+    "validate": "npm run apply:course-policy && node studio/validate.mjs",
+    "build:course": "npm run apply:course-policy && node studio/build-course.mjs && node studio/enforce-course-legal-assets.mjs",
+    "build:all": "npm run apply:course-policy && node studio/build-all-courses.mjs && node studio/enforce-course-legal-assets.mjs",
+    "catalog": "npm run apply:course-policy && node studio/generate-catalog.mjs",
+    "collect:sources": "node studio/collect-authoritative-sources.mjs",
+    "import:website": "node studio/import-website-courses.mjs",
+    "media:course": "npm run apply:course-policy && node studio/generate-media.mjs",
+    "load:courses:check": "npm run apply:course-policy && node studio/load-courses-to-lcms.mjs --dry-run",
+    "load:courses": "npm run apply:course-policy && node studio/load-courses-to-lcms.mjs",
+    "sync:website": "npm run import:website -- ./tmp/courseData.ts && npm run build:all && npm run validate && npm run catalog",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
+    "verify": "npm run test && npm run validate && npm run build:all && npm run catalog && npm run load:courses:check && npm run db:validate",
+    "ci": "npm run verify && npm run build"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^6.31.0",
+    "@prisma/client": "^6.16.0",
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "prisma": "^6.16.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=22 <25"
+  }
+}

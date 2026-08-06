@@ -1,0 +1,11 @@
+{
+  "courseId": "cybersecurity-foundations",
+  "version": "0.1.0",
+  "answers": [
+    { "questionId": "q1", "correctOption": 1 },
+    { "questionId": "q2", "correctOption": 1 },
+    { "questionId": "q3", "correctOption": 2 },
+    { "questionId": "q4", "correctOption": 1 },
+    { "questionId": "q5", "correctOption": 2 }
+  ]
+}

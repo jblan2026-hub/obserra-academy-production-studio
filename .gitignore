@@ -1,0 +1,11 @@
+node_modules/
+.env
+.env.*
+!.env.example
+courses/*/generated/
+releases/*/FINAL/*.mp4
+releases/*/FINAL/*.mov
+releases/*/FINAL/*.wav
+releases/*/FINAL/*.mp3
+.DS_Store
+Thumbs.db

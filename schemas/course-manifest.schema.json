@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.obserrallc.com/schemas/course-manifest.schema.json",
+  "title": "Obserra Academy Course Manifest",
+  "type": "object",
+  "required": ["schemaVersion", "course", "commerce", "completion", "release", "reviews"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "course": {
+      "type": "object",
+      "required": ["id", "title", "department", "level", "track", "audience", "description", "duration", "outcomes", "modules"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "title": { "type": "string", "minLength": 8 },
+        "department": { "enum": ["Cyber", "Protection", "Intelligence", "Technologies"] },
+        "level": { "enum": ["Foundation", "Professional", "Advanced", "Executive Intensive", "CISO Masterclass"] },
+        "track": { "type": "string", "minLength": 3 },
+        "audience": { "type": "string", "minLength": 10 },
+        "description": { "type": "string", "minLength": 40 },
+        "duration": { "type": "string", "minLength": 3 },
+        "prerequisites": { "type": "array", "items": { "type": "string" } },
+        "outcomes": { "type": "array", "minItems": 3, "items": { "type": "string", "minLength": 10 } },
+        "modules": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "duration", "format", "description"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+              "title": { "type": "string", "minLength": 5 },
+              "duration": { "type": "string", "minLength": 3 },
+              "format": { "enum": ["Interactive lesson", "Video lesson", "Scenario", "Lab", "Workshop", "Assessment"] },
+              "description": { "type": "string", "minLength": 20 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "commerce": {
+      "type": "object",
+      "required": ["model", "currency", "price", "accessPolicy"],
+      "properties": {
+        "model": { "const": "one-time-payment" },
+        "currency": { "const": "USD" },
+        "price": { "type": "number", "minimum": 0 },
+        "stripePriceId": { "type": ["string", "null"] },
+        "paymentLink": { "type": ["string", "null"], "format": "uri" },
+        "accessPolicy": { "const": "until-completion" }
+      },
+      "additionalProperties": false
+    },
+    "completion": {
+      "type": "object",
+      "required": ["allLessonsRequired", "assessmentRequired", "passingScore", "certificateIssued"],
+      "properties": {
+        "allLessonsRequired": { "const": true },
+        "assessmentRequired": { "const": true },
+        "passingScore": { "type": "integer", "minimum": 70, "maximum": 100 },
+        "certificateIssued": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "release": {
+      "type": "object",
+      "required": ["version", "status", "publishToAcademy"],
+      "properties": {
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "status": { "enum": ["draft", "review", "approved", "published"] },
+        "publishToAcademy": { "type": "boolean" },
+        "effectiveDate": { "type": ["string", "null"], "format": "date" }
+      },
+      "additionalProperties": false
+    },
+    "reviews": {
+      "type": "object",
+      "required": ["subjectMatter", "technical", "brand", "accessibility"],
+      "properties": {
+        "subjectMatter": { "$ref": "#/$defs/review" },
+        "technical": { "$ref": "#/$defs/review" },
+        "legal": { "$ref": "#/$defs/review" },
+        "brand": { "$ref": "#/$defs/review" },
+        "accessibility": { "$ref": "#/$defs/review" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "review": {
+      "type": "object",
+      "required": ["required", "status"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "status": { "enum": ["not-started", "in-review", "approved", "changes-required", "not-applicable"] },
+        "reviewedBy": { "type": ["string", "null"] },
+        "reviewedAt": { "type": ["string", "null"], "format": "date-time" },
+        "notes": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

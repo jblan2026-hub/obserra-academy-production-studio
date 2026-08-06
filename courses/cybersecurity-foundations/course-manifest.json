@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "id": "cybersecurity-foundations",
+    "title": "Cybersecurity Foundations for New Professionals",
+    "department": "Cyber",
+    "level": "Foundation",
+    "track": "Cyber Defense Academy",
+    "audience": "New cybersecurity professionals, technology staff, risk owners, and business partners",
+    "description": "An original Obserra Academy foundation course that develops practical cybersecurity judgment, identity protection habits, incident reporting discipline, and risk-aware decision making for professionals entering security-related roles.",
+    "duration": "2.5 hours",
+    "prerequisites": [],
+    "outcomes": [
+      "Explain core cybersecurity responsibilities using clear business and risk language.",
+      "Recognize common identity, data, endpoint, and social-engineering threats.",
+      "Apply proportionate escalation and incident-reporting decisions in realistic workplace scenarios.",
+      "Distinguish preventive, detective, responsive, and recovery controls.",
+      "Document accountable next actions after identifying a security concern."
+    ],
+    "modules": [
+      {
+        "id": "security-and-business-risk",
+        "title": "Security and Business Risk",
+        "duration": "24 minutes",
+        "format": "Interactive lesson",
+        "description": "Connect cybersecurity responsibilities to business operations, people, data, trust, and organizational resilience."
+      },
+      {
+        "id": "identity-and-access",
+        "title": "Identity, Access, and Authentication",
+        "duration": "26 minutes",
+        "format": "Interactive lesson",
+        "description": "Apply secure identity habits, least privilege, multifactor authentication, and safe access decisions."
+      },
+      {
+        "id": "threat-recognition",
+        "title": "Threat Recognition and Safe Response",
+        "duration": "28 minutes",
+        "format": "Scenario",
+        "description": "Recognize phishing, social engineering, malicious files, unsafe requests, and indicators requiring escalation."
+      },
+      {
+        "id": "incident-reporting",
+        "title": "Incident Reporting and Evidence Preservation",
+        "duration": "30 minutes",
+        "format": "Workshop",
+        "description": "Practice timely reporting, factual documentation, evidence preservation, and responsible communication."
+      },
+      {
+        "id": "final-assessment",
+        "title": "Applied Cybersecurity Foundations Assessment",
+        "duration": "42 minutes",
+        "format": "Assessment",
+        "description": "Demonstrate practical judgment across identity, threat recognition, escalation, control selection, and incident response."
+      }
+    ]
+  },
+  "commerce": {
+    "model": "one-time-payment",
+    "currency": "USD",
+    "price": 149,
+    "stripePriceId": null,
+    "paymentLink": null,
+    "accessPolicy": "until-completion"
+  },
+  "completion": {
+    "allLessonsRequired": true,
+    "assessmentRequired": true,
+    "passingScore": 80,
+    "certificateIssued": true
+  },
+  "release": {
+    "version": "0.1.0",
+    "status": "draft",
+    "publishToAcademy": false,
+    "effectiveDate": null
+  },
+  "reviews": {
+    "subjectMatter": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": null },
+    "technical": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": null },
+    "legal": { "required": false, "status": "not-applicable", "reviewedBy": null, "reviewedAt": null, "notes": null },
+    "brand": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": null },
+    "accessibility": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": null }
+  }
+}

@@ -1,0 +1,72 @@
+name: Studio staging readiness
+
+on:
+  pull_request:
+    branches:
+      - feature/chunk-1-studio-foundation
+  push:
+    branches:
+      - agent/studio-v1-web-application
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: studio-staging-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://studio:studio@127.0.0.1:5432/studio?schema=public
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_c3R1ZGlvLmV4YW1wbGUuY29tJA
+      CLERK_SECRET_KEY: sk_test_studio_ci_placeholder
+      STUDIO_MACHINE_TOKEN: studio-ci-machine-token
+      NEXT_PUBLIC_APP_ENV: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Validate Prisma schema
+        run: npm run db:validate
+
+      - name: Run tenant isolation and platform tests
+        run: npm test
+
+      - name: Validate course production assets
+        run: npm run validate
+
+      - name: Generate Academy catalog
+        run: npm run catalog
+
+      - name: Build authenticated Studio application
+        run: npm run build
+
+      - name: Verify required application routes
+        run: |
+          test -f app/api/health/route.ts
+          test -f app/api/status/route.ts
+          test -f app/api/courses/route.ts
+          test -f app/api/builds/route.ts
+          test -f app/sign-in/[[...sign-in]]/page.tsx
+          test -f proxy.ts
+
+      - name: Verify tenant isolation controls
+        run: |
+          grep -q "organizationId" prisma/schema.prisma
+          grep -q "tenantWhere" lib/tenant-scope.ts
+          grep -q "Cross organization access denied" lib/tenant-scope.ts
