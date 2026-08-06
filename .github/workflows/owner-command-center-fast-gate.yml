@@ -31,7 +31,7 @@ concurrency:
 jobs:
   fast-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,24 +46,32 @@ jobs:
       - name: Install Command Center dependencies
         working-directory: owner-command-center
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Validate Command Center syntax
+      - name: Validate complete Command Center syntax
         working-directory: owner-command-center
         run: |
           node --check electron/main.cjs
+          node --check electron/main-with-remediation.cjs
           node --check electron/preload.cjs
           node --check electron/connectors.cjs
           node --check electron/academy-studio.cjs
           node --check electron/academy-preview.cjs
           node --check electron/owner-ai.cjs
           node --check electron/discovery.cjs
+          node --check electron/site-discovery.cjs
           node --check electron/threat-policy.cjs
           node --check electron/vulnerability-scan.cjs
           node --check electron/security-enforcement.cjs
           node --check electron/trend-store.cjs
+          node --check electron/ai-remediation.cjs
+          node --check electron/remediation-queue.cjs
           node --check src/app.js
           node --check src/security-dashboard.js
-      - name: Run Command Center verification
+          node --check src/remediation-dashboard.js
+          node --check src/refresh-15s.js
+      - name: Run Command Center governance and packaging verification
         working-directory: owner-command-center
         run: npm run verify
       - name: Run Studio and Command Center 500x workload
         run: npm run verify:500x
+      - name: Run governed 1000x remediation workload
+        run: npm run verify:1000x
