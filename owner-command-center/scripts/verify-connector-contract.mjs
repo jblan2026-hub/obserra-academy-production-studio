@@ -7,6 +7,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "u
 
 const connectorSource = read("electron/connectors.cjs");
 const bootstrapSource = read("scripts/build-removable-media-package.ps1");
+const mainSource = read("electron/main.cjs");
 const policy = JSON.parse(read("policy/connector-catalog.json"));
 
 const requiredIds = ["lcms", "academy", "website", "store", "eios", "stripe", "github", "vercel", "clerk", "localAi"];
@@ -23,14 +24,25 @@ for (const id of requiredIds) {
 if ((policy.resources ?? []).length !== requiredIds.length) {
   throw new Error(`Policy connector count must equal ${requiredIds.length}`);
 }
-if (!/schemaVersion\s*=\s*["']1\.1["']/.test(bootstrapSource)) {
-  throw new Error("Bootstrap schema must remain 1.1");
+if (!/schemaVersion\s*=\s*["']1\.0["']/.test(bootstrapSource)) {
+  throw new Error("Bootstrap builder schema must remain 1.0");
+}
+if (!/profile\.schemaVersion\s*!==\s*["']1\.0["']/.test(mainSource)) {
+  throw new Error("Electron runtime must accept the same bootstrap schema 1.0");
 }
 if (!/id:\s*["']eios["'][\s\S]*credentialKey:\s*["']eiosToken["']/.test(connectorSource)) {
   throw new Error("EIOS connector must use a dedicated encrypted credential key");
 }
 if (!/id:\s*["']website["'][\s\S]*credentialKey:\s*["']websiteToken["']/.test(connectorSource)) {
   throw new Error("Website intelligence connector must use a dedicated encrypted credential key");
+}
+for (const credentialKey of ["websiteToken", "eiosToken"]) {
+  if (!connectorSource.includes(`credentialKey: "${credentialKey}"`)) {
+    throw new Error(`Authenticated intelligence credential missing: ${credentialKey}`);
+  }
+}
+if (!/headers\.Authorization\s*=\s*`Bearer \$\{secret\}`/.test(mainSource)) {
+  throw new Error("Command Center must send bearer credentials through the constrained connector header path");
 }
 if (!/intelligencePath:\s*["']\/api\/obserra\/intelligence["']/.test(connectorSource)) {
   throw new Error("Federated intelligence path is not configured");
@@ -44,4 +56,4 @@ for (const resource of policy.resources ?? []) {
   }
 }
 
-console.log(`[Owner Command Center] Connector contract verified for ${requiredIds.length} governed resources.`);
+console.log(`[Owner Command Center] Connector contract verified for ${requiredIds.length} governed resources with authenticated Website and EIOS intelligence.`);
