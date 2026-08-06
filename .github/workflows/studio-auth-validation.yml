@@ -1,0 +1,52 @@
+name: Studio Authentication Validation
+
+on:
+  pull_request:
+    branches:
+      - feature/chunk-1-studio-foundation
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-authenticated-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/obserra_academy_studio?schema=public
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZHVtbXktc3R1ZGlvLWJ1aWxkLWtleQ
+      CLERK_SECRET_KEY: sk_test_ZHVtbXktc3R1ZGlvLWJ1aWxkLWtleQ
+      STUDIO_MACHINE_TOKEN: ci-only-not-a-production-secret
+      NEXT_PUBLIC_APP_ENV: ci
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema
+        run: npm run db:validate
+
+      - name: Validate course production assets
+        run: npm run verify
+
+      - name: Build authenticated Studio application
+        run: npm run build
+
+      - name: Verify protected route files
+        run: |
+          test -f proxy.ts
+          test -f app/sign-in/[[...sign-in]]/page.tsx
+          test -f app/select-organization/page.tsx
+          grep -q "auth.protect" proxy.ts
+          grep -q "OrganizationSwitcher" app/page.tsx
