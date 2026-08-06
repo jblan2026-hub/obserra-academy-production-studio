@@ -57,18 +57,27 @@ if (packageJson.private !== true) {
 if (!packageJson.build || packageJson.build.publish) {
   throw new Error("Local-only verification failed: automatic public publishing must not be configured");
 }
-if (!Array.isArray(connectorCatalog.connectors) || connectorCatalog.connectors.length === 0) {
-  throw new Error("Local-only verification failed: approved connector catalog is missing or empty");
+
+const resources = connectorCatalog.resources;
+if (!Array.isArray(resources) || resources.length === 0) {
+  throw new Error("Local-only verification failed: approved resource catalog is missing or empty");
 }
 
-for (const connector of connectorCatalog.connectors) {
-  if (!connector.id || !connector.name) {
-    throw new Error("Local-only verification failed: every connector requires an id and name");
+const defaultControlMode = String(connectorCatalog.defaultControlMode ?? "").toLowerCase();
+if (!defaultControlMode.includes("read")) {
+  throw new Error("Local-only verification failed: catalog default control mode must be read-only");
+}
+
+for (const resource of resources) {
+  if (!resource.id || !resource.name || !resource.type) {
+    throw new Error("Local-only verification failed: every resource requires an id, name, and type");
   }
-  const mode = String(connector.defaultMode ?? connector.mode ?? "").toLowerCase();
-  if (!mode.includes("read")) {
-    throw new Error(`Local-only verification failed: connector ${connector.id} must default to read-only mode`);
+  if (resource.writeCapabilitiesRequireOwnerApproval !== true) {
+    throw new Error(`Local-only verification failed: resource ${resource.id} must require owner approval for write capabilities`);
+  }
+  if (!Array.isArray(resource.capabilities) || resource.capabilities.length === 0) {
+    throw new Error(`Local-only verification failed: resource ${resource.id} must declare capabilities`);
   }
 }
 
-console.log(`[Owner Command Center] Local-only security verification passed for ${connectorCatalog.connectors.length} approved connector(s).`);
+console.log(`[Owner Command Center] Local-only security verification passed for ${resources.length} approved resource(s).`);
