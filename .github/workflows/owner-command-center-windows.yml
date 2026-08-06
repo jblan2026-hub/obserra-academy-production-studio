@@ -23,9 +23,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
-    name: Verify local-only controls
+  production-gate:
+    name: Validate, package, and verify Windows release
     runs-on: windows-2025
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: owner-command-center
@@ -38,49 +39,69 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install dependencies
+      - name: Install dependencies once
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Verify security and installer configuration
+      - name: Validate source syntax and policy JSON
+        shell: pwsh
+        run: |
+          node --check electron/main.cjs
+          node --check electron/preload.cjs
+          node --check electron/connectors.cjs
+          node --check src/app.js
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('policy/connector-catalog.json','utf8')); console.log('JSON policy validation passed')"
+
+      - name: Run local-only security and installer policy gates
         run: npm run verify
 
-  package:
-    name: Build signed-ready Windows media package
-    needs: verify
-    runs-on: windows-2025
-    defaults:
-      run:
-        working-directory: owner-command-center
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configure Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
-
-      - name: Build one-click and portable executables
+      - name: Build one-click installer, portable executable, and removable-media bundle
         run: npm run package:media
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
-      - name: Verify media package contents
+      - name: Verify release contents and cryptographic integrity
         shell: pwsh
         run: |
           $media = Join-Path $PWD "release-media"
           if (-not (Test-Path $media)) { throw "release-media directory missing" }
+
           $installer = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" }
           $portable = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe"
           if (-not $installer) { throw "One-click installer missing" }
           if (-not $portable) { throw "Portable executable missing" }
-          if (-not (Test-Path (Join-Path $media "SHA256SUMS.txt"))) { throw "SHA-256 manifest missing" }
-          if (-not (Test-Path (Join-Path $media "Install-Obserra-Command-Center.ps1"))) { throw "Installation launcher missing" }
 
-      - name: Upload removable-media installer bundle
+          $requiredFiles = @(
+            "SHA256SUMS.txt",
+            "SHA256SUMS.json",
+            "Install-Obserra-Command-Center.ps1",
+            "INSTALL-AND-RECOVERY.md",
+            "HIGH-AVAILABILITY.md"
+          )
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path (Join-Path $media $file))) { throw "Required release file missing: $file" }
+          }
+
+          $manifestLines = Get-Content (Join-Path $media "SHA256SUMS.txt") | Where-Object { $_.Trim() }
+          if ($manifestLines.Count -lt 2) { throw "SHA-256 manifest does not contain both executables" }
+
+          foreach ($line in $manifestLines) {
+            if ($line -notmatch '^([A-Fa-f0-9]{64})\s+(.+)$') { throw "Invalid SHA-256 manifest line: $line" }
+            $expected = $Matches[1].ToUpperInvariant()
+            $fileName = $Matches[2].Trim()
+            $filePath = Join-Path $media $fileName
+            if (-not (Test-Path $filePath)) { throw "Manifest references missing file: $fileName" }
+            $actual = (Get-FileHash -Algorithm SHA256 $filePath).Hash.ToUpperInvariant()
+            if ($actual -ne $expected) { throw "SHA-256 mismatch for $fileName" }
+          }
+
+          $jsonManifest = Get-Content (Join-Path $media "SHA256SUMS.json") -Raw | ConvertFrom-Json
+          if (-not $jsonManifest) { throw "JSON integrity manifest is empty" }
+
+          Write-Host "Windows release gate passed."
+          Write-Host "Installer: $($installer.Name)"
+          Write-Host "Portable: $($portable.Name)"
+
+      - name: Upload verified removable-media installer bundle
         uses: actions/upload-artifact@v4
         with:
           name: Obserra-Owner-AI-Command-Center-Windows-${{ github.sha }}
