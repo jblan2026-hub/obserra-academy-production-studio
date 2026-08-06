@@ -3,6 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { expertPanel, metrics, productionQueue, sourceSystems } from "@/lib/studio-data";
 
+export const dynamic = "force-dynamic";
+
 function MetricCard({ label, value, detail }: { label: string; value: string | number; detail: string }) {
   return <article className="metric-card"><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>;
 }
@@ -52,11 +54,20 @@ export default async function StudioDashboard() {
         </section>
 
         <div className="two-column">
-          <section className="panel" id="expert-panel"><div className="panel-heading"><div><p className="eyebrow">AI EXPERT PANEL</p><h2>Structured contributors</h2></div><span>{expertPanel.length} active</span></div><div className="expert-grid">{expertPanel.map((expert) => <span key={expert}>{expert}</span>)}</div></section>
-          <section className="panel" id="source-intelligence"><div className="panel-heading"><div><p className="eyebrow">SOURCE INTELLIGENCE</p><h2>Authoritative collection status</h2></div><button>Run collection</button></div><div className="source-list">{sourceSystems.map((source) => <article key={source.name}><div><strong>{source.name}</strong><small>Collected {source.lastCollection}</small></div><div><span className={source.status === "Healthy" ? "healthy" : "review"}>{source.status}</span><small>{source.impactedCourses} impacted courses</small></div></article>)}</div></section>
+          <section className="panel" id="expert-panel">
+            <div className="panel-heading"><div><p className="eyebrow">AI EXPERT PANEL</p><h2>Structured contributors</h2></div><span>{expertPanel.length} active</span></div>
+            <div className="expert-grid">{expertPanel.map((expert) => <span key={expert}>{expert}</span>)}</div>
+          </section>
+          <section className="panel" id="source-intelligence">
+            <div className="panel-heading"><div><p className="eyebrow">SOURCE INTELLIGENCE</p><h2>Authoritative collection status</h2></div><button>Run collection</button></div>
+            <div className="source-list">{sourceSystems.map((source) => <article key={source.name}><div><strong>{source.name}</strong><small>Collected {source.lastCollection}</small></div><div><span className={source.status === "Healthy" ? "healthy" : "review"}>{source.status}</span><small>{source.impactedCourses} impacted courses</small></div></article>)}</div>
+          </section>
         </div>
 
-        <section className="panel release-panel"><div><p className="eyebrow">CONTROLLED PUBLISHING</p><h2>One approved action, governed downstream execution.</h2><p>Approved releases synchronize Academy delivery, website catalog, marketplace commerce, licensing, learner entitlements, certificates, SEO, deployment, and administrator notifications.</p></div><div className="release-flow"><span>Approve</span><b>→</b><span>Package</span><b>→</b><span>Publish</span><b>→</b><span>Synchronize</span><b>→</b><span>Verify</span></div></section>
+        <section className="panel release-panel">
+          <div><p className="eyebrow">CONTROLLED PUBLISHING</p><h2>One approved action, governed downstream execution.</h2><p>Approved releases will synchronize Academy delivery, website catalog, marketplace commerce, licensing, learner entitlements, certificates, SEO, deployment, and administrator notifications.</p></div>
+          <div className="release-flow"><span>Approve</span><b>→</b><span>Package</span><b>→</b><span>Publish</span><b>→</b><span>Synchronize</span><b>→</b><span>Verify</span></div>
+        </section>
       </section>
     </main>
   );
