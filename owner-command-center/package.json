@@ -1,6 +1,6 @@
 {
   "name": "obserra-owner-ai-command-center",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Owner-only local AI command center for the Obserra ecosystem.",
   "main": "electron/main.cjs",
@@ -8,8 +8,9 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "verify": "node scripts/verify-local-only.mjs",
-    "package:windows": "electron-builder --win nsis"
+    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs",
+    "package:windows": "electron-builder --win nsis portable",
+    "package:media": "powershell -ExecutionPolicy Bypass -File scripts/build-removable-media-package.ps1"
   },
   "dependencies": {
     "electron-store": "^10.0.1"
@@ -21,20 +22,46 @@
   "build": {
     "appId": "com.obserra.ownercommandcenter",
     "productName": "Obserra Owner AI Command Center",
+    "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}",
+    "directories": {
+      "output": "dist"
+    },
     "files": [
       "electron/**/*",
       "src/**/*",
       "scripts/**/*",
+      "HIGH-AVAILABILITY.md",
+      "INSTALL-AND-RECOVERY.md",
       "package.json"
     ],
+    "asar": true,
+    "compression": "maximum",
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker",
+      "verifyUpdateCodeSignature": true
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "shortcutName": "Obserra Owner AI Command Center",
+      "uninstallDisplayName": "Obserra Owner AI Command Center"
+    },
+    "portable": {
+      "artifactName": "Obserra-Owner-AI-Command-Center-Portable-${version}-${arch}.${ext}"
     }
   }
 }
