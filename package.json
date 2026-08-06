@@ -1,19 +1,36 @@
 {
   "name": "obserra-academy-production-studio",
-  "version": "0.2.0",
+  "version": "1.0.0-alpha.1",
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
     "validate": "node studio/validate.mjs",
     "build:course": "node studio/build-course.mjs",
     "build:all": "node studio/build-all-courses.mjs",
     "catalog": "node studio/generate-catalog.mjs",
+    "collect:sources": "node studio/collect-authoritative-sources.mjs",
     "import:website": "node studio/import-website-courses.mjs",
     "media:course": "node studio/generate-media.mjs",
     "sync:website": "npm run import:website -- ./tmp/courseData.ts && npm run build:all && npm run validate && npm run catalog",
-    "verify": "npm run validate && npm run catalog"
+    "verify": "npm run validate && npm run catalog",
+    "ci": "npm run verify && npm run build"
+  },
+  "dependencies": {
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22 <25"
   }
 }
