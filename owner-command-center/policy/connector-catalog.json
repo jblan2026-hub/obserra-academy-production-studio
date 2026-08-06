@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "catalogVersion": "2026.08.06.1",
+  "publisher": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+  "defaultControlMode": "read-only",
+  "resources": [
+    {
+      "id": "lcms",
+      "type": "application",
+      "name": "Academy LCMS",
+      "discovery": {
+        "source": "configured-endpoint",
+        "resourceFeeds": [
+          { "kind": "course", "path": "/api/courses" },
+          { "kind": "release", "path": "/api/releases" },
+          { "kind": "build", "path": "/api/builds" }
+        ]
+      },
+      "capabilities": ["monitor", "search", "generate-course", "review-course", "publish-course"],
+      "writeCapabilitiesRequireOwnerApproval": true
+    },
+    {
+      "id": "website",
+      "type": "website",
+      "name": "Obserra Website",
+      "discovery": {
+        "source": "configured-endpoint",
+        "resourceFeeds": [
+          { "kind": "page", "path": "/api/owner/pages" },
+          { "kind": "deployment", "path": "/api/owner/deployments" }
+        ]
+      },
+      "capabilities": ["monitor", "sync-catalog", "publish-page", "deploy"],
+      "writeCapabilitiesRequireOwnerApproval": true
+    },
+    {
+      "id": "store",
+      "type": "store",
+      "name": "Obserra Store",
+      "discovery": {
+        "source": "configured-endpoint",
+        "resourceFeeds": [
+          { "kind": "product", "path": "/api/owner/products" },
+          { "kind": "order", "path": "/api/owner/orders" },
+          { "kind": "license", "path": "/api/owner/licenses" }
+        ]
+      },
+      "capabilities": ["monitor", "sync-product", "manage-license", "refund"],
+      "writeCapabilitiesRequireOwnerApproval": true
+    }
+  ]
+}
