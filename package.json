@@ -1,6 +1,6 @@
 {
   "name": "obserra-academy-production-studio",
-  "version": "1.0.0-alpha.3",
+  "version": "1.0.0-alpha.4",
   "private": true,
   "type": "module",
   "scripts": {
@@ -29,6 +29,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.31.0",
     "@prisma/client": "^6.16.0",
     "next": "^16.0.0",
     "react": "^19.2.0",
