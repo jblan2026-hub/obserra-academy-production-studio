@@ -7,6 +7,8 @@ on:
     paths:
       - "catalog/academy-course-catalog.json"
       - "courses/**/course-manifest.json"
+      - "studio/generate-catalog.mjs"
+      - ".github/workflows/publish-to-website.yml"
 
 permissions:
   contents: read
@@ -23,16 +25,38 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Validate and regenerate approved catalog
         run: npm run verify
 
       - name: Confirm publishable contract
         run: |
-          node -e 'const c=require("./catalog/academy-course-catalog.json"); if(!Array.isArray(c.courses)) process.exit(1); for(const x of c.courses){if(!x.id||!x.title||!x.duration||!x.description||!Array.isArray(x.modules)||!x.license||!x.certificate) process.exit(1)}'
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = './catalog/academy-course-catalog.json';
+          if (!fs.existsSync(path)) throw new Error('Generated Academy catalog is missing');
+          const catalog = JSON.parse(fs.readFileSync(path, 'utf8'));
+          if (catalog.schemaVersion !== '1.2') throw new Error('Academy catalog schemaVersion must equal 1.2');
+          if (!Array.isArray(catalog.courses) || catalog.courses.length === 0) throw new Error('Academy catalog must contain at least one approved course');
+          const ids = new Set();
+          for (const course of catalog.courses) {
+            if (!course.id || !course.title || !course.duration || !course.description) throw new Error(`Invalid course identity: ${course.id ?? 'unknown'}`);
+            if (ids.has(course.id)) throw new Error(`Duplicate course id: ${course.id}`);
+            ids.add(course.id);
+            if (!Array.isArray(course.modules) || course.modules.length === 0) throw new Error(`Course ${course.id} has no modules`);
+            if (!course.commerce || !course.licensing || !course.completion || !course.certificate) throw new Error(`Course ${course.id} is missing governed commercial metadata`);
+            if (!['approved', 'published'].includes(course.releaseStatus)) throw new Error(`Course ${course.id} is not approved for publication`);
+            if (course.completion.certificateIssued !== true) throw new Error(`Course ${course.id} is not configured to issue completion certificates`);
+          }
+          console.log(`[Academy Studio] Publish contract passed for ${catalog.courses.length} approved course(s)`);
+          NODE
 
       - name: Notify website repository
         env:
           GH_TOKEN: ${{ secrets.ACADEMY_STUDIO_TOKEN }}
+          STUDIO_SHA: ${{ github.sha }}
         run: |
           test -n "$GH_TOKEN"
           curl --fail-with-body --request POST \
@@ -40,4 +64,4 @@ jobs:
             --header "Authorization: Bearer $GH_TOKEN" \
             --header "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/jblan2026-hub/obserra-website/dispatches \
-            --data '{"event_type":"academy_catalog_published","client_payload":{"source":"obserra-academy-production-studio","classification":"OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION."}}'
+            --data "{\"event_type\":\"academy_catalog_published\",\"client_payload\":{\"source\":\"obserra-academy-production-studio\",\"ref\":\"main\",\"sha\":\"${STUDIO_SHA}\",\"classification\":\"OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.\"}}"
