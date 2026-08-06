@@ -3,7 +3,7 @@ const path = require("node:path");
 const os = require("node:os");
 const { spawn } = require("node:child_process");
 
-const ALLOWED_ACTIONS = new Set(["author", "build", "catalog", "verify"]);
+const ALLOWED_ACTIONS = new Set(["author", "author-all", "build", "build-all", "catalog", "verify"]);
 const ALLOWED_RELEASE_STATUSES = new Set(["draft", "in-review", "approved", "published", "retired"]);
 
 function workspaceCandidates() {
@@ -23,8 +23,7 @@ function isStudioRoot(candidate) {
 
 function resolveStudioRoot() {
   const configured = workspaceCandidates().find(isStudioRoot);
-  if (!configured) return null;
-  return fs.realpathSync(configured);
+  return configured ? fs.realpathSync(configured) : null;
 }
 
 function assertCourseId(value) {
@@ -32,19 +31,13 @@ function assertCourseId(value) {
   return value;
 }
 
-function readJson(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
-}
-
+function readJson(filePath) { return JSON.parse(fs.readFileSync(filePath, "utf8")); }
 function atomicWriteJson(filePath, value) {
   const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
   fs.writeFileSync(tempPath, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
   fs.renameSync(tempPath, filePath);
 }
-
-function fileExists(root, ...segments) {
-  return fs.existsSync(path.join(root, ...segments));
-}
+function fileExists(root, ...segments) { return fs.existsSync(path.join(root, ...segments)); }
 
 function summarizeCourse(root, courseId) {
   const courseRoot = path.join(root, "courses", assertCourseId(courseId));
@@ -67,7 +60,6 @@ function summarizeCourse(root, courseId) {
   if (completedReviews.length < requiredReviews.length) recommendations.push(`Complete ${requiredReviews.length - completedReviews.length} required review(s).`);
   if (!manifest.commerce?.stripePriceId && !manifest.commerce?.paymentLink) recommendations.push("Configure a Stripe price or governed payment link before publication.");
   if (!manifest.release?.publishToAcademy) recommendations.push("Keep publication disabled until generation, review, and release evidence are complete.");
-
   return {
     id: manifest.course.id,
     title: manifest.course.title,
@@ -96,13 +88,12 @@ function summarizeCourse(root, courseId) {
 function getStudioSnapshot() {
   const root = resolveStudioRoot();
   if (!root) return { available: false, mode: "detached", root: null, courses: [], summary: { total: 0, generated: 0, published: 0, reviewReady: 0, gaps: 1 }, gaps: ["Academy Studio workspace was not found. Set OBSERRA_ACADEMY_STUDIO_ROOT to the local repository path."] };
-  const courseRoot = path.join(root, "courses");
-  const courses = fs.readdirSync(courseRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => summarizeCourse(root, entry.name)).filter(Boolean).sort((a, b) => a.title.localeCompare(b.title));
-  const gaps = [];
-  if (!courses.length) gaps.push("No course manifests are available.");
+  const courses = fs.readdirSync(path.join(root, "courses"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => summarizeCourse(root, entry.name)).filter(Boolean).sort((a, b) => a.title.localeCompare(b.title));
   const notGenerated = courses.filter((course) => course.generation !== "generated").length;
   const unpublished = courses.filter((course) => !course.publishToAcademy).length;
   const missingRelease = courses.filter((course) => !course.finalRelease).length;
+  const gaps = [];
+  if (!courses.length) gaps.push("No course manifests are available.");
   if (notGenerated) gaps.push(`${notGenerated} course(s) have no governed AI-authored package.`);
   if (missingRelease) gaps.push(`${missingRelease} course(s) have no FINAL release record.`);
   if (unpublished) gaps.push(`${unpublished} course(s) are not approved for Academy publication.`);
@@ -154,9 +145,11 @@ function runStudioAction(action, courseId) {
   const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
   const commandMap = {
     author: ["run", "author:course", "--", "--course", assertCourseId(courseId)],
+    "author-all": ["run", "author:all"],
     build: ["run", "build:course", "--", "--course", assertCourseId(courseId)],
+    "build-all": ["run", "build:all"],
     catalog: ["run", "catalog"],
-    verify: ["run", "verify"]
+    verify: ["run", "verify:70x"]
   };
   const args = commandMap[action];
   return new Promise((resolve) => {
@@ -164,8 +157,8 @@ function runStudioAction(action, courseId) {
     const child = spawn(npmCommand, args, { cwd: root, env: { ...process.env }, windowsHide: true, shell: false });
     let stdout = "";
     let stderr = "";
-    child.stdout.on("data", (chunk) => { stdout = `${stdout}${chunk}`.slice(-50000); });
-    child.stderr.on("data", (chunk) => { stderr = `${stderr}${chunk}`.slice(-50000); });
+    child.stdout.on("data", (chunk) => { stdout = `${stdout}${chunk}`.slice(-100000); });
+    child.stderr.on("data", (chunk) => { stderr = `${stderr}${chunk}`.slice(-100000); });
     child.on("error", (error) => resolve({ ok: false, action, courseId: courseId || null, startedAt, completedAt: new Date().toISOString(), exitCode: null, stdout, stderr: error.message }));
     child.on("close", (exitCode) => resolve({ ok: exitCode === 0, action, courseId: courseId || null, startedAt, completedAt: new Date().toISOString(), exitCode, stdout, stderr }));
   });
