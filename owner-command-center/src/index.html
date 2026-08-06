@@ -31,12 +31,32 @@
 
     <section class="grid metrics" id="metrics"></section>
 
-    <section class="panel gapPanel">
+    <section class="panel academyPanel">
       <div class="sectionTitle">
         <div>
-          <p class="eyebrow">PRIORITY GAPS</p>
-          <h2>Operational blockers and required actions</h2>
+          <p class="eyebrow">ACADEMY OPERATIONS CENTER</p>
+          <h2>Generate, review, edit, approve, and publish courses</h2>
+          <p id="academyWorkspace" class="subhead">Discovering Academy Studio workspace…</p>
         </div>
+        <div class="actions">
+          <button id="academyVerify" class="secondary">Verify Studio</button>
+          <button id="academyCatalog" class="secondary">Regenerate catalog</button>
+          <button id="academyRefresh">Refresh courses</button>
+        </div>
+      </div>
+      <section id="academyMetrics" class="grid metrics academyMetrics"></section>
+      <div class="academyToolbar">
+        <label><span>Search courses</span><input id="academySearch" type="search" placeholder="Search title, department, track, or status" /></label>
+        <label><span>Filter</span><select id="academyFilter"><option value="all">All courses</option><option value="not-generated">Not generated</option><option value="generated">Generated</option><option value="review">Needs review</option><option value="publishable">Publishable</option><option value="published">Published</option></select></label>
+      </div>
+      <div id="academyGaps" class="gapList academyGaps"></div>
+      <div id="academyCourses" class="courseOpsGrid"></div>
+      <div id="academyActionLog" class="actionLog" aria-live="polite"></div>
+    </section>
+
+    <section class="panel gapPanel">
+      <div class="sectionTitle">
+        <div><p class="eyebrow">PRIORITY GAPS</p><h2>Operational blockers and required actions</h2></div>
         <span id="gapCount" class="gapCount">Calculating…</span>
       </div>
       <div id="gaps" class="gapList"></div>
@@ -44,37 +64,32 @@
 
     <section class="panel">
       <div class="sectionTitle">
-        <div>
-          <p class="eyebrow">OWNER CONNECTIONS</p>
-          <h2>Obserra ecosystem</h2>
-        </div>
-        <div class="actions">
-          <button id="exportConfig" class="secondary">Export encrypted recovery bundle</button>
-          <button id="importConfig" class="secondary">Import recovery bundle</button>
-        </div>
+        <div><p class="eyebrow">OWNER CONNECTIONS</p><h2>Obserra ecosystem</h2></div>
+        <div class="actions"><button id="exportConfig" class="secondary">Export encrypted recovery bundle</button><button id="importConfig" class="secondary">Import recovery bundle</button></div>
       </div>
       <div id="connectors" class="connectorGrid"></div>
     </section>
 
-    <section class="panel">
-      <p class="eyebrow">SECURITY STATE</p>
-      <h2>Control authorization</h2>
-      <div id="securitySummary" class="securitySummary"></div>
-    </section>
+    <section class="panel"><p class="eyebrow">SECURITY STATE</p><h2>Control authorization</h2><div id="securitySummary" class="securitySummary"></div></section>
   </main>
 
   <template id="connectorTemplate">
-    <article class="connectorCard">
-      <div class="connectorTop">
-        <div><h3></h3><p class="endpoint"></p></div>
-        <span class="status"></span>
+    <article class="connectorCard"><div class="connectorTop"><div><h3></h3><p class="endpoint"></p></div><span class="status"></span></div><p class="description"></p><div class="connectorMeta"></div><button class="configure secondary">Authorize / configure</button></article>
+  </template>
+  <template id="courseOpsTemplate">
+    <article class="courseOpsCard">
+      <div class="courseOpsHeader"><div><p class="courseDepartment"></p><h3 class="courseTitle"></h3></div><span class="status courseStatus"></span></div>
+      <p class="courseDescription"></p>
+      <div class="courseFacts"></div>
+      <div class="courseProgress"></div>
+      <div class="courseRecommendations"></div>
+      <div class="courseActions">
+        <button data-action="author">Generate course</button>
+        <button data-action="build" class="secondary">Build release</button>
+        <button data-action="edit" class="secondary">Edit metadata</button>
       </div>
-      <p class="description"></p>
-      <div class="connectorMeta"></div>
-      <button class="configure secondary">Authorize / configure</button>
     </article>
   </template>
-
   <script src="app.js"></script>
 </body>
 </html>
