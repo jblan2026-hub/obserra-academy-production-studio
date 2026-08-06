@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "purpose": "Trigger pull-request validation for the governed Owner AI Command Center remediation runtime and Windows packaging gates.",
+  "requiredGates": [
+    "command-center-fast-gate",
+    "owner-command-center-windows",
+    "500x-platform-workload",
+    "1000x-remediation-workload",
+    "evidence-bound-remediation",
+    "rollback-verification",
+    "ten-connector-bootstrap"
+  ],
+  "mergePolicy": "validation-only-do-not-merge-marker"
+}
