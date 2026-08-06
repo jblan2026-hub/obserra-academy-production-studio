@@ -8,10 +8,43 @@ const { resolvedConnectors, normalizeBaseUrl } = require("./connectors.cjs");
 
 const store = new Store({ name: "owner-command-center" });
 const REQUEST_TIMEOUT_MS = 10000;
+const BOOTSTRAP_FILE = "Obserra-Command-Center-Bootstrap.json";
 
 function assertLocalOnly() {
   app.commandLine.appendSwitch("disable-remote-fonts");
   app.commandLine.appendSwitch("disable-background-networking");
+}
+
+function bootstrapCandidates() {
+  return [
+    process.env.OBSERRA_COMMAND_CENTER_BOOTSTRAP,
+    path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"), "Obserra", "OwnerCommandCenter", BOOTSTRAP_FILE),
+    path.join(path.dirname(process.execPath), BOOTSTRAP_FILE),
+    path.join(app.getPath("userData"), BOOTSTRAP_FILE)
+  ].filter(Boolean);
+}
+
+function applyBootstrapProfile() {
+  const profilePath = bootstrapCandidates().find((candidate) => fs.existsSync(candidate));
+  if (!profilePath) return { applied: false, reason: "not-found" };
+  const profile = JSON.parse(fs.readFileSync(profilePath, "utf8"));
+  if (profile.schemaVersion !== "1.0") throw new Error("Unsupported Command Center bootstrap schema");
+  const hostname = os.hostname().toLowerCase();
+  const target = String(profile.targetHostname || "").toLowerCase();
+  if (target && target !== "*" && hostname !== target) {
+    return { applied: false, reason: "hostname-mismatch", targetHostname: target, hostname };
+  }
+  for (const connector of profile.connectors || []) {
+    if (!connector?.id || !connector?.url) continue;
+    store.set(`connectors.${connector.id}.url`, normalizeBaseUrl(connector.url));
+  }
+  store.set("bootstrap", {
+    appliedAt: new Date().toISOString(),
+    profilePath,
+    targetHostname: target || "*",
+    profileId: profile.profileId || null
+  });
+  return { applied: true, profilePath, targetHostname: target || "*", profileId: profile.profileId || null };
 }
 
 function createWindow() {
@@ -32,7 +65,6 @@ function createWindow() {
       devTools: process.env.NODE_ENV !== "production"
     }
   });
-
   window.removeMenu();
   window.loadFile(path.join(__dirname, "../src/index.html"));
   window.once("ready-to-show", () => window.show());
@@ -46,44 +78,62 @@ function encryptForDevice(value) {
   if (!safeStorage.isEncryptionAvailable()) throw new Error("Windows credential encryption is unavailable");
   return safeStorage.encryptString(value).toString("base64");
 }
-
 function decryptForDevice(value) {
   if (!safeStorage.isEncryptionAvailable()) throw new Error("Windows credential encryption is unavailable");
   return safeStorage.decryptString(Buffer.from(value, "base64"));
 }
-
 function getSecret(key) {
   const value = store.get(`secrets.${key}`);
   return typeof value === "string" ? decryptForDevice(value) : undefined;
 }
-
 function setSecret(key, value) {
   store.set(`secrets.${key}`, encryptForDevice(value));
 }
-
 function connectorHeaders(connector) {
   const secret = connector.credentialKey ? getSecret(connector.credentialKey) : undefined;
   const headers = { Accept: "application/json", "User-Agent": "Obserra-Owner-Command-Center" };
-  if (!secret) return headers;
-  headers.Authorization = `Bearer ${secret}`;
+  if (secret) headers.Authorization = `Bearer ${secret}`;
   return headers;
 }
 
 async function probeConnector(connector) {
-  const configured = !connector.credentialKey || Boolean(store.get(`secrets.${connector.credentialKey}`));
-  if (!configured) return { ...connector, status: "unconfigured", configured: false, controlEnabled: false, checkedAt: new Date().toISOString() };
+  const credentialConfigured = !connector.credentialKey || Boolean(store.get(`secrets.${connector.credentialKey}`));
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(`${connector.url}${connector.healthPath}`, { method: "GET", headers: connectorHeaders(connector), signal: controller.signal, redirect: "error" });
+    const response = await fetch(`${connector.url}${connector.healthPath}`, {
+      method: "GET",
+      headers: connectorHeaders(connector),
+      signal: controller.signal,
+      redirect: "error"
+    });
     const healthy = response.ok;
-    const result = { ...connector, configured: true, status: healthy ? "connected" : "degraded", httpStatus: response.status, controlEnabled: healthy && connector.control === true, checkedAt: new Date().toISOString() };
+    const result = {
+      ...connector,
+      configured: true,
+      credentialConfigured,
+      status: healthy ? "connected" : "degraded",
+      httpStatus: response.status,
+      controlEnabled: healthy && connector.control === true && credentialConfigured,
+      checkedAt: new Date().toISOString()
+    };
     store.set(`connectors.${connector.id}.lastStatus`, result);
     return result;
   } catch (error) {
     const cached = store.get(`connectors.${connector.id}.lastStatus`);
-    return { ...connector, configured: true, status: "failed", controlEnabled: false, cachedStatus: cached || null, error: error instanceof Error ? error.message : String(error), checkedAt: new Date().toISOString() };
-  } finally { clearTimeout(timeout); }
+    return {
+      ...connector,
+      configured: true,
+      credentialConfigured,
+      status: "failed",
+      controlEnabled: false,
+      cachedStatus: cached || null,
+      error: error instanceof Error ? error.message : String(error),
+      checkedAt: new Date().toISOString()
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function deriveBundleKey(passphrase, salt) { return crypto.scryptSync(passphrase, salt, 32); }
@@ -103,16 +153,56 @@ function decryptRecoveryBundle(bundle, passphrase) {
 }
 
 assertLocalOnly();
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
-  ipcMain.handle("system:getSnapshot", async () => ({ hostname: os.hostname(), platform: `${os.type()} ${os.release()}`, cpu: os.cpus()[0]?.model ?? "Unknown CPU", logicalProcessors: os.cpus().length, totalMemoryGb: Math.round(os.totalmem() / 1024 / 1024 / 1024), freeMemoryGb: Math.round(os.freemem() / 1024 / 1024 / 1024), uptimeSeconds: os.uptime(), localOnly: true, windowsEncryption: safeStorage.isEncryptionAvailable() }));
-  ipcMain.handle("connectors:list", async () => resolvedConnectors(store).map((connector) => ({ ...connector, configured: !connector.credentialKey || Boolean(store.get(`secrets.${connector.credentialKey}`)), controlEnabled: false })));
-  ipcMain.handle("connectors:probe", async (_event, id) => { const connector = resolvedConnectors(store).find((item) => item.id === id); if (!connector) throw new Error("Unknown connector"); return probeConnector(connector); });
+  let bootstrap;
+  try { bootstrap = applyBootstrapProfile(); }
+  catch (error) { bootstrap = { applied: false, reason: "invalid", error: error instanceof Error ? error.message : String(error) }; }
+  const initialConnectorStatus = await Promise.all(resolvedConnectors(store).map(probeConnector));
+  store.set("startup", { checkedAt: new Date().toISOString(), bootstrap, connectors: initialConnectorStatus });
+
+  ipcMain.handle("system:getSnapshot", async () => ({
+    hostname: os.hostname(),
+    platform: `${os.type()} ${os.release()}`,
+    cpu: os.cpus()[0]?.model ?? "Unknown CPU",
+    logicalProcessors: os.cpus().length,
+    totalMemoryGb: Math.round(os.totalmem() / 1024 / 1024 / 1024),
+    freeMemoryGb: Math.round(os.freemem() / 1024 / 1024 / 1024),
+    uptimeSeconds: os.uptime(),
+    localOnly: true,
+    windowsEncryption: safeStorage.isEncryptionAvailable(),
+    bootstrap,
+    startupCheckedAt: store.get("startup.checkedAt")
+  }));
+  ipcMain.handle("connectors:list", async () => resolvedConnectors(store).map((connector) => ({
+    ...connector,
+    configured: true,
+    credentialConfigured: !connector.credentialKey || Boolean(store.get(`secrets.${connector.credentialKey}`)),
+    controlEnabled: false,
+    lastStatus: store.get(`connectors.${connector.id}.lastStatus`) || null
+  })));
+  ipcMain.handle("connectors:probe", async (_event, id) => {
+    const connector = resolvedConnectors(store).find((item) => item.id === id);
+    if (!connector) throw new Error("Unknown connector");
+    return probeConnector(connector);
+  });
   ipcMain.handle("connectors:probeAll", async () => Promise.all(resolvedConnectors(store).map(probeConnector)));
-  ipcMain.handle("connectors:configure", async (_event, payload) => { const connector = resolvedConnectors(store).find((item) => item.id === payload?.id); if (!connector) throw new Error("Unknown connector"); if (payload.url) store.set(`connectors.${connector.id}.url`, normalizeBaseUrl(payload.url)); if (connector.credentialKey && payload.secret) setSecret(connector.credentialKey, payload.secret); return probeConnector(resolvedConnectors(store).find((item) => item.id === connector.id)); });
+  ipcMain.handle("connectors:configure", async (_event, payload) => {
+    const connector = resolvedConnectors(store).find((item) => item.id === payload?.id);
+    if (!connector) throw new Error("Unknown connector");
+    if (payload.url) store.set(`connectors.${connector.id}.url`, normalizeBaseUrl(payload.url));
+    if (connector.credentialKey && payload.secret) setSecret(connector.credentialKey, payload.secret);
+    return probeConnector(resolvedConnectors(store).find((item) => item.id === connector.id));
+  });
   ipcMain.handle("recovery:export", async (_event, passphrase) => {
     if (typeof passphrase !== "string" || passphrase.length < 14) throw new Error("Recovery passphrase must contain at least 14 characters");
-    const secrets = {}; for (const connector of resolvedConnectors(store)) { if (connector.credentialKey) { const value = getSecret(connector.credentialKey); if (value) secrets[connector.credentialKey] = value; } }
+    const secrets = {};
+    for (const connector of resolvedConnectors(store)) {
+      if (connector.credentialKey) {
+        const value = getSecret(connector.credentialKey);
+        if (value) secrets[connector.credentialKey] = value;
+      }
+    }
     const payload = { createdAt: new Date().toISOString(), ownerDevice: os.hostname(), connectors: resolvedConnectors(store).map(({ id, url }) => ({ id, url })), secrets };
     const result = await dialog.showSaveDialog({ title: "Export encrypted Obserra owner recovery bundle", defaultPath: `Obserra-Owner-Recovery-${new Date().toISOString().slice(0, 10)}.obserra-recovery`, filters: [{ name: "Obserra Recovery Bundle", extensions: ["obserra-recovery"] }] });
     if (result.canceled || !result.filePath) return { exported: false };
