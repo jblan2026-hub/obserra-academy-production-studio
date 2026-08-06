@@ -1,13 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PrismaClient } from "@prisma/client";
 import { assertBrandAndTags, officialBrand } from "./brand-policy.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
 const dryRun = process.argv.includes("--dry-run");
-const prisma = dryRun ? null : new PrismaClient();
+let prisma;
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -16,7 +15,7 @@ function readJson(filePath) {
 function normalizeStatus(status) {
   const value = String(status ?? "draft").toUpperCase().replaceAll("-", "_");
   if (["IDEA", "RESEARCH", "GENERATING", "REVIEW", "MEDIA", "APPROVAL", "READY", "PUBLISHED", "ARCHIVED"].includes(value)) return value;
-  return value === "DRAFT" ? "IDEA" : "IDEA";
+  return "IDEA";
 }
 
 function manifestPaths() {
@@ -38,6 +37,13 @@ function validateManifest(manifest, manifestPath) {
   }
   if (errors.length) throw new Error(`${manifestPath}: ${errors.join("; ")}`);
   assertBrandAndTags(manifest, manifestPath);
+}
+
+async function createPrismaClient() {
+  const module = await import("@prisma/client");
+  const PrismaClient = module.PrismaClient ?? module.default?.PrismaClient;
+  if (!PrismaClient) throw new Error("PrismaClient is unavailable. Run `npm run db:generate` before a database load.");
+  return new PrismaClient();
 }
 
 async function resolveOrganization() {
@@ -140,11 +146,12 @@ if (dryRun) {
 }
 
 try {
+  prisma = await createPrismaClient();
   const organization = await resolveOrganization();
   const results = [];
   for (const item of manifests) results.push(await loadManifest(organization.id, item.manifest, item.manifestPath));
   console.log(`[Academy Studio] Loaded ${results.length} governed course(s) into organization ${organization.clerkOrganizationId}.`);
   for (const result of results) console.log(`- ${result.slug}: ${result.lessons} lesson(s)`);
 } finally {
-  await prisma.$disconnect();
+  if (prisma) await prisma.$disconnect();
 }
