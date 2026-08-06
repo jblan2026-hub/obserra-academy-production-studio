@@ -30,12 +30,17 @@ function createTrendStore(store) {
     return state;
   }
 
-  function record(seriesId, value, metadata = {}) {
+  function appendPoint(state, seriesId, value, metadata = {}) {
     if (!seriesId) throw new Error("Trend series id is required");
-    const state = load();
     state.series[seriesId] ||= [];
     const point = { id: id("pt"), seriesId, value, numericValue: numericSummary(value), metadata, recordedAt: now() };
     state.series[seriesId].push(point);
+    return point;
+  }
+
+  function record(seriesId, value, metadata = {}) {
+    const state = load();
+    const point = appendPoint(state, seriesId, value, metadata);
     save(state);
     return point;
   }
@@ -44,7 +49,7 @@ function createTrendStore(store) {
     const state = load();
     const snapshot = { id: id("snap"), domain, payload, metrics, recordedAt: now() };
     state.snapshots.push(snapshot);
-    for (const [name, value] of Object.entries(metrics)) record(`${domain}:${name}`, value, { snapshotId: snapshot.id });
+    for (const [name, value] of Object.entries(metrics)) appendPoint(state, `${domain}:${name}`, value, { snapshotId: snapshot.id });
     save(state);
     return snapshot;
   }
@@ -91,17 +96,19 @@ function createTrendStore(store) {
   function getDashboard() {
     const state = load();
     const series = {};
-    for (const key of Object.keys(state.series)) series[key] = compareSeries(key, Math.min(30, state.series[key].length));
+    for (const key of Object.keys(state.series)) {
+      const points = state.series[key];
+      const selected = points.slice(-Math.min(30, points.length));
+      if (selected.length < 2) series[key] = { seriesId: key, available: false, reason: "insufficient-history" };
+      else {
+        const first = selected[0];
+        const last = selected[selected.length - 1];
+        const delta = first.numericValue !== null && last.numericValue !== null ? last.numericValue - first.numericValue : null;
+        series[key] = { seriesId: key, available: true, first, last, count: selected.length, delta, direction: delta === null ? "changed" : delta > 0 ? "increasing" : delta < 0 ? "decreasing" : "stable" };
+      }
+    }
     const domains = [...new Set(state.snapshots.map((item) => item.domain))];
-    return {
-      schemaVersion: state.schemaVersion,
-      seriesCount: Object.keys(state.series).length,
-      snapshotCount: state.snapshots.length,
-      domains,
-      series,
-      latestSnapshots: state.snapshots.slice(-200).reverse(),
-      latestComparisons: state.comparisons.slice(-200).reverse()
-    };
+    return { schemaVersion: state.schemaVersion, seriesCount: Object.keys(state.series).length, snapshotCount: state.snapshots.length, domains, series, latestSnapshots: state.snapshots.slice(-200).reverse(), latestComparisons: state.comparisons.slice(-200).reverse() };
   }
 
   return { record, recordSnapshot, compareSeries, compareSnapshots, getDomainHistory, getDashboard };
