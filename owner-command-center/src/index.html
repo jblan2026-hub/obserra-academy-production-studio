@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'" />
+  <title>Obserra Owner AI Command Center</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header><div><p class="eyebrow">OBSERRA EXECUTIVE PROTECTION &amp; INTELLIGENCE LLC</p><h1>Owner AI Command Center</h1><p class="subhead">Private owner control plane · local device only</p></div><div id="localBadge" class="badge">Verifying local security boundary…</div></header>
+  <main>
+    <section class="panel hero"><div><h2>Secure Auto-Connect</h2><p>The Command Center discovers approved Obserra services, restores owner configuration when available, verifies credentials, and enables control only after successful authorization.</p></div><button id="connectAll">Discover and connect all</button></section>
+    <section class="grid metrics" id="metrics"></section>
+    <section class="panel"><div class="sectionTitle"><div><p class="eyebrow">OWNER CONNECTIONS</p><h2>Obserra ecosystem</h2></div><div class="actions"><button id="exportConfig" class="secondary">Export encrypted recovery bundle</button><button id="importConfig" class="secondary">Import recovery bundle</button></div></div><div id="connectors" class="connectorGrid"></div></section>
+    <section class="panel"><p class="eyebrow">SECURITY STATE</p><h2>Control authorization</h2><div id="securitySummary" class="securitySummary"></div></section>
+  </main>
+  <template id="connectorTemplate"><article class="connectorCard"><div class="connectorTop"><div><h3></h3><p class="endpoint"></p></div><span class="status"></span></div><p class="description"></p><div class="connectorMeta"></div><button class="configure secondary">Authorize / configure</button></article></template>
+  <script src="app.js"></script>
+</body>
+</html>
