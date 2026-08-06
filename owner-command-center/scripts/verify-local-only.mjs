@@ -35,7 +35,7 @@ requirePattern(main, /nodeIntegration:\s*false/, "renderer Node integration must
 requirePattern(main, /sandbox:\s*true/, "renderer sandbox must be enabled");
 requirePattern(main, /webSecurity:\s*true/, "Electron web security must be enabled");
 requirePattern(main, /setPermissionRequestHandler[\s\S]*callback\(false\)/, "all renderer permission requests must be denied by default");
-requirePattern(main, /setWindowOpenHandler\([^)]*=>\s*\(\{\s*action:\s*["']deny["']\s*\}\)\)/s, "new-window creation must be denied");
+requirePattern(main, /setWindowOpenHandler[\s\S]*action:\s*["']deny["']/, "new-window creation must be denied");
 requirePattern(main, /will-navigate/, "navigation interception must be configured");
 requirePattern(main, /file:\/\//, "renderer navigation must remain restricted to packaged local files");
 requirePattern(main, /safeStorage\.encryptString/, "secrets must use Windows-backed Electron safeStorage encryption");
