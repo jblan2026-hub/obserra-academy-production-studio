@@ -46,7 +46,7 @@ Copy-Item (Join-Path $root "INSTALL-AND-RECOVERY.md") (Join-Path $destinationPat
 Copy-Item (Join-Path $root "HIGH-AVAILABILITY.md") (Join-Path $destinationPath "HIGH-AVAILABILITY.md")
 
 $bootstrap = [ordered]@{
-    schemaVersion = "1.1"
+    schemaVersion = "1.0"
     profileId = "obserra-owner-command-center-default"
     targetHostname = $TargetHostname.ToLowerInvariant()
     generatedAt = (Get-Date).ToUniversalTime().ToString("o")
