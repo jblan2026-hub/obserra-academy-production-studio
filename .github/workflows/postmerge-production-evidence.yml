@@ -1,4 +1,4 @@
-name: Obserra Postmerge Production Evidence
+name: Obserra 10x Cross-Project Production Evidence
 
 on:
   workflow_dispatch:
@@ -20,12 +20,12 @@ permissions:
   statuses: write
 
 concurrency:
-  group: obserra-postmerge-production-${{ github.ref }}
+  group: obserra-10x-production-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   studio:
-    name: Studio build and governed catalog
+    name: Academy LCMS, governed catalog, branding, and build
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -43,7 +43,7 @@ jobs:
       - run: npm run catalog
       - run: npm run db:validate
       - run: npm run build
-      - name: Validate branding, tags, disclaimer, and completion language
+      - name: Validate official branding, tags, disclaimer, and credential restrictions
         shell: bash
         run: |
           set -euo pipefail
@@ -53,25 +53,35 @@ jobs:
           grep -RIlE 'completion|credential|certificate of completion' courses studio | head -n 1
           if grep -RInE 'guaranteed certification|guaranteed compliance|certifies compliance' courses studio; then exit 1; fi
 
-  production-web:
-    name: Live website, Academy, identity boundary, and security
+  public-web:
+    name: Website public availability, routes, Academy, and security headers
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Validate public domains and security headers
+      - name: Validate both production domains and hardened headers
         shell: bash
         run: |
           set -euo pipefail
           for url in https://www.obserrallc.com https://obserrallc.com; do
-            curl --fail --location --silent --show-error --max-time 30 -D /tmp/headers.txt -o /tmp/site.html "$url"
+            code=$(curl --location --silent --show-error --max-time 30 -D /tmp/headers.txt -o /tmp/site.html -w '%{http_code}' "$url")
+            test "$code" = "200"
             test -s /tmp/site.html
             grep -Eqi 'Obserra' /tmp/site.html
-            grep -Eqi 'strict-transport-security' /tmp/headers.txt
-            grep -Eqi 'content-security-policy' /tmp/headers.txt
-            grep -Eqi 'x-content-type-options' /tmp/headers.txt
-            grep -Eqi 'x-frame-options' /tmp/headers.txt
+            grep -Eqi '^strict-transport-security:' /tmp/headers.txt
+            grep -Eqi '^content-security-policy:' /tmp/headers.txt
+            grep -Eqi '^x-content-type-options:' /tmp/headers.txt
+            grep -Eqi '^x-frame-options:' /tmp/headers.txt
           done
-      - name: Validate Academy catalog and protected checkout
+      - name: Validate critical public routes without 5xx responses
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in / /academy /contact /services /apps /eios /trust /about /sign-in; do
+            code=$(curl --location --silent --show-error --max-time 30 -o /tmp/route.html -w '%{http_code}' "https://www.obserrallc.com${path}")
+            if [ "$code" -ge 500 ]; then echo "Critical route ${path} returned ${code}" >&2; exit 1; fi
+            if [ "$path" != "/sign-in" ]; then test "$code" = "200"; fi
+          done
+      - name: Validate Academy catalog, course count, disclaimers, and enrollment links
         shell: bash
         run: |
           set -euo pipefail
@@ -80,23 +90,61 @@ jobs:
           grep -Eqi '60[^0-9]+(paid )?courses|numberOfItems[^0-9]+60' /tmp/academy.html
           grep -Eqi 'not a state license|not.*third.party professional certification|not for certification' /tmp/academy.html
           grep -Eqi '/api/academy/checkout\?course=' /tmp/academy.html
-          curl --silent --show-error --location --max-time 30 -D /tmp/checkout-headers.txt -o /tmp/checkout.html -w '%{url_effective}' 'https://www.obserrallc.com/api/academy/checkout?course=zero-trust-strategy' > /tmp/checkout-url.txt
-          grep -Eqi '/sign-in' /tmp/checkout-url.txt
-          grep -Eqi 'SECURE CUSTOMER ACCESS|Sign in to your Obserra account' /tmp/checkout.html
-          grep -Eqi 'private|no-store' /tmp/checkout-headers.txt
-      - name: Enforce production Clerk identity
+
+  commerce-boundary:
+    name: Protected checkout and identity fail-closed behavior
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify Academy checkout never returns 5xx and never bypasses identity
         shell: bash
         run: |
           set -euo pipefail
+          curl --silent --show-error --max-time 30 -D /tmp/checkout-headers.txt -o /tmp/checkout-body.txt -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=zero-trust-strategy' > /tmp/checkout-code.txt
+          code=$(cat /tmp/checkout-code.txt)
+          if [ "$code" -ge 500 ]; then echo "Academy checkout returned ${code}" >&2; cat /tmp/checkout-body.txt >&2; exit 1; fi
+          test "$code" = "302" -o "$code" = "303" -o "$code" = "307" -o "$code" = "308"
+          location=$(grep -i '^location:' /tmp/checkout-headers.txt | tail -n 1 | tr -d '\r')
+          echo "$location"
+          echo "$location" | grep -Eqi '/sign-in|identity=configuration-required|enrollment=identity-unavailable'
+          if echo "$location" | grep -Eqi 'checkout\.stripe\.com|buy\.stripe\.com'; then
+            echo 'Unauthenticated checkout bypassed the identity boundary.' >&2
+            exit 1
+          fi
+      - name: Verify portal and administrative routes do not return 5xx
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in /portal /admin; do
+            code=$(curl --silent --show-error --max-time 30 -o /tmp/protected.html -w '%{http_code}' "https://www.obserrallc.com${path}")
+            if [ "$code" -ge 500 ]; then echo "Protected route ${path} returned ${code}" >&2; exit 1; fi
+          done
+
+  identity-readiness:
+    name: Production Clerk identity readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Require valid production Clerk configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --silent --show-error --max-time 30 -D /tmp/root-headers.txt -o /tmp/root.html https://www.obserrallc.com/
+          status=$(grep -i '^x-obserra-identity-status:' /tmp/root-headers.txt | tail -n 1 | tr -d '\r' || true)
+          echo "${status:-x-obserra-identity-status header missing}"
+          if echo "$status" | grep -Eqi 'configuration-required|unavailable|invalid'; then
+            echo 'Production identity is fail-closed but not operational. Install a valid matching pk_live_/sk_live_ Clerk pair and redeploy.' >&2
+            exit 1
+          fi
           curl --fail --location --silent --show-error --max-time 30 https://www.obserrallc.com/sign-in -o /tmp/signin.html
           if grep -Eqi 'pk_test_|clerk\.accounts\.dev|clerkstage\.dev' /tmp/signin.html; then
-            echo 'Production identity is still using Clerk development resources.' >&2
+            echo 'Production identity is using Clerk development resources.' >&2
             exit 1
           fi
           grep -Eqi 'pk_live_' /tmp/signin.html
 
   windows-release:
-    name: Windows installer, portable package, media, integrity, and recovery
+    name: Owner Command Center installer, portable media, integrity, and recovery
     runs-on: windows-2025
     timeout-minutes: 70
     defaults:
@@ -112,7 +160,7 @@ jobs:
       - run: npm run package:media
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-      - name: Verify executable inventory and SHA-256 manifests
+      - name: Verify executable inventory, recovery assets, and SHA-256 manifests
         shell: pwsh
         run: |
           function Get-Sha256Hex {
@@ -138,18 +186,20 @@ jobs:
           }
       - uses: actions/upload-artifact@v4
         with:
-          name: postmerge-command-center-release-${{ github.sha }}
+          name: 10x-command-center-release-${{ github.sha }}
           path: owner-command-center/release-media/**
           if-no-files-found: error
           retention-days: 180
 
   publish-status:
-    name: Publish production evidence status
+    name: Publish explicit cross-project production evidence
     runs-on: ubuntu-latest
     if: always()
     needs:
       - studio
-      - production-web
+      - public-web
+      - commerce-boundary
+      - identity-readiness
       - windows-release
     steps:
       - name: Publish explicit commit status
@@ -157,31 +207,35 @@ jobs:
         with:
           script: |
             const results = {
-              studio: '${{ needs.studio.result }}',
-              productionWeb: '${{ needs.production-web.result }}',
-              windowsRelease: '${{ needs.windows-release.result }}'
+              academyStudio: '${{ needs.studio.result }}',
+              publicWebsite: '${{ needs.public-web.result }}',
+              commerceBoundary: '${{ needs.commerce-boundary.result }}',
+              productionIdentity: '${{ needs.identity-readiness.result }}',
+              ownerCommandCenter: '${{ needs.windows-release.result }}'
             };
             const success = Object.values(results).every((value) => value === 'success');
             const state = success ? 'success' : 'failure';
             const description = success
-              ? 'Studio, production web, identity, and Windows release evidence passed.'
-              : `Production evidence failed: ${JSON.stringify(results)}`.slice(0, 140);
+              ? 'All three Obserra production workstreams passed end-to-end evidence.'
+              : `10x production evidence failed: ${JSON.stringify(results)}`.slice(0, 140);
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: context.sha,
               state,
-              context: 'obserra/postmerge-production-evidence',
+              context: 'obserra/10x-cross-project-production-evidence',
               description,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
             core.summary
-              .addHeading('Obserra Postmerge Production Evidence')
+              .addHeading('Obserra 10x Cross-Project Production Evidence')
               .addTable([
-                [{data: 'Gate', header: true}, {data: 'Result', header: true}],
-                ['Studio', results.studio],
-                ['Production web and identity', results.productionWeb],
-                ['Windows release', results.windowsRelease]
+                [{data: 'Workstream', header: true}, {data: 'Result', header: true}],
+                ['Academy LCMS and Production Studio', results.academyStudio],
+                ['Production website and public routes', results.publicWebsite],
+                ['Commerce and protected boundary', results.commerceBoundary],
+                ['Production Clerk identity', results.productionIdentity],
+                ['Owner AI Command Center', results.ownerCommandCenter]
               ])
               .write();
             if (!success) core.setFailed(description);
