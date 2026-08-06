@@ -8,12 +8,22 @@ export const metadata: Metadata = {
   description: "Enterprise learning content management, production, governance, and publishing for Obserra Academy.",
 };
 
+function Document({ children }: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  if (process.env.NEXT_PUBLIC_APP_ENV === "ci") {
+    return <Document>{children}</Document>;
+  }
+
   return (
     <ClerkProvider signInUrl="/sign-in" afterSignOutUrl="/sign-in">
-      <html lang="en">
-        <body>{children}</body>
-      </html>
+      <Document>{children}</Document>
     </ClerkProvider>
   );
 }
