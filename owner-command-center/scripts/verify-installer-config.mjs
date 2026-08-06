@@ -20,7 +20,7 @@ const mediaScriptPath = path.join(root, "scripts", "build-removable-media-packag
 const mediaScript = fs.readFileSync(mediaScriptPath, "utf8");
 const requiredConnectorIds = ["lcms", "academy", "website", "store", "eios", "stripe", "github", "vercel", "clerk", "localAi"];
 
-if (!/schemaVersion\s*=\s*"1\.1"/.test(mediaScript)) throw new Error("Removable-media bootstrap must use schema version 1.1");
+if (!/schemaVersion\s*=\s*"1\.0"/.test(mediaScript)) throw new Error("Removable-media bootstrap must use schema version 1.0");
 if (!/TargetHostname\s*=\s*"obserra"/.test(mediaScript)) throw new Error("Default removable-media target must remain machine 'obserra'");
 for (const connectorId of requiredConnectorIds) {
   const pattern = new RegExp(`id\\s*=\\s*"${connectorId}"`);
@@ -30,4 +30,4 @@ for (const requiredTerm of ["SHA256SUMS.json", "Get-FileHash", "OBSERRA_COMMAND_
   if (!mediaScript.includes(requiredTerm)) throw new Error(`Removable-media packaging is missing required behavior: ${requiredTerm}`);
 }
 
-console.log(`[Owner Command Center] Installer configuration verified: one-click NSIS, portable target, schema 1.1 bootstrap, and ${requiredConnectorIds.length} governed connectors.`);
+console.log(`[Owner Command Center] Installer configuration verified: one-click NSIS, portable target, schema 1.0 bootstrap, and ${requiredConnectorIds.length} governed connectors.`);
