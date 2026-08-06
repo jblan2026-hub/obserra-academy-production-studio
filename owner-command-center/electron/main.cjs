@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const crypto = require("node:crypto");
 const Store = require("electron-store");
 const { resolvedConnectors, normalizeBaseUrl } = require("./connectors.cjs");
+const { getStudioSnapshot, updateCourseMetadata, runStudioAction } = require("./academy-studio.cjs");
 
 const store = new Store({ name: "owner-command-center" });
 const REQUEST_TIMEOUT_MS = 10000;
@@ -31,19 +32,12 @@ function applyBootstrapProfile() {
   if (profile.schemaVersion !== "1.0") throw new Error("Unsupported Command Center bootstrap schema");
   const hostname = os.hostname().toLowerCase();
   const target = String(profile.targetHostname || "").toLowerCase();
-  if (target && target !== "*" && hostname !== target) {
-    return { applied: false, reason: "hostname-mismatch", targetHostname: target, hostname };
-  }
+  if (target && target !== "*" && hostname !== target) return { applied: false, reason: "hostname-mismatch", targetHostname: target, hostname };
   for (const connector of profile.connectors || []) {
     if (!connector?.id || !connector?.url) continue;
     store.set(`connectors.${connector.id}.url`, normalizeBaseUrl(connector.url));
   }
-  store.set("bootstrap", {
-    appliedAt: new Date().toISOString(),
-    profilePath,
-    targetHostname: target || "*",
-    profileId: profile.profileId || null
-  });
+  store.set("bootstrap", { appliedAt: new Date().toISOString(), profilePath, targetHostname: target || "*", profileId: profile.profileId || null });
   return { applied: true, profilePath, targetHostname: target || "*", profileId: profile.profileId || null };
 }
 
@@ -69,9 +63,7 @@ function createWindow() {
   window.loadFile(path.join(__dirname, "../src/index.html"));
   window.once("ready-to-show", () => window.show());
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-  window.webContents.on("will-navigate", (event, url) => {
-    if (!url.startsWith("file://")) event.preventDefault();
-  });
+  window.webContents.on("will-navigate", (event, url) => { if (!url.startsWith("file://")) event.preventDefault(); });
 }
 
 function encryptForDevice(value) {
@@ -86,9 +78,7 @@ function getSecret(key) {
   const value = store.get(`secrets.${key}`);
   return typeof value === "string" ? decryptForDevice(value) : undefined;
 }
-function setSecret(key, value) {
-  store.set(`secrets.${key}`, encryptForDevice(value));
-}
+function setSecret(key, value) { store.set(`secrets.${key}`, encryptForDevice(value)); }
 function connectorHeaders(connector) {
   const secret = connector.credentialKey ? getSecret(connector.credentialKey) : undefined;
   const headers = { Accept: "application/json", "User-Agent": "Obserra-Owner-Command-Center" };
@@ -101,39 +91,15 @@ async function probeConnector(connector) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(`${connector.url}${connector.healthPath}`, {
-      method: "GET",
-      headers: connectorHeaders(connector),
-      signal: controller.signal,
-      redirect: "error"
-    });
+    const response = await fetch(`${connector.url}${connector.healthPath}`, { method: "GET", headers: connectorHeaders(connector), signal: controller.signal, redirect: "error" });
     const healthy = response.ok;
-    const result = {
-      ...connector,
-      configured: true,
-      credentialConfigured,
-      status: healthy ? "connected" : "degraded",
-      httpStatus: response.status,
-      controlEnabled: healthy && connector.control === true && credentialConfigured,
-      checkedAt: new Date().toISOString()
-    };
+    const result = { ...connector, configured: true, credentialConfigured, status: healthy ? "connected" : "degraded", httpStatus: response.status, controlEnabled: healthy && connector.control === true && credentialConfigured, checkedAt: new Date().toISOString() };
     store.set(`connectors.${connector.id}.lastStatus`, result);
     return result;
   } catch (error) {
     const cached = store.get(`connectors.${connector.id}.lastStatus`);
-    return {
-      ...connector,
-      configured: true,
-      credentialConfigured,
-      status: "failed",
-      controlEnabled: false,
-      cachedStatus: cached || null,
-      error: error instanceof Error ? error.message : String(error),
-      checkedAt: new Date().toISOString()
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
+    return { ...connector, configured: true, credentialConfigured, status: "failed", controlEnabled: false, cachedStatus: cached || null, error: error instanceof Error ? error.message : String(error), checkedAt: new Date().toISOString() };
+  } finally { clearTimeout(timeout); }
 }
 
 function deriveBundleKey(passphrase, salt) { return crypto.scryptSync(passphrase, salt, 32); }
@@ -161,26 +127,8 @@ app.whenReady().then(async () => {
   const initialConnectorStatus = await Promise.all(resolvedConnectors(store).map(probeConnector));
   store.set("startup", { checkedAt: new Date().toISOString(), bootstrap, connectors: initialConnectorStatus });
 
-  ipcMain.handle("system:getSnapshot", async () => ({
-    hostname: os.hostname(),
-    platform: `${os.type()} ${os.release()}`,
-    cpu: os.cpus()[0]?.model ?? "Unknown CPU",
-    logicalProcessors: os.cpus().length,
-    totalMemoryGb: Math.round(os.totalmem() / 1024 / 1024 / 1024),
-    freeMemoryGb: Math.round(os.freemem() / 1024 / 1024 / 1024),
-    uptimeSeconds: os.uptime(),
-    localOnly: true,
-    windowsEncryption: safeStorage.isEncryptionAvailable(),
-    bootstrap,
-    startupCheckedAt: store.get("startup.checkedAt")
-  }));
-  ipcMain.handle("connectors:list", async () => resolvedConnectors(store).map((connector) => ({
-    ...connector,
-    configured: true,
-    credentialConfigured: !connector.credentialKey || Boolean(store.get(`secrets.${connector.credentialKey}`)),
-    controlEnabled: false,
-    lastStatus: store.get(`connectors.${connector.id}.lastStatus`) || null
-  })));
+  ipcMain.handle("system:getSnapshot", async () => ({ hostname: os.hostname(), platform: `${os.type()} ${os.release()}`, cpu: os.cpus()[0]?.model ?? "Unknown CPU", logicalProcessors: os.cpus().length, totalMemoryGb: Math.round(os.totalmem() / 1024 / 1024 / 1024), freeMemoryGb: Math.round(os.freemem() / 1024 / 1024 / 1024), uptimeSeconds: os.uptime(), localOnly: true, windowsEncryption: safeStorage.isEncryptionAvailable(), bootstrap, startupCheckedAt: store.get("startup.checkedAt") }));
+  ipcMain.handle("connectors:list", async () => resolvedConnectors(store).map((connector) => ({ ...connector, configured: true, credentialConfigured: !connector.credentialKey || Boolean(store.get(`secrets.${connector.credentialKey}`)), controlEnabled: false, lastStatus: store.get(`connectors.${connector.id}.lastStatus`) || null })));
   ipcMain.handle("connectors:probe", async (_event, id) => {
     const connector = resolvedConnectors(store).find((item) => item.id === id);
     if (!connector) throw new Error("Unknown connector");
@@ -194,6 +142,11 @@ app.whenReady().then(async () => {
     if (connector.credentialKey && payload.secret) setSecret(connector.credentialKey, payload.secret);
     return probeConnector(resolvedConnectors(store).find((item) => item.id === connector.id));
   });
+
+  ipcMain.handle("academy:getSnapshot", async () => getStudioSnapshot());
+  ipcMain.handle("academy:updateCourse", async (_event, payload) => updateCourseMetadata(payload));
+  ipcMain.handle("academy:runAction", async (_event, payload) => runStudioAction(payload?.action, payload?.courseId));
+
   ipcMain.handle("recovery:export", async (_event, passphrase) => {
     if (typeof passphrase !== "string" || passphrase.length < 14) throw new Error("Recovery passphrase must contain at least 14 characters");
     const secrets = {};
