@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 type AuditInput = {
+  organizationId?: string;
   actorId?: string;
   actorType: "system" | "user" | "service";
   action: string;
@@ -17,6 +18,7 @@ export async function recordAuditEvent(input: AuditInput): Promise<void> {
   try {
     await prisma.auditEvent.create({
       data: {
+        organizationId: input.organizationId,
         actorId: input.actorId,
         actorType: input.actorType,
         action: input.action,
@@ -28,6 +30,12 @@ export async function recordAuditEvent(input: AuditInput): Promise<void> {
       },
     });
   } catch (error) {
-    console.error("studio audit event write failed", error);
+    console.error("studio audit event write failed", {
+      organizationId: input.organizationId,
+      action: input.action,
+      resourceType: input.resourceType,
+      resourceId: input.resourceId,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
