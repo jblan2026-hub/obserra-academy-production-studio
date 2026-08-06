@@ -10,14 +10,35 @@
 <body>
   <header><div><p class="eyebrow">OBSERRA EXECUTIVE PROTECTION &amp; INTELLIGENCE LLC</p><h1>Owner AI Command Center</h1><p class="subhead">Private owner control plane · local device only</p></div><div class="headerStatus"><div id="localBadge" class="badge">Verifying local security boundary…</div><div id="refreshBadge" class="badge">Live status initializing…</div></div></header>
   <main>
-    <section class="panel hero"><div><p class="eyebrow">LIVE OPERATIONS</p><h2>Secure Auto-Connect</h2><p>The Command Center continuously discovers approved Obserra services, verifies availability, preserves the last known state, and enables control only after successful owner authorization.</p></div><button id="connectAll">Refresh all now</button></section>
+    <section class="panel hero"><div><p class="eyebrow">LIVE OPERATIONS</p><h2>Secure Auto-Connect</h2><p>The Command Center continuously discovers approved Obserra services, verifies availability, preserves the last known state, learns normal behavior, and enables control only after successful owner authorization.</p></div><button id="connectAll">Refresh all now</button></section>
     <section class="grid metrics" id="metrics"></section>
+
+    <section class="panel" id="ownerAiPanel">
+      <div class="sectionTitle"><div><p class="eyebrow">OWNER AI</p><h2>Persistent intelligence, recommendations, and approvals</h2><p class="subhead">Live while the Command Center is open. Durable memory and evidence persist across sessions.</p></div><div class="actions"><button id="ownerAiAnalyze">Analyze now</button><button id="securityScanNow" class="secondary">Scan entire site</button></div></div>
+      <section id="ownerAiMetrics" class="grid metrics"></section>
+      <div class="academyToolbar"><label><span>Teach Owner AI</span><input id="ownerAiMemory" type="text" placeholder="Add an enduring owner instruction or observation" /></label><button id="ownerAiRemember" class="secondary">Remember always</button></div>
+      <div class="dashboardColumns"><div><h3>Recommendations</h3><div id="ownerAiRecommendations" class="gapList"></div></div><div><h3>Approval queue</h3><div id="ownerAiApprovals" class="gapList"></div></div></div>
+    </section>
+
+    <section class="panel" id="securityPanel">
+      <div class="sectionTitle"><div><p class="eyebrow">SECURITY, VULNERABILITY, AND FLOW INTELLIGENCE</p><h2>Entire-site discovery, mapped blocking, and AI-assisted remediation</h2><p id="securityScanStatus" class="subhead">Loading latest security evidence…</p></div><div class="actions"><button id="securityRefresh" class="secondary">Refresh security</button></div></div>
+      <section id="securityMetrics" class="grid metrics"></section>
+      <div class="dashboardColumns"><div><h3>Alerts and findings</h3><div id="securityAlerts" class="gapList"></div></div><div><h3>Automatic blocks and owner overrides</h3><div id="securityBlocks" class="gapList"></div></div></div>
+    </section>
+
+    <section class="panel" id="trendPanel">
+      <div class="sectionTitle"><div><p class="eyebrow">TRACK AND TREND</p><h2>Compare current, prior, recurring, and improving conditions</h2><p class="subhead">Connectors, Academy, purchases, routes, vulnerabilities, Owner AI, blocks, overrides, and remediation outcomes.</p></div><button id="trendRefresh" class="secondary">Refresh trends</button></div>
+      <section id="trendMetrics" class="grid metrics"></section>
+      <div id="trendComparisons" class="gapList"></div>
+    </section>
+
     <section class="panel academyPanel">
       <div class="sectionTitle"><div><p class="eyebrow">ACADEMY OPERATIONS CENTER</p><h2>Generate, preview, review, edit, approve, and publish courses</h2><p id="academyWorkspace" class="subhead">Discovering Academy Studio workspace…</p></div><div class="actions"><button id="academyGenerateAll" data-batch-action>Generate all pending</button><button id="academyBuildAll" data-batch-action class="secondary">Build all ready</button><button id="academyVerify" class="secondary">Verify Studio</button><button id="academyCatalog" class="secondary">Regenerate catalog</button><button id="academyRefresh">Refresh courses</button></div></div>
       <section id="academyMetrics" class="grid metrics academyMetrics"></section>
       <div class="academyToolbar"><label><span>Search courses</span><input id="academySearch" type="search" placeholder="Search title, department, track, or status" /></label><label><span>Filter</span><select id="academyFilter"><option value="all">All courses</option><option value="not-generated">Not generated</option><option value="generated">Generated</option><option value="review">Needs review</option><option value="publishable">Publishable</option><option value="published">Published</option></select></label></div>
       <div id="academyGaps" class="gapList academyGaps"></div><div id="academyCourses" class="courseOpsGrid"></div><div id="academyActionLog" class="actionLog" aria-live="polite"></div>
     </section>
+
     <section class="panel gapPanel"><div class="sectionTitle"><div><p class="eyebrow">PRIORITY GAPS</p><h2>Operational blockers and required actions</h2></div><span id="gapCount" class="gapCount">Calculating…</span></div><div id="gaps" class="gapList"></div></section>
     <section class="panel"><div class="sectionTitle"><div><p class="eyebrow">OWNER CONNECTIONS</p><h2>Obserra ecosystem</h2></div><div class="actions"><button id="exportConfig" class="secondary">Export encrypted recovery bundle</button><button id="importConfig" class="secondary">Import recovery bundle</button></div></div><div id="connectors" class="connectorGrid"></div></section>
     <section class="panel"><p class="eyebrow">SECURITY STATE</p><h2>Control authorization</h2><div id="securitySummary" class="securitySummary"></div></section>
@@ -25,6 +46,6 @@
   <template id="connectorTemplate"><article class="connectorCard"><div class="connectorTop"><div><h3></h3><p class="endpoint"></p></div><span class="status"></span></div><p class="description"></p><div class="connectorMeta"></div><button class="configure secondary">Authorize / configure</button></article></template>
   <template id="courseOpsTemplate"><article class="courseOpsCard"><div class="courseOpsHeader"><div><p class="courseDepartment"></p><h3 class="courseTitle"></h3></div><span class="status courseStatus"></span></div><p class="courseDescription"></p><div class="courseFacts"></div><div class="courseProgress"></div><div class="courseRecommendations"></div><div class="courseActions"><button data-action="author">Generate course</button><button data-action="build" class="secondary">Build release</button><button data-action="edit" class="secondary">Edit metadata</button></div></article></template>
   <dialog id="academyPreviewDialog" class="academyPreviewDialog"><div class="previewHeader"><div><p class="eyebrow">ACADEMY PREVIEW</p><h2 id="academyPreviewTitle">Course preview</h2><p id="academyPreviewMeta" class="subhead"></p></div><button id="academyPreviewClose" class="secondary">Close</button></div><pre id="academyPreviewBody" class="academyPreviewBody"></pre></dialog>
-  <script src="app.js"></script><script src="academy-batch.js"></script><script src="academy-preview-ui.js"></script>
+  <script src="app.js"></script><script src="academy-batch.js"></script><script src="academy-preview-ui.js"></script><script src="security-dashboard.js"></script>
 </body>
 </html>
