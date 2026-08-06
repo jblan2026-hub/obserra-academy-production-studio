@@ -12,6 +12,23 @@ if ([string]::IsNullOrWhiteSpace($Destination)) {
 }
 $destinationPath = [System.IO.Path]::GetFullPath($Destination)
 
+function Get-Sha256Hex {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $algorithm = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            $bytes = $algorithm.ComputeHash($stream)
+            return ([System.BitConverter]::ToString($bytes)).Replace("-", "")
+        } finally {
+            $algorithm.Dispose()
+        }
+    } finally {
+        $stream.Dispose()
+    }
+}
+
 Write-Host "[Obserra] Verifying owner command center..."
 Push-Location $root
 try {
@@ -62,10 +79,9 @@ Start-Process -FilePath $app.FullName -Wait
 Set-Content (Join-Path $destinationPath "Install-Obserra-Command-Center.ps1") $installScript -Encoding UTF8
 
 $hashes = Get-ChildItem $destinationPath -File | ForEach-Object {
-    $hash = Get-FileHash $_.FullName -Algorithm SHA256
     [pscustomobject]@{
         File = $_.Name
-        SHA256 = $hash.Hash
+        SHA256 = Get-Sha256Hex -Path $_.FullName
         Bytes = $_.Length
     }
 }
