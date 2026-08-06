@@ -1,0 +1,83 @@
+name: Build Owner Command Center Windows Package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/owner-ai-command-center
+    paths:
+      - "owner-command-center/**"
+      - ".github/workflows/owner-command-center-windows.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: owner-command-center-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify local-only controls
+    runs-on: windows-2025
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Verify security and installer configuration
+        run: npm run verify
+
+  package:
+    name: Build signed-ready Windows media package
+    needs: verify
+    runs-on: windows-2025
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Build one-click and portable executables
+        run: npm run package:media
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Verify media package contents
+        shell: pwsh
+        run: |
+          $media = Join-Path $PWD "release-media"
+          if (-not (Test-Path $media)) { throw "release-media directory missing" }
+          $installer = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" }
+          $portable = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe"
+          if (-not $installer) { throw "One-click installer missing" }
+          if (-not $portable) { throw "Portable executable missing" }
+          if (-not (Test-Path (Join-Path $media "SHA256SUMS.txt"))) { throw "SHA-256 manifest missing" }
+          if (-not (Test-Path (Join-Path $media "Install-Obserra-Command-Center.ps1"))) { throw "Installation launcher missing" }
+
+      - name: Upload removable-media installer bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Owner-AI-Command-Center-Windows-${{ github.sha }}
+          path: owner-command-center/release-media/**
+          if-no-files-found: error
+          retention-days: 30
