@@ -56,11 +56,12 @@ jobs:
         run: npm run verify
 
       - name: Build installer, portable executable, and removable-media bundle
-        run: npm run package:media
+        shell: pwsh
+        run: ./scripts/build-removable-media-package.ps1 -TargetHostname obserra
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
-      - name: Verify release contents and cryptographic integrity
+      - name: Verify release contents, bootstrap profile, and cryptographic integrity
         shell: pwsh
         run: |
           function Get-Sha256Hex {
@@ -85,6 +86,7 @@ jobs:
             "SHA256SUMS.txt",
             "SHA256SUMS.json",
             "Install-Obserra-Command-Center.ps1",
+            "Obserra-Command-Center-Bootstrap.json",
             "INSTALL-AND-RECOVERY.md",
             "HIGH-AVAILABILITY.md"
           )
@@ -92,8 +94,22 @@ jobs:
             if (-not (Test-Path (Join-Path $media $file))) { throw "Required release file missing: $file" }
           }
 
+          $bootstrap = Get-Content (Join-Path $media "Obserra-Command-Center-Bootstrap.json") -Raw | ConvertFrom-Json
+          if ($bootstrap.schemaVersion -ne "1.0") { throw "Unsupported bootstrap schema" }
+          if ($bootstrap.targetHostname -ne "obserra") { throw "Bootstrap target must be machine 'obserra'" }
+          if (@($bootstrap.connectors).Count -lt 9) { throw "Bootstrap connector inventory is incomplete" }
+          $requiredConnectorIds = @("lcms","academy","website","store","stripe","github","vercel","clerk","localAi")
+          foreach ($connectorId in $requiredConnectorIds) {
+            if (-not (@($bootstrap.connectors) | Where-Object { $_.id -eq $connectorId })) { throw "Bootstrap connector missing: $connectorId" }
+          }
+
+          $installScript = Get-Content (Join-Path $media "Install-Obserra-Command-Center.ps1") -Raw
+          foreach ($term in @("Get-FileHash", "TargetHostname", "OBSERRA_COMMAND_CENTER_BOOTSTRAP", "Portable")) {
+            if ($installScript -notmatch [regex]::Escape($term)) { throw "Installer script missing required behavior: $term" }
+          }
+
           $manifest = @(Get-Content (Join-Path $media "SHA256SUMS.json") -Raw | ConvertFrom-Json)
-          if ($manifest.Count -lt 5) { throw "JSON integrity manifest is incomplete" }
+          if ($manifest.Count -lt 6) { throw "JSON integrity manifest is incomplete" }
           foreach ($entry in $manifest) {
             $filePath = Join-Path $media $entry.File
             if (-not (Test-Path $filePath)) { throw "Manifest references missing file: $($entry.File)" }
@@ -104,6 +120,7 @@ jobs:
           Write-Host "Windows release gate passed."
           Write-Host "Installer: $($installer.Name)"
           Write-Host "Portable: $($portable.Name)"
+          Write-Host "Bootstrap target: $($bootstrap.targetHostname)"
 
       - name: Upload verified removable-media installer bundle
         uses: actions/upload-artifact@v4
