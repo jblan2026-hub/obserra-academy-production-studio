@@ -11,6 +11,7 @@
     "test": "tsx --test tests/**/*.test.ts",
     "apply:course-policy": "node studio/apply-course-policy.mjs",
     "validate": "npm run apply:course-policy && node studio/validate.mjs",
+    "author:course": "node studio/author-course-ai.mjs",
     "build:course": "npm run apply:course-policy && node studio/build-course.mjs && node studio/enforce-course-legal-assets.mjs",
     "build:all": "npm run apply:course-policy && node studio/build-all-courses.mjs && node studio/enforce-course-legal-assets.mjs",
     "catalog": "npm run apply:course-policy && node studio/generate-catalog.mjs",
@@ -31,9 +32,7 @@
     "verify:70x": "npm run verify && npm run test:70x-extension",
     "ci": "npm run verify:70x && npm run build"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
+  "prisma": { "seed": "tsx prisma/seed.ts" },
   "dependencies": {
     "@clerk/nextjs": "^6.31.0",
     "@prisma/client": "^6.16.0",
@@ -49,7 +48,5 @@
     "tsx": "^4.20.0",
     "typescript": "^5.7.0"
   },
-  "engines": {
-    "node": ">=22 <25"
-  }
+  "engines": { "node": ">=22 <25" }
 }
