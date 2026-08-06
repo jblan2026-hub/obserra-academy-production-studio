@@ -74,6 +74,8 @@ jobs:
           node --check electron/threat-policy.cjs
           node --check electron/security-enforcement.cjs
           node --check electron/trend-store.cjs
+          node --check electron/ai-remediation.cjs
+          node --check electron/remediation-queue.cjs
           node --check src/app.js
           node --check src/security-dashboard.js
           node --check src/refresh-15s.js
@@ -85,6 +87,10 @@ jobs:
       - name: Execute Studio and Command Center 500x workload gate
         working-directory: .
         run: npm run test:500x-workload
+
+      - name: Execute Studio and Command Center 1000x remediation gate
+        working-directory: .
+        run: npm run test:1000x-remediation
 
       - name: Build installer, portable executable, and removable-media bundle
         shell: pwsh
@@ -126,7 +132,7 @@ jobs:
           }
 
           $bootstrap = Get-Content (Join-Path $media "Obserra-Command-Center-Bootstrap.json") -Raw | ConvertFrom-Json
-          if ($bootstrap.schemaVersion -ne "1.1") { throw "Unsupported bootstrap schema" }
+          if ($bootstrap.schemaVersion -ne "1.0") { throw "Unsupported bootstrap schema" }
           if ($bootstrap.targetHostname -ne "obserra") { throw "Bootstrap target must be machine 'obserra'" }
           if (@($bootstrap.connectors).Count -lt 10) { throw "Bootstrap connector inventory is incomplete" }
           $requiredConnectorIds = @("lcms","academy","website","store","eios","stripe","github","vercel","clerk","localAi")
