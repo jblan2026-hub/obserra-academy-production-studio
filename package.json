@@ -1,6 +1,6 @@
 {
   "name": "obserra-academy-production-studio",
-  "version": "1.0.0-alpha.4",
+  "version": "1.0.0-alpha.5",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,6 +8,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "tsx --test tests/**/*.test.ts",
     "validate": "node studio/validate.mjs",
     "build:course": "node studio/build-course.mjs",
     "build:all": "node studio/build-all-courses.mjs",
@@ -22,7 +23,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "verify": "npm run validate && npm run catalog && npm run db:validate",
+    "verify": "npm run test && npm run validate && npm run catalog && npm run db:validate",
     "ci": "npm run verify && npm run build"
   },
   "prisma": {
