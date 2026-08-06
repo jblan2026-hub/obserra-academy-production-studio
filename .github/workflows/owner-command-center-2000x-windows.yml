@@ -1,0 +1,74 @@
+name: Owner Command Center 2000x Windows Gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "owner-command-center/**"
+      - "studio/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/owner-command-center-2000x-windows.yml"
+  push:
+    branches: [main]
+    paths:
+      - "owner-command-center/**"
+      - "studio/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/owner-command-center-2000x-windows.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: owner-command-center-2000x-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-package:
+    runs-on: windows-2025
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            owner-command-center/package-lock.json
+      - name: Install Studio dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install Command Center dependencies
+        working-directory: owner-command-center
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify Command Center governance and remediation runtime
+        working-directory: owner-command-center
+        run: npm run verify
+      - name: Execute complete 2000x resilience suite
+        run: npm run verify:2000x
+      - name: Build and verify Windows release media
+        working-directory: owner-command-center
+        shell: pwsh
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: ./scripts/build-removable-media-package.ps1 -TargetHostname obserra
+      - name: Verify release artifacts exist
+        shell: pwsh
+        run: |
+          $media = Join-Path $PWD "owner-command-center/release-media"
+          if (-not (Test-Path $media)) { throw "release-media missing" }
+          foreach ($name in @("SHA256SUMS.json", "SHA256SUMS.txt", "Obserra-Command-Center-Bootstrap.json", "Install-Obserra-Command-Center.ps1")) {
+            if (-not (Test-Path (Join-Path $media $name))) { throw "required artifact missing: $name" }
+          }
+          $bootstrap = Get-Content (Join-Path $media "Obserra-Command-Center-Bootstrap.json") -Raw | ConvertFrom-Json
+          if ($bootstrap.schemaVersion -ne "1.0") { throw "bootstrap schema mismatch" }
+          if (@($bootstrap.connectors).Count -ne 10) { throw "connector inventory mismatch" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Command-Center-2000x-Windows-${{ github.sha }}
+          path: owner-command-center/release-media/**
+          if-no-files-found: error
+          retention-days: 180
