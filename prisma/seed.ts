@@ -1,6 +1,7 @@
 import { PrismaClient, CourseStatus, SourceStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
+const defaultClerkOrganizationId = process.env.STUDIO_SEED_CLERK_ORG_ID ?? "org_obserra_seed";
 
 const experts = [
   ["Executive Leadership", "Leadership"], ["Board Governance", "Governance"],
@@ -33,6 +34,17 @@ const sources = [
 ];
 
 async function main() {
+  const organization = await prisma.organization.upsert({
+    where: { clerkOrganizationId: defaultClerkOrganizationId },
+    update: { name: "Obserra Academy", slug: "obserra-academy", active: true },
+    create: {
+      clerkOrganizationId: defaultClerkOrganizationId,
+      name: "Obserra Academy",
+      slug: "obserra-academy",
+      active: true,
+    },
+  });
+
   for (const [name, domain] of experts) {
     await prisma.expertAgent.upsert({
       where: { name },
@@ -43,9 +55,13 @@ async function main() {
 
   for (const course of courses) {
     await prisma.course.upsert({
-      where: { slug: course.slug },
+      where: { organizationId_slug: { organizationId: organization.id, slug: course.slug } },
       update: course,
-      create: { ...course, summary: `${course.title} production record managed by Obserra Academy Studio.` },
+      create: {
+        ...course,
+        organizationId: organization.id,
+        summary: `${course.title} production record managed by Obserra Academy Studio.`,
+      },
     });
   }
 
@@ -59,6 +75,7 @@ async function main() {
 
   await prisma.auditEvent.create({
     data: {
+      organizationId: organization.id,
       actorType: "SYSTEM",
       action: "DATABASE_SEEDED",
       resourceType: "STUDIO",
