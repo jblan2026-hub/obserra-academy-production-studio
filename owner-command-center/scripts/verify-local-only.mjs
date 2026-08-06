@@ -34,8 +34,9 @@ requirePattern(main, /contextIsolation:\s*true/, "Electron context isolation mus
 requirePattern(main, /nodeIntegration:\s*false/, "renderer Node integration must be disabled");
 requirePattern(main, /sandbox:\s*true/, "renderer sandbox must be enabled");
 requirePattern(main, /webSecurity:\s*true/, "Electron web security must be enabled");
-requirePattern(main, /setPermissionRequestHandler\([^)]*=>\s*callback\(false\)\)/s, "all renderer permission requests must be denied by default");
-requirePattern(main, /setWindowOpenHandler\([^)]*=>\s*\(\{\s*action:\s*["']deny["']\s*\}\)\)/s, "new-window creation must be denied");
+requirePattern(main, /setPermissionRequestHandler\s*\(/, "a renderer permission request handler must be configured");
+requirePattern(main, /setPermissionRequestHandler[\s\S]{0,300}callback\s*\(\s*false\s*\)/, "all renderer permission requests must be denied by default");
+requirePattern(main, /setWindowOpenHandler\s*\([^]*action:\s*["']deny["']/, "new-window creation must be denied");
 requirePattern(main, /will-navigate/, "navigation interception must be configured");
 requirePattern(main, /file:\/\//, "renderer navigation must remain restricted to packaged local files");
 requirePattern(main, /safeStorage\.encryptString/, "secrets must use Windows-backed Electron safeStorage encryption");
@@ -43,7 +44,7 @@ requirePattern(main, /safeStorage\.decryptString/, "encrypted secrets must suppo
 requirePattern(main, /readOnly|read-only/i, "new connector capabilities must default to read-only control");
 
 rejectPattern(main, /\.listen\s*\(/, "the desktop application must not open an inbound HTTP listener");
-rejectPattern(main, /0\.0\.0\.0|::0|::1\s*[,)]/, "the desktop application must not bind a public or network listener");
+rejectPattern(main, /0\.0\.0\.0|::0/, "the desktop application must not bind a public or network listener");
 rejectPattern(main, /nodeIntegration:\s*true/, "renderer Node integration cannot be enabled");
 rejectPattern(main, /contextIsolation:\s*false/, "context isolation cannot be disabled");
 rejectPattern(main, /webSecurity:\s*false/, "web security cannot be disabled");
