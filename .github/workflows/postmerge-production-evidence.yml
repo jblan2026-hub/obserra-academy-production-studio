@@ -80,15 +80,34 @@ jobs:
           grep -Eqi '60[^0-9]+(paid )?courses|numberOfItems[^0-9]+60' /tmp/academy.html
           grep -Eqi 'not a state license|not.*third.party professional certification|not for certification' /tmp/academy.html
           grep -Eqi '/api/academy/checkout\?course=' /tmp/academy.html
-          curl --silent --show-error --location --max-time 30 -D /tmp/checkout-headers.txt -o /tmp/checkout.html -w '%{url_effective}' 'https://www.obserrallc.com/api/academy/checkout?course=zero-trust-strategy' > /tmp/checkout-url.txt
-          grep -Eqi '/sign-in' /tmp/checkout-url.txt
-          grep -Eqi 'SECURE CUSTOMER ACCESS|Sign in to your Obserra account' /tmp/checkout.html
-          grep -Eqi 'private|no-store' /tmp/checkout-headers.txt
+
+          checkout_url='https://www.obserrallc.com/api/academy/checkout?course=zero-trust-strategy'
+          status=$(curl --silent --show-error --max-time 30 -D /tmp/checkout-initial-headers.txt -o /tmp/checkout-initial.html -w '%{http_code}' "$checkout_url")
+          test "$status" = '302' -o "$status" = '303' -o "$status" = '307' -o "$status" = '308'
+          location=$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/^[^:]+:[[:space:]]*/, ""); gsub(/\r/, ""); print; exit}' /tmp/checkout-initial-headers.txt)
+          test -n "$location"
+          echo "$location" | grep -Eqi '/sign-in|/academy\?enrollment=identity-unavailable'
+          if echo "$location" | grep -Eqi 'stripe\.com|buy\.stripe\.com|checkout\.stripe\.com'; then
+            echo 'Unauthenticated checkout reached Stripe.' >&2
+            exit 1
+          fi
+
+          final_status=$(curl --silent --show-error --location --max-time 30 -D /tmp/checkout-final-headers.txt -o /tmp/checkout-final.html -w '%{http_code}' "$checkout_url")
+          test "$final_status" = '200'
+          grep -Eqi 'Obserra Academy|SECURE CUSTOMER ACCESS|Sign in to your Obserra account' /tmp/checkout-final.html
+          if grep -Eqi 'stripe\.com/checkout|buy\.stripe\.com' /tmp/checkout-final.html; then
+            echo 'Fail-closed checkout rendered a direct Stripe destination.' >&2
+            exit 1
+          fi
       - name: Enforce production Clerk identity
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --location --silent --show-error --max-time 30 https://www.obserrallc.com/sign-in -o /tmp/signin.html
+          curl --fail --location --silent --show-error --max-time 30 -D /tmp/signin-headers.txt https://www.obserrallc.com/sign-in -o /tmp/signin.html
+          if grep -Eqi 'configuration-required' /tmp/signin-headers.txt; then
+            echo 'Production identity configuration remains unavailable.' >&2
+            exit 1
+          fi
           if grep -Eqi 'pk_test_|clerk\.accounts\.dev|clerkstage\.dev' /tmp/signin.html; then
             echo 'Production identity is still using Clerk development resources.' >&2
             exit 1
