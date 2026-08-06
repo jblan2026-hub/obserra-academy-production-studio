@@ -8,6 +8,12 @@ on:
     paths:
       - "owner-command-center/**"
       - ".github/workflows/owner-command-center-windows.yml"
+  pull_request:
+    branches:
+      - agent/studio-v1-web-application
+    paths:
+      - "owner-command-center/**"
+      - ".github/workflows/owner-command-center-windows.yml"
 
 permissions:
   contents: read
