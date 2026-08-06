@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld("obserraOwner", {
   getAcademySnapshot: () => ipcRenderer.invoke("academy:getSnapshot"),
   updateAcademyCourse: (payload) => ipcRenderer.invoke("academy:updateCourse", payload),
   runAcademyAction: (payload) => ipcRenderer.invoke("academy:runAction", payload),
+  previewAcademyCourse: (courseId) => ipcRenderer.invoke("academy:previewCourse", courseId),
+  previewAcademyMaterials: (courseId) => ipcRenderer.invoke("academy:previewMaterials", courseId),
+  previewAcademyCertificate: (courseId) => ipcRenderer.invoke("academy:previewCertificate", courseId),
   exportRecoveryBundle: (passphrase) => ipcRenderer.invoke("recovery:export", passphrase),
   importRecoveryBundle: (passphrase) => ipcRenderer.invoke("recovery:import", passphrase)
 });
