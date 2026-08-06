@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "1.0",
-  "catalogVersion": "2026.08.06.1",
+  "schemaVersion": "1.1",
+  "catalogVersion": "2026.08.06.2",
   "publisher": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
   "defaultControlMode": "read-only",
   "resources": [
@@ -8,44 +8,80 @@
       "id": "lcms",
       "type": "application",
       "name": "Academy LCMS",
-      "discovery": {
-        "source": "configured-endpoint",
-        "resourceFeeds": [
-          { "kind": "course", "path": "/api/courses" },
-          { "kind": "release", "path": "/api/releases" },
-          { "kind": "build", "path": "/api/builds" }
-        ]
-      },
+      "discovery": { "source": "configured-endpoint", "resourceFeeds": [{ "kind": "course", "path": "/api/courses" }, { "kind": "release", "path": "/api/releases" }, { "kind": "build", "path": "/api/builds" }] },
       "capabilities": ["monitor", "search", "generate-course", "review-course", "publish-course"],
+      "writeCapabilitiesRequireOwnerApproval": true
+    },
+    {
+      "id": "academy",
+      "type": "application",
+      "name": "Obserra Academy",
+      "discovery": { "source": "configured-endpoint", "resourceFeeds": [{ "kind": "learner", "path": "/api/academy/learners" }, { "kind": "assessment", "path": "/api/academy/assessments" }, { "kind": "certificate", "path": "/api/academy/certificates" }] },
+      "capabilities": ["monitor", "review-learning-flow", "review-assessment", "review-certificate"],
       "writeCapabilitiesRequireOwnerApproval": true
     },
     {
       "id": "website",
       "type": "website",
       "name": "Obserra Website",
-      "discovery": {
-        "source": "configured-endpoint",
-        "resourceFeeds": [
-          { "kind": "page", "path": "/api/owner/pages" },
-          { "kind": "deployment", "path": "/api/owner/deployments" }
-        ]
-      },
-      "capabilities": ["monitor", "sync-catalog", "publish-page", "deploy"],
+      "discovery": { "source": "configured-endpoint", "resourceFeeds": [{ "kind": "page", "path": "/api/owner/pages" }, { "kind": "deployment", "path": "/api/owner/deployments" }] },
+      "capabilities": ["monitor", "scan-routes", "sync-catalog", "publish-page", "deploy"],
       "writeCapabilitiesRequireOwnerApproval": true
     },
     {
       "id": "store",
       "type": "store",
       "name": "Obserra Store",
-      "discovery": {
-        "source": "configured-endpoint",
-        "resourceFeeds": [
-          { "kind": "product", "path": "/api/owner/products" },
-          { "kind": "order", "path": "/api/owner/orders" },
-          { "kind": "license", "path": "/api/owner/licenses" }
-        ]
-      },
+      "discovery": { "source": "configured-endpoint", "resourceFeeds": [{ "kind": "product", "path": "/api/owner/products" }, { "kind": "order", "path": "/api/owner/orders" }, { "kind": "license", "path": "/api/owner/licenses" }] },
       "capabilities": ["monitor", "sync-product", "manage-license", "refund"],
+      "writeCapabilitiesRequireOwnerApproval": true
+    },
+    {
+      "id": "eios",
+      "type": "platform",
+      "name": "Obserra EIOS",
+      "discovery": { "source": "configured-endpoint", "resourceFeeds": [{ "kind": "health", "path": "/api/health" }, { "kind": "intelligence", "path": "/api/obserra/intelligence" }] },
+      "capabilities": ["monitor", "ingest-intelligence", "review-recommendations", "review-evidence", "approve-action"],
+      "writeCapabilitiesRequireOwnerApproval": true
+    },
+    {
+      "id": "stripe",
+      "type": "commerce",
+      "name": "Stripe",
+      "discovery": { "source": "configured-endpoint", "resourceFeeds": [{ "kind": "balance", "path": "/v1/balance" }] },
+      "capabilities": ["monitor", "review-payment", "review-webhook", "refund"],
+      "writeCapabilitiesRequireOwnerApproval": true
+    },
+    {
+      "id": "github",
+      "type": "source-control",
+      "name": "GitHub",
+      "discovery": { "source": "configured-endpoint", "resourceFeeds": [{ "kind": "rate-limit", "path": "/rate_limit" }] },
+      "capabilities": ["monitor", "review-commit", "review-workflow", "publish-change"],
+      "writeCapabilitiesRequireOwnerApproval": true
+    },
+    {
+      "id": "vercel",
+      "type": "deployment",
+      "name": "Vercel",
+      "discovery": { "source": "configured-endpoint", "resourceFeeds": [{ "kind": "owner", "path": "/v2/user" }] },
+      "capabilities": ["monitor", "review-build", "review-runtime", "promote-deployment"],
+      "writeCapabilitiesRequireOwnerApproval": true
+    },
+    {
+      "id": "clerk",
+      "type": "identity",
+      "name": "Clerk",
+      "discovery": { "source": "configured-endpoint", "resourceFeeds": [{ "kind": "identity-health", "path": "/v1/users?limit=1" }] },
+      "capabilities": ["monitor", "review-user", "review-session", "manage-access"],
+      "writeCapabilitiesRequireOwnerApproval": true
+    },
+    {
+      "id": "localAi",
+      "type": "local-ai",
+      "name": "Local AI",
+      "discovery": { "source": "loopback-endpoint", "resourceFeeds": [{ "kind": "models", "path": "/api/tags" }] },
+      "capabilities": ["monitor", "private-inference", "recommend", "summarize"],
       "writeCapabilitiesRequireOwnerApproval": true
     }
   ]
