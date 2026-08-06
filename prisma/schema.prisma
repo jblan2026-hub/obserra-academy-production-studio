@@ -50,26 +50,41 @@ enum ReleaseStatus {
   ROLLED_BACK
 }
 
+model Organization {
+  id                  String       @id @default(cuid())
+  clerkOrganizationId String       @unique
+  name                String
+  slug                String       @unique
+  active              Boolean      @default(true)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  courses             Course[]
+  auditEvents         AuditEvent[]
+}
+
 model Course {
-  id                 String          @id @default(cuid())
-  slug               String          @unique
-  title              String
-  summary            String?
-  status             CourseStatus    @default(IDEA)
-  version            Int             @default(1)
-  qualityScore       Int             @default(0)
-  productionOwner    String?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  lessons            Lesson[]
-  reviews            CourseReview[]
-  qualityAssessments QualityScore[]
-  builds             Build[]
-  releases           Release[]
-  sourceLinks        CourseSource[]
+  id                  String          @id @default(cuid())
+  organizationId      String
+  slug                String
+  title               String
+  summary             String?
+  status              CourseStatus    @default(IDEA)
+  version             Int             @default(1)
+  qualityScore        Int             @default(0)
+  productionOwner     String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  organization        Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lessons             Lesson[]
+  reviews             CourseReview[]
+  qualityAssessments  QualityScore[]
+  builds              Build[]
+  releases            Release[]
+  sourceLinks         CourseSource[]
   expertContributions ExpertContribution[]
 
-  @@index([status])
+  @@unique([organizationId, slug])
+  @@index([organizationId, status])
   @@index([updatedAt])
 }
 
@@ -103,122 +118,122 @@ model ExpertAgent {
 }
 
 model ExpertContribution {
-  id          String      @id @default(cuid())
-  courseId    String
-  expertId    String
+  id               String      @id @default(cuid())
+  courseId         String
+  expertId         String
   contributionType String
-  payload     Json
-  confidence  Float?
-  createdAt   DateTime    @default(now())
-  course      Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  expert      ExpertAgent @relation(fields: [expertId], references: [id], onDelete: Restrict)
+  payload          Json
+  confidence       Float?
+  createdAt        DateTime    @default(now())
+  course           Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  expert           ExpertAgent @relation(fields: [expertId], references: [id], onDelete: Restrict)
 
   @@index([courseId])
   @@index([expertId])
 }
 
 model SourceDocument {
-  id             String        @id @default(cuid())
-  authority      String
-  title          String
-  canonicalUrl   String        @unique
-  version        String?
-  effectiveDate  DateTime?
-  status         SourceStatus  @default(HEALTHY)
-  contentHash    String?
+  id              String        @id @default(cuid())
+  authority       String
+  title           String
+  canonicalUrl    String        @unique
+  version         String?
+  effectiveDate   DateTime?
+  status          SourceStatus  @default(HEALTHY)
+  contentHash     String?
   lastCollectedAt DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  citations      Citation[]
-  courseLinks    CourseSource[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  citations       Citation[]
+  courseLinks     CourseSource[]
 
   @@index([authority])
   @@index([status])
 }
 
 model CourseSource {
-  id          String         @id @default(cuid())
-  courseId    String
-  sourceId    String
+  id            String         @id @default(cuid())
+  courseId      String
+  sourceId      String
   applicability String?
-  binding     Boolean        @default(false)
-  createdAt   DateTime       @default(now())
-  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  source      SourceDocument @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  binding       Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  course        Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  source        SourceDocument @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, sourceId])
   @@index([sourceId])
 }
 
 model Citation {
-  id          String         @id @default(cuid())
-  lessonId    String
-  sourceId    String
-  locator     String?
-  quotation   String?
-  createdAt   DateTime       @default(now())
-  lesson      Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  source      SourceDocument @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  id        String         @id @default(cuid())
+  lessonId  String
+  sourceId  String
+  locator   String?
+  quotation String?
+  createdAt DateTime       @default(now())
+  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  source    SourceDocument @relation(fields: [sourceId], references: [id], onDelete: Restrict)
 
   @@index([lessonId])
   @@index([sourceId])
 }
 
 model Assessment {
-  id          String   @id @default(cuid())
-  lessonId    String
-  kind        String
-  prompt      String
-  options     Json?
-  answerKey   Json?
-  rationale   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  lessonId  String
+  kind      String
+  prompt    String
+  options   Json?
+  answerKey Json?
+  rationale String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@index([lessonId])
 }
 
 model MediaAsset {
-  id          String   @id @default(cuid())
-  lessonId    String?
-  type        String
-  title       String
-  storageKey  String
-  mimeType    String?
-  metadata    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  lesson      Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  id         String   @id @default(cuid())
+  lessonId   String?
+  type       String
+  title      String
+  storageKey String
+  mimeType   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  lesson     Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
 
   @@index([lessonId])
 }
 
 model CourseReview {
-  id          String       @id @default(cuid())
-  courseId    String
+  id           String       @id @default(cuid())
+  courseId     String
   reviewerRole String
-  reviewerId  String?
-  status      ReviewStatus @default(PENDING)
-  notes       String?
-  completedAt DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  reviewerId   String?
+  status       ReviewStatus @default(PENDING)
+  notes        String?
+  completedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([courseId, status])
 }
 
 model QualityScore {
-  id            String   @id @default(cuid())
-  courseId      String
-  category      String
-  score         Int
-  threshold     Int
-  passed        Boolean
-  evidence      Json?
-  evaluatedAt   DateTime @default(now())
-  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  courseId    String
+  category    String
+  score       Int
+  threshold   Int
+  passed      Boolean
+  evidence    Json?
+  evaluatedAt DateTime @default(now())
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([courseId])
   @@index([passed])
@@ -242,35 +257,38 @@ model Build {
 }
 
 model Release {
-  id            String        @id @default(cuid())
-  courseId      String
-  version       String
-  status        ReleaseStatus @default(DRAFT)
-  packageUrl    String?
-  approvedBy    String?
-  approvedAt    DateTime?
-  publishedAt   DateTime?
-  rollbackOfId  String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  course        Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id           String        @id @default(cuid())
+  courseId     String
+  version      String
+  status       ReleaseStatus @default(DRAFT)
+  packageUrl   String?
+  approvedBy   String?
+  approvedAt   DateTime?
+  publishedAt  DateTime?
+  rollbackOfId String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  course       Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, version])
   @@index([status])
 }
 
 model AuditEvent {
-  id            String   @id @default(cuid())
-  actorId       String?
-  actorType     String
-  action        String
-  resourceType  String
-  resourceId    String?
-  correlationId String?
-  outcome       String
-  metadata      Json?
-  createdAt     DateTime @default(now())
+  id             String        @id @default(cuid())
+  organizationId String?
+  actorId        String?
+  actorType      String
+  action         String
+  resourceType   String
+  resourceId     String?
+  correlationId  String?
+  outcome        String
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
+  @@index([organizationId, createdAt])
   @@index([resourceType, resourceId])
   @@index([correlationId])
   @@index([createdAt])
