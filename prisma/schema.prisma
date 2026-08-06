@@ -50,31 +50,66 @@ enum ReleaseStatus {
   ROLLED_BACK
 }
 
+enum AiExecutionStatus {
+  QUEUED
+  ROUTING
+  RUNNING
+  WAITING_FOR_REVIEW
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+enum AiApprovalStatus {
+  NOT_REQUIRED
+  PENDING
+  APPROVED
+  REJECTED
+  CHANGES_REQUIRED
+}
+
+enum AiGuardrailStatus {
+  NOT_EVALUATED
+  PASSED
+  WARNING
+  BLOCKED
+}
+
+enum AiStepStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+}
+
 model Organization {
-  id                  String       @id @default(cuid())
-  clerkOrganizationId String       @unique
+  id                  String           @id @default(cuid())
+  clerkOrganizationId String           @unique
   name                String
-  slug                String       @unique
-  active              Boolean      @default(true)
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  slug                String           @unique
+  active              Boolean          @default(true)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
   courses             Course[]
   auditEvents         AuditEvent[]
+  promptTemplates     AiPromptTemplate[]
+  aiExecutions        AiExecution[]
 }
 
 model Course {
-  id                  String          @id @default(cuid())
+  id                  String               @id @default(cuid())
   organizationId      String
   slug                String
   title               String
   summary             String?
-  status              CourseStatus    @default(IDEA)
-  version             Int             @default(1)
-  qualityScore        Int             @default(0)
+  status              CourseStatus         @default(IDEA)
+  version             Int                  @default(1)
+  qualityScore        Int                  @default(0)
   productionOwner     String?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-  organization        Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   lessons             Lesson[]
   reviews             CourseReview[]
   qualityAssessments  QualityScore[]
@@ -82,6 +117,7 @@ model Course {
   releases            Release[]
   sourceLinks         CourseSource[]
   expertContributions ExpertContribution[]
+  aiExecutions        AiExecution[]
 
   @@unique([organizationId, slug])
   @@index([organizationId, status])
@@ -107,14 +143,16 @@ model Lesson {
 }
 
 model ExpertAgent {
-  id            String               @id @default(cuid())
-  name          String               @unique
-  domain        String
-  description   String?
-  active        Boolean              @default(true)
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  contributions ExpertContribution[]
+  id              String               @id @default(cuid())
+  name            String               @unique
+  domain          String
+  description     String?
+  active          Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  contributions   ExpertContribution[]
+  promptTemplates AiPromptTemplate[]
+  executions      AiExecution[]
 }
 
 model ExpertContribution {
@@ -130,6 +168,118 @@ model ExpertContribution {
 
   @@index([courseId])
   @@index([expertId])
+}
+
+model AiModelProfile {
+  id                    String        @id @default(cuid())
+  key                   String        @unique
+  provider              String
+  model                 String
+  displayName           String
+  capabilities          Json
+  inputCostPerMillion   Decimal?      @db.Decimal(12, 6)
+  outputCostPerMillion  Decimal?      @db.Decimal(12, 6)
+  maximumContextTokens  Int?
+  supportsStructuredOut Boolean       @default(false)
+  supportsTools         Boolean       @default(false)
+  active                Boolean       @default(true)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  executions            AiExecution[]
+
+  @@index([provider, active])
+}
+
+model AiPromptTemplate {
+  id             String           @id @default(cuid())
+  organizationId String
+  expertId       String?
+  key            String
+  name           String
+  version        Int
+  active         Boolean          @default(true)
+  systemPrompt   String
+  taskTemplate   String
+  outputSchema   Json?
+  guardrails     Json?
+  createdBy      String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  expert         ExpertAgent?     @relation(fields: [expertId], references: [id], onDelete: SetNull)
+  executions     AiExecution[]
+
+  @@unique([organizationId, key, version])
+  @@index([organizationId, active])
+  @@index([expertId])
+}
+
+model AiExecution {
+  id                 String              @id @default(cuid())
+  organizationId     String
+  courseId           String?
+  expertId           String?
+  promptTemplateId   String?
+  modelProfileId     String?
+  requestedBy        String
+  objective          String
+  status             AiExecutionStatus   @default(QUEUED)
+  approvalStatus     AiApprovalStatus     @default(PENDING)
+  guardrailStatus    AiGuardrailStatus    @default(NOT_EVALUATED)
+  routingReason      String?
+  input              Json
+  output             Json?
+  confidence         Float?
+  promptTokens       Int?
+  completionTokens   Int?
+  estimatedCostUsd   Decimal?             @db.Decimal(14, 6)
+  retryCount         Int                  @default(0)
+  maxRetries         Int                  @default(2)
+  errorCode          String?
+  errorMessage       String?
+  provenance         Json?
+  approvedBy         String?
+  approvedAt         DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  organization       Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  course             Course?              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  expert             ExpertAgent?         @relation(fields: [expertId], references: [id], onDelete: SetNull)
+  promptTemplate     AiPromptTemplate?     @relation(fields: [promptTemplateId], references: [id], onDelete: SetNull)
+  modelProfile       AiModelProfile?       @relation(fields: [modelProfileId], references: [id], onDelete: SetNull)
+  steps              AiExecutionStep[]
+
+  @@index([organizationId, status, createdAt])
+  @@index([courseId])
+  @@index([expertId])
+  @@index([approvalStatus])
+}
+
+model AiExecutionStep {
+  id             String         @id @default(cuid())
+  executionId    String
+  sequence       Int
+  name           String
+  agentRole      String?
+  status         AiStepStatus   @default(PENDING)
+  modelProfileKey String?
+  input          Json?
+  output         Json?
+  confidence     Float?
+  promptTokens   Int?
+  completionTokens Int?
+  estimatedCostUsd Decimal?     @db.Decimal(14, 6)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  errorMessage   String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  execution      AiExecution    @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@unique([executionId, sequence])
+  @@index([executionId, status])
 }
 
 model SourceDocument {
