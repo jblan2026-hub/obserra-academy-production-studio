@@ -1,4 +1,4 @@
-name: Obserra 10x Cross-Project Production Evidence
+name: Obserra 40x Cross-Project Production Evidence
 
 on:
   workflow_dispatch:
@@ -19,14 +19,14 @@ permissions:
   statuses: write
 
 concurrency:
-  group: obserra-10x-production-${{ github.ref }}
+  group: obserra-40x-postmerge-production-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   studio:
     name: Academy LCMS, governed catalog, branding, and build
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
     env:
       DATABASE_URL: postgresql://obserra_ci:obserra_ci@127.0.0.1:5432/obserra_ci
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
@@ -53,9 +53,9 @@ jobs:
           if grep -RInE 'guaranteed certification|guaranteed compliance|certifies compliance' courses studio; then exit 1; fi
 
   public-web:
-    name: Website public availability, routes, Academy, and security headers
+    name: Website public availability, routes, Academy, legal brand, and security headers
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Validate production domains and hardened response headers
         shell: bash
@@ -68,42 +68,69 @@ jobs:
             grep -Eqi 'Obserra' /tmp/site.html
             grep -Eqi '^strict-transport-security:' /tmp/headers.txt
             grep -Eqi '^content-security-policy:' /tmp/headers.txt
-            grep -Eqi '^x-content-type-options:' /tmp/headers.txt
-            grep -Eqi '^x-frame-options:' /tmp/headers.txt
+            grep -Eqi '^x-content-type-options: nosniff' /tmp/headers.txt
+            grep -Eqi '^x-frame-options: (DENY|SAMEORIGIN)' /tmp/headers.txt
+            grep -Eqi '^referrer-policy:' /tmp/headers.txt
+            grep -Eqi '^permissions-policy:' /tmp/headers.txt
           done
       - name: Validate critical routes without 5xx responses
         shell: bash
         run: |
           set -euo pipefail
-          for path in / /academy /contact /services /apps /eios /trust /about /sign-in /portal /admin; do
+          for path in / /academy /contact /services /apps /eios /trust /about /sign-in /portal /admin /api/academy/commerce-health; do
             code=$(curl --silent --show-error --max-time 30 -o /tmp/route.html -w '%{http_code}' "https://www.obserrallc.com${path}")
             if [ "$code" -ge 500 ]; then echo "Critical route ${path} returned ${code}" >&2; exit 1; fi
           done
-      - name: Validate Academy catalog and informational-use policy
+      - name: Validate Academy catalog, legal organization name, and informational-use policy
         shell: bash
         run: |
           set -euo pipefail
           curl --fail --location --silent --show-error --max-time 30 https://www.obserrallc.com/academy -o /tmp/academy.html
           grep -Eqi 'Obserra Academy' /tmp/academy.html
+          grep -Eqi 'Obserra Executive Protection (&|&amp;) Intelligence LLC' /tmp/academy.html
           grep -Eqi '60[^0-9]+(paid )?courses|numberOfItems[^0-9]+60' /tmp/academy.html
           grep -Eqi 'not a state license|not.*third.party professional certification|not for certification' /tmp/academy.html
           grep -Eqi '/api/academy/checkout\?course=' /tmp/academy.html
 
   commerce-ha:
-    name: Highly available Stripe commerce and signed webhook boundary
+    name: Highly available Stripe commerce, claim security, and signed webhook boundary
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
-      - name: Validate live checkout creation without 5xx responses
+      - name: Validate sanitized commerce contract
         shell: bash
         run: |
           set -euo pipefail
-          code=$(curl --silent --show-error --max-time 45 -D /tmp/checkout-headers.txt -o /tmp/checkout-body.txt -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=zero-trust-strategy')
-          if [ "$code" -ge 500 ]; then cat /tmp/checkout-body.txt >&2; exit 1; fi
-          test "$code" = "302" -o "$code" = "303" -o "$code" = "307" -o "$code" = "308"
-          location=$(grep -i '^location:' /tmp/checkout-headers.txt | tail -n 1 | tr -d '\r')
-          echo "$location" | grep -Eqi '^location: https://(checkout\.stripe\.com|buy\.stripe\.com)/'
-          grep -Eqi '^x-obserra-commerce-mode: (guest-email|authenticated)' /tmp/checkout-headers.txt
+          curl --fail --silent --show-error --max-time 30 -D /tmp/health-headers.txt https://www.obserrallc.com/api/academy/commerce-health -o /tmp/health.json
+          python - <<'PY'
+          import json
+          with open('/tmp/health.json', encoding='utf-8') as handle:
+              data = json.load(handle)
+          assert data['contract'] == 'academy-commerce-health-v1'
+          assert data['operational'] is True
+          assert data['paymentProvider'] == 'stripe'
+          assert data['webhookVerification'] == 'required'
+          assert data['claimPolicy'] == 'purchaser-email-match-v1'
+          assert set(data['checkoutModes']) == {'authenticated', 'guest-email'}
+          assert data['fulfillment']['authenticated'] == 'immediate-entitlement'
+          assert data['fulfillment']['guest'] == 'paid-pending-account-claim'
+          assert data['fulfillment']['idempotencyKey'] == 'stripe-checkout-session-id'
+          PY
+          grep -Eqi '^x-obserra-commerce-contract: academy-commerce-health-v1' /tmp/health-headers.txt
+          grep -Eqi '^x-obserra-claim-policy: purchaser-email-match-v1' /tmp/health-headers.txt
+      - name: Validate multiple live checkout sessions without 5xx responses
+        shell: bash
+        run: |
+          set -euo pipefail
+          for course in zero-trust-strategy ai-ready-workforce; do
+            code=$(curl --silent --show-error --max-time 45 -D /tmp/checkout-headers.txt -o /tmp/checkout-body.txt -w '%{http_code}' "https://www.obserrallc.com/api/academy/checkout?course=${course}")
+            if [ "$code" -ge 500 ]; then cat /tmp/checkout-body.txt >&2; exit 1; fi
+            case "$code" in 302|303|307|308) ;; *) cat /tmp/checkout-body.txt >&2; exit 1 ;; esac
+            location=$(grep -i '^location:' /tmp/checkout-headers.txt | tail -n 1 | tr -d '\r')
+            echo "$location" | grep -Eqi '^location: https://(checkout\.stripe\.com|buy\.stripe\.com)/'
+            grep -Eqi '^x-obserra-commerce-mode: (guest-email|authenticated)' /tmp/checkout-headers.txt
+            grep -Eqi '^x-obserra-claim-policy: purchaser-email-match-v1' /tmp/checkout-headers.txt
+          done
       - name: Validate webhook signature enforcement and invalid-course containment
         shell: bash
         run: |
@@ -111,13 +138,15 @@ jobs:
           webhook_code=$(curl --silent --show-error --max-time 30 -X POST -H 'content-type: application/json' -d '{}' -o /tmp/webhook.json -w '%{http_code}' https://www.obserrallc.com/api/webhook/stripe)
           test "$webhook_code" = "400"
           grep -Eqi 'Webhook not configured|Invalid webhook signature' /tmp/webhook.json
+          get_code=$(curl --silent --show-error --max-time 30 -o /tmp/webhook-get.txt -w '%{http_code}' https://www.obserrallc.com/api/webhook/stripe)
+          test "$get_code" -lt 500
           invalid_code=$(curl --silent --show-error --max-time 30 -o /tmp/invalid.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=not-a-real-course')
           if [ "$invalid_code" -ge 500 ]; then cat /tmp/invalid.html >&2; exit 1; fi
 
   identity-containment:
     name: Identity degradation containment and protected-route safety
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Report identity state without masking degradation
         shell: bash
@@ -129,10 +158,11 @@ jobs:
           for path in /sign-in /portal /admin; do
             code=$(curl --silent --show-error --max-time 30 -o /tmp/protected.html -w '%{http_code}' "https://www.obserrallc.com${path}")
             if [ "$code" -ge 500 ]; then echo "Identity route ${path} returned ${code}" >&2; exit 1; fi
+            case "$code" in 200|302|303|307|308|401|403) ;; *) echo "Unexpected protected route status ${code}" >&2; exit 1 ;; esac
           done
           if echo "$status" | grep -Eqi 'configuration-required|unavailable|invalid'; then
             echo 'IDENTITY_DEGRADED=true' >> "$GITHUB_ENV"
-            echo 'Clerk remains degraded, but public routes, commerce, and protected-route containment are operational.'
+            echo 'Clerk remains degraded, while public routes, commerce, and protected-route containment remain operational.'
           else
             echo 'IDENTITY_DEGRADED=false' >> "$GITHUB_ENV"
           fi
@@ -140,7 +170,7 @@ jobs:
   windows-release:
     name: Owner Command Center installer, portable media, integrity, and recovery
     runs-on: windows-2025
-    timeout-minutes: 70
+    timeout-minutes: 75
     defaults:
       run:
         working-directory: owner-command-center
@@ -180,13 +210,13 @@ jobs:
           }
       - uses: actions/upload-artifact@v4
         with:
-          name: 10x-command-center-release-${{ github.sha }}
+          name: 40x-command-center-release-${{ github.sha }}
           path: owner-command-center/release-media/**
           if-no-files-found: error
           retention-days: 180
 
   publish-status:
-    name: Publish explicit cross-project production evidence
+    name: Publish explicit 40x cross-project production evidence
     runs-on: ubuntu-latest
     if: always()
     needs: [studio, public-web, commerce-ha, identity-containment, windows-release]
@@ -205,24 +235,24 @@ jobs:
             const success = Object.values(results).every((value) => value === 'success');
             const state = success ? 'success' : 'failure';
             const description = success
-              ? 'All three production workstreams passed; identity degradation is reported separately.'
-              : `10x production evidence failed: ${JSON.stringify(results)}`.slice(0, 140);
+              ? 'All three production workstreams passed the 40x postmerge evidence standard.'
+              : `40x production evidence failed: ${JSON.stringify(results)}`.slice(0, 140);
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: context.sha,
               state,
-              context: 'obserra/10x-cross-project-production-evidence',
+              context: 'obserra/40x-cross-project-production-evidence',
               description,
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
             core.summary
-              .addHeading('Obserra 10x Cross-Project Production Evidence')
+              .addHeading('Obserra 40x Cross-Project Production Evidence')
               .addTable([
                 [{data: 'Workstream', header: true}, {data: 'Result', header: true}],
                 ['Academy LCMS and Production Studio', results.academyStudio],
-                ['Production website and public routes', results.publicWebsite],
-                ['Highly available Stripe commerce', results.commerceHA],
+                ['Production website, legal brand, and public routes', results.publicWebsite],
+                ['Highly available Stripe commerce and secure claims', results.commerceHA],
                 ['Identity degradation containment', results.identityContainment],
                 ['Owner AI Command Center', results.ownerCommandCenter]
               ])
