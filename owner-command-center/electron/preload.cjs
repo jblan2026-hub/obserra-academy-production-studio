@@ -17,6 +17,15 @@ contextBridge.exposeInMainWorld("obserraOwner", {
   rememberOwnerAI: (payload) => ipcRenderer.invoke("ownerAI:remember", payload),
   decideOwnerAIApproval: (payload) => ipcRenderer.invoke("ownerAI:decideApproval", payload),
   acknowledgeOwnerAIRecommendation: (id) => ipcRenderer.invoke("ownerAI:acknowledgeRecommendation", id),
+  getSecuritySnapshot: () => ipcRenderer.invoke("security:getSnapshot"),
+  runFullSecurityScan: () => ipcRenderer.invoke("security:scanNow"),
+  getLastSecurityScan: () => ipcRenderer.invoke("security:getLastScan"),
+  createOwnerOverride: (payload) => ipcRenderer.invoke("security:ownerOverride", payload),
+  releaseOwnerOverride: (id) => ipcRenderer.invoke("security:releaseOverride", id),
+  getTrendDashboard: () => ipcRenderer.invoke("trends:getDashboard"),
+  getTrendDomainHistory: (payload) => ipcRenderer.invoke("trends:getDomainHistory", payload),
+  compareTrendDomain: (domain) => ipcRenderer.invoke("trends:compareDomain", domain),
+  compareTrendSeries: (payload) => ipcRenderer.invoke("trends:compareSeries", payload),
   exportRecoveryBundle: (passphrase) => ipcRenderer.invoke("recovery:export", passphrase),
   importRecoveryBundle: (passphrase) => ipcRenderer.invoke("recovery:import", passphrase)
 });
