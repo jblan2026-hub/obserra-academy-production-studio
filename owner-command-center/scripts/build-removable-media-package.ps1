@@ -1,11 +1,15 @@
 [CmdletBinding()]
 param(
-    [string]$Destination = (Join-Path $PSScriptRoot "..\release-media")
+    [string]$Destination
 )
 
 $ErrorActionPreference = "Stop"
-$root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
+$root = (Resolve-Path (Join-Path $scriptDirectory "..")).Path
 $dist = Join-Path $root "dist"
+if ([string]::IsNullOrWhiteSpace($Destination)) {
+    $Destination = Join-Path $root "release-media"
+}
 $destinationPath = [System.IO.Path]::GetFullPath($Destination)
 
 Write-Host "[Obserra] Verifying owner command center..."
@@ -42,17 +46,6 @@ Copy-Item $portable.FullName (Join-Path $destinationPath $portable.Name)
 Copy-Item (Join-Path $root "INSTALL-AND-RECOVERY.md") (Join-Path $destinationPath "INSTALL-AND-RECOVERY.md")
 Copy-Item (Join-Path $root "HIGH-AVAILABILITY.md") (Join-Path $destinationPath "HIGH-AVAILABILITY.md")
 
-$hashes = Get-ChildItem $destinationPath -File | ForEach-Object {
-    $hash = Get-FileHash $_.FullName -Algorithm SHA256
-    [pscustomobject]@{
-        File = $_.Name
-        SHA256 = $hash.Hash
-        Bytes = $_.Length
-    }
-}
-$hashes | ConvertTo-Json -Depth 3 | Set-Content (Join-Path $destinationPath "SHA256SUMS.json") -Encoding UTF8
-$hashes | ForEach-Object { "{0}  {1}" -f $_.SHA256, $_.File } | Set-Content (Join-Path $destinationPath "SHA256SUMS.txt") -Encoding ASCII
-
 $installScript = @'
 [CmdletBinding()]
 param([switch]$Portable)
@@ -68,5 +61,16 @@ Start-Process -FilePath $app.FullName -Wait
 '@
 Set-Content (Join-Path $destinationPath "Install-Obserra-Command-Center.ps1") $installScript -Encoding UTF8
 
+$hashes = Get-ChildItem $destinationPath -File | ForEach-Object {
+    $hash = Get-FileHash $_.FullName -Algorithm SHA256
+    [pscustomobject]@{
+        File = $_.Name
+        SHA256 = $hash.Hash
+        Bytes = $_.Length
+    }
+}
+$hashes | ConvertTo-Json -Depth 3 | Set-Content (Join-Path $destinationPath "SHA256SUMS.json") -Encoding UTF8
+$hashes | ForEach-Object { "{0}  {1}" -f $_.SHA256, $_.File } | Set-Content (Join-Path $destinationPath "SHA256SUMS.txt") -Encoding ASCII
+
 Write-Host "[Obserra] Removable-media package created at $destinationPath"
-Write-Host "[Obserra] Includes one-click installer, portable executable, recovery guide, and SHA-256 integrity manifests."
+Write-Host "[Obserra] Includes one-click installer, portable executable, installation launcher, recovery guide, and SHA-256 integrity manifests."
