@@ -46,7 +46,7 @@ Copy-Item (Join-Path $root "INSTALL-AND-RECOVERY.md") (Join-Path $destinationPat
 Copy-Item (Join-Path $root "HIGH-AVAILABILITY.md") (Join-Path $destinationPath "HIGH-AVAILABILITY.md")
 
 $bootstrap = [ordered]@{
-    schemaVersion = "1.0"
+    schemaVersion = "1.1"
     profileId = "obserra-owner-command-center-default"
     targetHostname = $TargetHostname.ToLowerInvariant()
     generatedAt = (Get-Date).ToUniversalTime().ToString("o")
@@ -55,6 +55,7 @@ $bootstrap = [ordered]@{
         @{ id = "academy"; url = "https://www.obserrallc.com" },
         @{ id = "website"; url = "https://www.obserrallc.com" },
         @{ id = "store"; url = "https://www.obserrallc.com" },
+        @{ id = "eios"; url = "https://obserra-eios-dual-mode-module-platform.vercel.app" },
         @{ id = "stripe"; url = "https://api.stripe.com" },
         @{ id = "github"; url = "https://api.github.com" },
         @{ id = "vercel"; url = "https://api.vercel.com" },
