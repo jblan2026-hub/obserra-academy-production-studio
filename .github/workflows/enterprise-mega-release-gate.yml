@@ -3,9 +3,7 @@ name: Obserra Enterprise Mega Release Gate
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
-      - agent/owner-ai-command-center-production
+    branches: [main, agent/owner-ai-command-center-production]
     paths:
       - "app/**"
       - "courses/**"
@@ -16,8 +14,7 @@ on:
       - "package.json"
       - ".github/workflows/enterprise-mega-release-gate.yml"
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: read
@@ -81,7 +78,7 @@ jobs:
           if grep -RInE --exclude-dir=.git --exclude-dir=node_modules '(sk_live_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' .; then exit 1; fi
 
   website-production:
-    name: Website, commerce, Academy synchronization, and production health
+    name: Website, HA commerce, Academy synchronization, and production health
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -93,21 +90,21 @@ jobs:
           grep -RIlE 'catalog|course' .github app courses studio | head -n 1
           grep -RIlE 'website|sync|publication' .github app studio | head -n 1
           grep -RIlE 'disclaimer|informational|completion' courses studio app | head -n 1
-      - name: Validate production domains and security headers
+      - name: Validate production domains and security headers from real GET responses
         shell: bash
         run: |
           set -euo pipefail
           for url in https://www.obserrallc.com https://obserrallc.com; do
-            curl --fail --location --silent --show-error --max-time 30 "$url" -o /tmp/site.html
+            code=$(curl --location --silent --show-error --max-time 30 -D /tmp/headers.txt -o /tmp/site.html -w '%{http_code}' "$url")
+            test "$code" = "200"
             test -s /tmp/site.html
             grep -Eqi 'Obserra' /tmp/site.html
-            curl --fail --silent --show-error --head --max-time 30 "$url" -o /tmp/headers.txt
-            grep -Eqi 'strict-transport-security' /tmp/headers.txt
-            grep -Eqi 'content-security-policy' /tmp/headers.txt
-            grep -Eqi 'x-content-type-options' /tmp/headers.txt
-            grep -Eqi 'x-frame-options' /tmp/headers.txt
+            grep -Eqi '^strict-transport-security:' /tmp/headers.txt
+            grep -Eqi '^content-security-policy:' /tmp/headers.txt
+            grep -Eqi '^x-content-type-options:' /tmp/headers.txt
+            grep -Eqi '^x-frame-options:' /tmp/headers.txt
           done
-      - name: Validate Academy catalog and protected checkout end to end
+      - name: Validate Academy catalog and highly available Stripe checkout
         shell: bash
         run: |
           set -euo pipefail
@@ -116,9 +113,24 @@ jobs:
           grep -Eqi '60[^0-9]+(paid )?courses|numberOfItems[^0-9]+60' /tmp/academy.html
           grep -Eqi 'not a state license|not.*third.party professional certification|not for certification' /tmp/academy.html
           grep -Eqi '/api/academy/checkout\?course=' /tmp/academy.html
-          curl --silent --show-error --location --max-time 30 -o /tmp/checkout.html -w '%{url_effective}' 'https://www.obserrallc.com/api/academy/checkout?course=zero-trust-strategy' > /tmp/checkout-url.txt
-          grep -Eqi '/sign-in' /tmp/checkout-url.txt
-          grep -Eqi 'SECURE CUSTOMER ACCESS|Sign in to your Obserra account' /tmp/checkout.html
+          code=$(curl --silent --show-error --max-time 45 -D /tmp/checkout-headers.txt -o /tmp/checkout.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=zero-trust-strategy')
+          if [ "$code" -ge 500 ]; then cat /tmp/checkout.html >&2; exit 1; fi
+          test "$code" = "302" -o "$code" = "303" -o "$code" = "307" -o "$code" = "308"
+          location=$(grep -i '^location:' /tmp/checkout-headers.txt | tail -n 1 | tr -d '\r')
+          echo "$location"
+          echo "$location" | grep -Eqi '^location: https://(checkout\.stripe\.com|buy\.stripe\.com)/'
+          grep -Eqi '^x-obserra-commerce-mode: (guest-email|authenticated)' /tmp/checkout-headers.txt
+          if echo "$location" | grep -Eqi 'identity-configuration-required|checkout-unavailable|enrollment=not-ready'; then exit 1; fi
+      - name: Validate signed webhook boundary and failure containment
+        shell: bash
+        run: |
+          set -euo pipefail
+          webhook_code=$(curl --silent --show-error --max-time 30 -X POST -H 'content-type: application/json' -d '{}' -o /tmp/webhook.json -w '%{http_code}' https://www.obserrallc.com/api/webhook/stripe)
+          test "$webhook_code" = "400"
+          grep -Eqi 'Webhook not configured|Invalid webhook signature' /tmp/webhook.json
+          invalid_code=$(curl --silent --show-error --max-time 30 -D /tmp/invalid-headers.txt -o /tmp/invalid.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=not-a-real-course')
+          if [ "$invalid_code" -ge 500 ]; then cat /tmp/invalid.html >&2; exit 1; fi
+          test "$invalid_code" = "302" -o "$invalid_code" = "303" -o "$invalid_code" = "307" -o "$invalid_code" = "308"
 
   command-security:
     name: Command Center local-only and owner-control security
@@ -225,19 +237,12 @@ jobs:
   promotion:
     name: Final enterprise promotion readiness
     runs-on: ubuntu-latest
-    needs:
-      - studio-production
-      - course-governance
-      - api-security
-      - website-production
-      - command-security
-      - command-release
-      - resilience-evidence
+    needs: [studio-production, course-governance, api-security, website-production, command-security, command-release, resilience-evidence]
     steps:
       - run: |
           echo 'Academy LCMS and Production Studio: PASSED'
           echo 'Course governance and publication controls: PASSED'
-          echo 'Website, authenticated checkout handoff, and production health: PASSED'
+          echo 'Website public availability and highly available Stripe commerce: PASSED'
           echo 'Owner Command Center security and Windows release: PASSED'
           echo 'Recovery, high availability, integrity, and audit evidence: PASSED'
           echo 'Enterprise production release is operational and promotion-ready.'
