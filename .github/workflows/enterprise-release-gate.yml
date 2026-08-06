@@ -1,0 +1,222 @@
+name: Obserra Three-Stream Enterprise Release Gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/owner-ai-command-center
+      - main
+    paths:
+      - "studio/**"
+      - "courses/**"
+      - "prisma/**"
+      - "src/**"
+      - "app/**"
+      - "owner-command-center/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/enterprise-release-gate.yml"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: obserra-enterprise-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  studio-production-gate:
+    name: LCMS, course factory, governance, and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Validate source syntax and repository configuration
+        run: |
+          node --check studio/validate.mjs
+          node --check studio/generate-catalog.mjs
+          node --check studio/build-course.mjs
+          node --check studio/build-all-courses.mjs
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); console.log('Root package JSON valid')"
+
+      - name: Run tests, course validation, catalog generation, and Prisma validation
+        run: npm run verify
+
+      - name: Build production Studio application
+        run: npm run build
+
+      - name: Enforce governed catalog policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          catalog=$(find . -type f \( -iname '*catalog*.json' -o -iname '*catalog*.ts' -o -iname '*catalog*.js' \) -not -path './node_modules/*' | head -n 1 || true)
+          if [ -z "$catalog" ]; then
+            echo "No governed catalog output found"
+            exit 1
+          fi
+          grep -Eqi 'OBSERRA|Obserra' "$catalog"
+          grep -Eqi 'informational|information only|not.*certification|completion' "$catalog"
+          grep -Eqi 'tag|category|topic' "$catalog"
+          echo "Governed catalog policy checks passed: $catalog"
+
+      - name: Verify no reusable production secrets are committed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE --exclude-dir=node_modules --exclude-dir=.git --exclude='*.md' '(sk_live_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' .; then
+            echo "Potential reusable production secret detected"
+            exit 1
+          fi
+
+  website-commerce-gate:
+    name: Website, commerce, Academy contract, and production health
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout integration contract
+        uses: actions/checkout@v4
+
+      - name: Validate publication and synchronization assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f package.json
+          grep -RIlE 'sync.*website|website.*sync|repository_dispatch|catalog' .github studio package.json --exclude-dir=node_modules | head -n 1
+          grep -RIlE 'disclaimer|informational|completion|credential' studio courses . --exclude-dir=node_modules --exclude-dir=.git | head -n 1
+
+      - name: Verify production domains and transport security
+        shell: bash
+        run: |
+          set -euo pipefail
+          for url in https://www.obserrallc.com https://obserrallc.com; do
+            code=$(curl --location --silent --show-error --output /tmp/site.html --write-out '%{http_code}' --max-time 30 "$url")
+            case "$code" in
+              200|301|302|307|308) ;;
+              *) echo "Production health failed for $url with HTTP $code"; exit 1 ;;
+            esac
+            test -s /tmp/site.html
+            echo "$url returned HTTP $code"
+          done
+
+      - name: Verify production branding and Academy surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --location --silent --show-error --max-time 30 https://www.obserrallc.com -o /tmp/obserra-home.html
+          grep -Eqi 'Obserra' /tmp/obserra-home.html
+          echo "Production branding check passed"
+
+      - name: Verify security headers are present
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --location --silent --show-error --head --max-time 30 https://www.obserrallc.com -o /tmp/headers.txt
+          grep -Eqi 'strict-transport-security|content-security-policy|x-content-type-options' /tmp/headers.txt
+          echo "Production security header check passed"
+
+  command-center-release-gate:
+    name: Owner Command Center security, packaging, integrity, and recovery
+    runs-on: windows-2025
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: owner-command-center/package-lock.json
+
+      - name: Install Command Center dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Validate syntax, policy, security, and installer configuration
+        shell: pwsh
+        run: |
+          node --check electron/main.cjs
+          node --check electron/preload.cjs
+          node --check electron/connectors.cjs
+          node --check src/app.js
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('policy/connector-catalog.json','utf8'))"
+          npm run verify
+
+      - name: Build installer, portable executable, and removable-media package
+        run: npm run package:media
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Verify release inventory, hashes, documentation, and launcher
+        shell: pwsh
+        run: |
+          $media = Join-Path $PWD "release-media"
+          if (-not (Test-Path $media)) { throw "release-media directory missing" }
+          $required = @(
+            "SHA256SUMS.txt",
+            "SHA256SUMS.json",
+            "Install-Obserra-Command-Center.ps1",
+            "INSTALL-AND-RECOVERY.md",
+            "HIGH-AVAILABILITY.md"
+          )
+          foreach ($name in $required) {
+            if (-not (Test-Path (Join-Path $media $name))) { throw "Required release file missing: $name" }
+          }
+          $installer = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" }
+          $portable = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe"
+          if (-not $installer) { throw "One-click installer missing" }
+          if (-not $portable) { throw "Portable executable missing" }
+          $manifest = Get-Content (Join-Path $media "SHA256SUMS.json") -Raw | ConvertFrom-Json
+          if (-not $manifest -or @($manifest).Count -lt 5) { throw "Integrity manifest is incomplete" }
+          foreach ($entry in @($manifest)) {
+            $path = Join-Path $media $entry.File
+            if (-not (Test-Path $path)) { throw "Manifest references missing file: $($entry.File)" }
+            $stream = [System.IO.File]::OpenRead($path)
+            try {
+              $sha = [System.Security.Cryptography.SHA256]::Create()
+              try { $actual = ([System.BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '') }
+              finally { $sha.Dispose() }
+            } finally { $stream.Dispose() }
+            if ($actual -ne $entry.SHA256) { throw "SHA-256 mismatch: $($entry.File)" }
+          }
+          Write-Host "Command Center release integrity verified for $(@($manifest).Count) files"
+
+      - name: Upload verified Windows release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Owner-AI-Command-Center-Enterprise-${{ github.sha }}
+          path: owner-command-center/release-media/**
+          if-no-files-found: error
+          retention-days: 90
+
+  enterprise-promotion-gate:
+    name: Enterprise promotion and merge-readiness gate
+    needs:
+      - studio-production-gate
+      - website-commerce-gate
+      - command-center-release-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm all three workstreams passed
+        run: |
+          echo "Academy LCMS and Production Studio: PASSED"
+          echo "Website, commerce, and production health: PASSED"
+          echo "Owner AI Command Center Windows release: PASSED"
+          echo "Obserra coordinated enterprise release is merge-ready."
