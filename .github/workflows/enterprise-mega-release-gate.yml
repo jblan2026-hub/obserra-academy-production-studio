@@ -32,6 +32,8 @@ jobs:
     timeout-minutes: 45
     env:
       DATABASE_URL: postgresql://obserra_ci:obserra_ci@127.0.0.1:5432/obserra_ci
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
+      CLERK_SECRET_KEY: sk_test_ci_only_not_a_real_secret
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
