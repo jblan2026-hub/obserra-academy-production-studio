@@ -38,7 +38,7 @@ function gapForConnector(connector) {
     return {
       severity: "high",
       title: `${connector.name}: degraded`,
-      detail: `The endpoint responded with HTTP ${connector.httpStatus || "an unhealthy status"}.",
+      detail: `The endpoint responded with HTTP ${connector.httpStatus || "an unhealthy status"}.`,
       action: "Inspect the service health endpoint, identity configuration, and current deployment logs."
     };
   }
@@ -174,7 +174,7 @@ async function probeAll({ manual = false } = {}) {
     refreshBadge.classList.toggle("ok", unhealthy === 0);
     refreshBadge.classList.toggle("warn", unhealthy > 0);
     renderAll();
-  } catch (error) {
+  } catch {
     refreshBadge.textContent = "Live refresh failed";
     refreshBadge.classList.add("warn");
   } finally {
