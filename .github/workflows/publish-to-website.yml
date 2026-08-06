@@ -11,7 +11,11 @@ on:
       - ".github/workflows/publish-to-website.yml"
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: academy-catalog-publication
+  cancel-in-progress: true
 
 jobs:
   publish:
@@ -19,6 +23,8 @@ jobs:
     steps:
       - name: Checkout Studio
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.ACADEMY_STUDIO_TOKEN }}
 
       - name: Configure Node.js
         uses: actions/setup-node@v4
@@ -31,34 +37,84 @@ jobs:
       - name: Validate and regenerate approved catalog
         run: npm run verify
 
-      - name: Confirm publishable contract
+      - name: Confirm exact per-course publication contract
+        shell: bash
         run: |
           node <<'NODE'
           const fs = require('node:fs');
           const path = './catalog/academy-course-catalog.json';
+          const legalName = 'Obserra Executive Protection & Intelligence, LLC';
+          const officialLogo = '/brand/obserra-logo.png';
+
+          function minutes(value) {
+            const normalized = String(value || '').trim().toLowerCase();
+            const hours = normalized.match(/^(\d+(?:\.\d+)?)\s*hours?$/);
+            if (hours) return Math.round(Number(hours[1]) * 60);
+            const mins = normalized.match(/^(\d+)\s*min(?:ute)?s?$/);
+            if (mins) return Number(mins[1]);
+            return null;
+          }
+
           if (!fs.existsSync(path)) throw new Error('Generated Academy catalog is missing');
           const catalog = JSON.parse(fs.readFileSync(path, 'utf8'));
           if (catalog.schemaVersion !== '1.2') throw new Error('Academy catalog schemaVersion must equal 1.2');
+          if (catalog.publisher !== legalName) throw new Error(`Academy publisher must equal ${legalName}`);
+          if (catalog.officialLogo !== officialLogo) throw new Error(`Academy officialLogo must equal ${officialLogo}`);
           if (!Array.isArray(catalog.courses) || catalog.courses.length === 0) throw new Error('Academy catalog must contain at least one approved course');
+
           const ids = new Set();
           for (const course of catalog.courses) {
             if (!course.id || !course.title || !course.duration || !course.description) throw new Error(`Invalid course identity: ${course.id ?? 'unknown'}`);
             if (ids.has(course.id)) throw new Error(`Duplicate course id: ${course.id}`);
             ids.add(course.id);
-            if (!Array.isArray(course.modules) || course.modules.length === 0) throw new Error(`Course ${course.id} has no modules`);
+            if (!Array.isArray(course.modules) || course.modules.length === 0) throw new Error(`Course ${course.id} has no approved lessons`);
+            if (course.moduleCount !== course.modules.length) throw new Error(`Course ${course.id} moduleCount does not match its lesson array`);
+            const expectedMinutes = minutes(course.duration);
+            if (!expectedMinutes) throw new Error(`Course ${course.id} has an unsupported advertised duration`);
+            let actualMinutes = 0;
+            const moduleIds = new Set();
+            course.modules.forEach((module, index) => {
+              if (!module.id || moduleIds.has(module.id)) throw new Error(`Course ${course.id} has a missing or duplicate module id`);
+              moduleIds.add(module.id);
+              if (module.sequence !== index + 1) throw new Error(`Course ${course.id} has a nonsequential lesson order`);
+              if (!module.title || !module.description || !module.format) throw new Error(`Course ${course.id} lesson ${index + 1} is incomplete`);
+              const moduleMinutes = minutes(module.duration);
+              if (!moduleMinutes) throw new Error(`Course ${course.id} lesson ${index + 1} has an invalid duration`);
+              actualMinutes += moduleMinutes;
+            });
+            if (actualMinutes !== expectedMinutes) throw new Error(`Course ${course.id} lesson minutes ${actualMinutes} do not match advertised minutes ${expectedMinutes}`);
+            if (!Array.isArray(course.outcomes) || course.outcomes.length < 3) throw new Error(`Course ${course.id} has incomplete outcomes`);
             if (!course.commerce || !course.licensing || !course.completion || !course.certificate) throw new Error(`Course ${course.id} is missing governed commercial metadata`);
+            if (!(course.commerce.price > 0) || course.commerce.currency !== 'USD') throw new Error(`Course ${course.id} has invalid commerce metadata`);
             if (!['approved', 'published'].includes(course.releaseStatus)) throw new Error(`Course ${course.id} is not approved for publication`);
-            if (course.completion.certificateIssued !== true) throw new Error(`Course ${course.id} is not configured to issue completion certificates`);
+            if (course.completion.allLessonsRequired !== true || course.completion.assessmentRequired !== true || course.completion.certificateIssued !== true) throw new Error(`Course ${course.id} has invalid completion requirements`);
+            if (course.certificate.issuer !== legalName || course.certificate.verificationRequired !== true) throw new Error(`Course ${course.id} has invalid certificate issuance metadata`);
           }
-          console.log(`[Academy Studio] Publish contract passed for ${catalog.courses.length} approved course(s)`);
+          console.log(`[Academy Studio] Exact manifest publication contract passed for ${catalog.courses.length} approved course(s)`);
           NODE
 
-      - name: Notify website repository
+      - name: Commit generated approved catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "obserra-academy-bot"
+          git config user.email "academy-bot@obserrallc.com"
+          git add catalog/academy-course-catalog.json
+          if git diff --cached --quiet; then
+            echo "Approved Academy catalog is already committed"
+          else
+            git commit -m "Publish approved Academy course catalog"
+            git push origin HEAD:main
+          fi
+
+      - name: Notify Website after catalog commit
         env:
           GH_TOKEN: ${{ secrets.ACADEMY_STUDIO_TOKEN }}
-          STUDIO_SHA: ${{ github.sha }}
+        shell: bash
         run: |
+          set -euo pipefail
           test -n "$GH_TOKEN"
+          STUDIO_SHA="$(git rev-parse HEAD)"
           curl --fail-with-body --request POST \
             --header "Accept: application/vnd.github+json" \
             --header "Authorization: Bearer $GH_TOKEN" \
