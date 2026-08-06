@@ -1,0 +1,69 @@
+name: Owner Command Center Fast Gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "owner-command-center/**"
+      - "studio/**"
+      - "courses/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/owner-command-center-fast-gate.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "owner-command-center/**"
+      - "studio/**"
+      - "courses/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/owner-command-center-fast-gate.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: owner-command-center-fast-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            owner-command-center/package-lock.json
+      - name: Install Studio dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install Command Center dependencies
+        working-directory: owner-command-center
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Validate Command Center syntax
+        working-directory: owner-command-center
+        run: |
+          node --check electron/main.cjs
+          node --check electron/preload.cjs
+          node --check electron/connectors.cjs
+          node --check electron/academy-studio.cjs
+          node --check electron/academy-preview.cjs
+          node --check electron/owner-ai.cjs
+          node --check electron/discovery.cjs
+          node --check electron/threat-policy.cjs
+          node --check electron/vulnerability-scan.cjs
+          node --check electron/security-enforcement.cjs
+          node --check electron/trend-store.cjs
+          node --check src/app.js
+          node --check src/security-dashboard.js
+      - name: Run Command Center verification
+        working-directory: owner-command-center
+        run: npm run verify
+      - name: Run Studio and Command Center 500x workload
+        run: npm run verify:500x
