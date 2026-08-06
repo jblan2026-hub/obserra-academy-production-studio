@@ -26,8 +26,10 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
+    "test:70x-extension": "node studio/verify-70x-extension.mjs",
     "verify": "npm run test && npm run validate && npm run build:all && npm run catalog && npm run load:courses:check && npm run db:validate",
-    "ci": "npm run verify && npm run build"
+    "verify:70x": "npm run verify && npm run test:70x-extension",
+    "ci": "npm run verify:70x && npm run build"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
