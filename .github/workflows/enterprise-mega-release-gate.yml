@@ -10,7 +10,7 @@ on:
       - "courses/**"
       - "lib/**"
       - "prisma/**"
-      - "scripts/**"
+      - "studio/**"
       - "owner-command-center/**"
       - "package.json"
       - ".github/workflows/enterprise-mega-release-gate.yml"
@@ -30,6 +30,8 @@ jobs:
     name: Studio production, tests, database, and catalog
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      DATABASE_URL: postgresql://obserra_ci:obserra_ci@127.0.0.1:5432/obserra_ci
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -53,11 +55,11 @@ jobs:
         run: |
           set -euo pipefail
           test -d courses
-          grep -RIlE 'OBSERRA|Obserra' courses scripts | head -n 1
-          grep -RIlE 'tag|category|topic' courses scripts | head -n 1
-          grep -RIlE 'informational|information only|not for certification|not certification' courses scripts | head -n 1
-          grep -RIlE 'completion|credential|certificate of completion' courses scripts | head -n 1
-          if grep -RInE 'guaranteed certification|guaranteed compliance|certifies compliance' courses scripts; then exit 1; fi
+          grep -RIlE 'OBSERRA|Obserra' courses studio | head -n 1
+          grep -RIlE 'tag|category|topic' courses studio | head -n 1
+          grep -RIlE 'informational|information only|not for certification|not certification' courses studio | head -n 1
+          grep -RIlE 'completion|credential|certificate of completion' courses studio | head -n 1
+          if grep -RInE 'guaranteed certification|guaranteed compliance|certifies compliance' courses studio; then exit 1; fi
 
   api-security:
     name: API, authentication, tenant isolation, and secret policy
@@ -85,9 +87,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -RIlE 'catalog|course' .github app courses scripts | head -n 1
-          grep -RIlE 'website|sync|publication' .github app scripts | head -n 1
-          grep -RIlE 'disclaimer|informational|completion' courses scripts app | head -n 1
+          grep -RIlE 'catalog|course' .github app courses studio | head -n 1
+          grep -RIlE 'website|sync|publication' .github app studio | head -n 1
+          grep -RIlE 'disclaimer|informational|completion' courses studio app | head -n 1
       - name: Validate production domains and security headers
         shell: bash
         run: |
