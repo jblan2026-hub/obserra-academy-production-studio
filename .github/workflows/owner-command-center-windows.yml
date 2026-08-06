@@ -1,0 +1,115 @@
+name: Build Owner Command Center Windows Package
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/owner-ai-command-center-production
+    paths:
+      - "owner-command-center/**"
+      - ".github/workflows/owner-command-center-windows.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "owner-command-center/**"
+      - ".github/workflows/owner-command-center-windows.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: owner-command-center-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production-gate:
+    name: Validate, package, and verify Windows release
+    runs-on: windows-2025
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: owner-command-center/package-lock.json
+
+      - name: Install dependencies once
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Validate source syntax and policy JSON
+        shell: pwsh
+        run: |
+          node --check electron/main.cjs
+          node --check electron/preload.cjs
+          node --check electron/connectors.cjs
+          node --check src/app.js
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('policy/connector-catalog.json','utf8')); console.log('JSON policy validation passed')"
+
+      - name: Run local-only security and installer policy gates
+        run: npm run verify
+
+      - name: Build installer, portable executable, and removable-media bundle
+        run: npm run package:media
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Verify release contents and cryptographic integrity
+        shell: pwsh
+        run: |
+          function Get-Sha256Hex {
+            param([Parameter(Mandatory = $true)][string]$Path)
+            $stream = [System.IO.File]::OpenRead($Path)
+            try {
+              $algorithm = [System.Security.Cryptography.SHA256]::Create()
+              try { return ([BitConverter]::ToString($algorithm.ComputeHash($stream))).Replace('-','') }
+              finally { $algorithm.Dispose() }
+            } finally { $stream.Dispose() }
+          }
+
+          $media = Join-Path $PWD "release-media"
+          if (-not (Test-Path $media)) { throw "release-media directory missing" }
+
+          $installer = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" }
+          $portable = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe"
+          if (-not $installer) { throw "One-click installer missing" }
+          if (-not $portable) { throw "Portable executable missing" }
+
+          $requiredFiles = @(
+            "SHA256SUMS.txt",
+            "SHA256SUMS.json",
+            "Install-Obserra-Command-Center.ps1",
+            "INSTALL-AND-RECOVERY.md",
+            "HIGH-AVAILABILITY.md"
+          )
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path (Join-Path $media $file))) { throw "Required release file missing: $file" }
+          }
+
+          $manifest = @(Get-Content (Join-Path $media "SHA256SUMS.json") -Raw | ConvertFrom-Json)
+          if ($manifest.Count -lt 5) { throw "JSON integrity manifest is incomplete" }
+          foreach ($entry in $manifest) {
+            $filePath = Join-Path $media $entry.File
+            if (-not (Test-Path $filePath)) { throw "Manifest references missing file: $($entry.File)" }
+            $actual = Get-Sha256Hex -Path $filePath
+            if ($actual -ne $entry.SHA256) { throw "SHA-256 mismatch for $($entry.File)" }
+          }
+
+          Write-Host "Windows release gate passed."
+          Write-Host "Installer: $($installer.Name)"
+          Write-Host "Portable: $($portable.Name)"
+
+      - name: Upload verified removable-media installer bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Owner-AI-Command-Center-Windows-${{ github.sha }}
+          path: owner-command-center/release-media/**
+          if-no-files-found: error
+          retention-days: 180
