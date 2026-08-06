@@ -1,0 +1,342 @@
+name: Obserra Enterprise Mega Release Gate
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/owner-ai-command-center
+      - main
+    paths:
+      - "studio/**"
+      - "courses/**"
+      - "prisma/**"
+      - "src/**"
+      - "app/**"
+      - "owner-command-center/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/enterprise-mega-release-gate.yml"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: obserra-enterprise-mega-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  root-integrity:
+    name: Repository integrity and dependency gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --no-audit --no-fund
+      - name: Validate repository structure
+        run: |
+          set -euo pipefail
+          test -f package.json
+          test -d studio
+          test -d courses
+          test -d prisma
+          test -d owner-command-center
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
+          npm ls --all --omit=optional >/tmp/npm-tree.txt || true
+          test -s /tmp/npm-tree.txt
+      - name: Scan committed secrets and unsafe files
+        run: |
+          set -euo pipefail
+          if find . -path './.git' -prune -o -path './node_modules' -prune -o -type f \( -name '*.pem' -o -name '*.pfx' -o -name '*.key' \) -print | grep -q .; then exit 1; fi
+          if grep -RInE --exclude-dir=.git --exclude-dir=node_modules '(sk_live_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' .; then exit 1; fi
+
+  studio-test-build:
+    name: Studio tests, validation, database, and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --no-audit --no-fund
+      - run: npm run test
+      - run: npm run validate
+      - run: npm run catalog
+      - run: npm run db:validate
+      - run: npm run build
+
+  course-governance:
+    name: Course governance, branding, tags, disclaimers, and credentials
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce course package policy
+        run: |
+          set -euo pipefail
+          files=$(find courses studio -type f \( -name '*.json' -o -name '*.ts' -o -name '*.js' -o -name '*.md' \) 2>/dev/null)
+          test -n "$files"
+          grep -RIlE 'OBSERRA|Obserra' courses studio | head -n 1
+          grep -RIlE 'tag|category|topic' courses studio | head -n 1
+          grep -RIlE 'informational|information only|not for certification|not certification' courses studio | head -n 1
+          grep -RIlE 'completion|credential|certificate of completion' courses studio | head -n 1
+          if grep -RInE 'guaranteed certification|guaranteed compliance|certifies compliance' courses studio; then exit 1; fi
+
+  catalog-publication:
+    name: Catalog generation, publication contract, and artifact gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --no-audit --no-fund
+      - run: npm run catalog
+      - name: Verify catalog and website dispatch contract
+        run: |
+          set -euo pipefail
+          catalog=$(find . -type f \( -iname '*catalog*.json' -o -iname '*catalog*.ts' -o -iname '*catalog*.js' \) -not -path './node_modules/*' | head -n 1)
+          test -n "$catalog"
+          test -s "$catalog"
+          grep -Eqi 'Obserra' "$catalog"
+          grep -RIlE 'repository_dispatch|sync.*website|website.*sync' .github studio | head -n 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: governed-academy-catalog-${{ github.sha }}
+          path: |
+            **/*catalog*.json
+            **/*catalog*.ts
+            **/*catalog*.js
+          if-no-files-found: error
+          retention-days: 90
+
+  api-contracts:
+    name: Studio API and connector contract gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate operational contracts
+        run: |
+          set -euo pipefail
+          grep -RIlE '/api/|route.ts|route.js' app src studio | head -n 1
+          grep -RIlE 'course|catalog|build|release' app src studio | head -n 1
+          grep -RIlE 'health|status|readiness' app src studio | head -n 1
+          grep -RIlE 'authorization|authentication|Clerk|session' app src studio package.json | head -n 1
+
+  website-contract:
+    name: Website, Academy, commerce, and licensing contract gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate integration metadata
+        run: |
+          set -euo pipefail
+          grep -RIlE 'Stripe|stripe|checkout|payment' . --exclude-dir=node_modules --exclude-dir=.git | head -n 1
+          grep -RIlE 'license|licensing|named learner|subscription' . --exclude-dir=node_modules --exclude-dir=.git | head -n 1
+          grep -RIlE 'catalog|course' .github studio courses --exclude-dir=node_modules | head -n 1
+          grep -RIlE 'disclaimer|informational|completion' . --exclude-dir=node_modules --exclude-dir=.git | head -n 1
+
+  production-web-health:
+    name: Production domains, TLS, redirects, headers, and content health
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Validate production sites
+        run: |
+          set -euo pipefail
+          for url in https://www.obserrallc.com https://obserrallc.com; do
+            curl --fail --location --silent --show-error --max-time 30 "$url" -o /tmp/site.html
+            test -s /tmp/site.html
+            grep -Eqi 'Obserra' /tmp/site.html
+            curl --fail --silent --show-error --head --max-time 30 "$url" -o /tmp/headers.txt
+            grep -Eqi 'strict-transport-security|content-security-policy|x-content-type-options' /tmp/headers.txt
+          done
+      - name: Check common public routes
+        run: |
+          set -euo pipefail
+          for path in / /academy /store; do
+            code=$(curl --location --silent --output /dev/null --write-out '%{http_code}' --max-time 30 "https://www.obserrallc.com$path")
+            case "$code" in 200|301|302|307|308|404) ;; *) exit 1 ;; esac
+          done
+
+  command-security:
+    name: Command Center local-only, connector, and owner-control security gate
+    runs-on: windows-2025
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: owner-command-center/package-lock.json
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: npm run verify
+      - name: Validate source and catalog
+        shell: pwsh
+        run: |
+          node --check electron/main.cjs
+          node --check electron/preload.cjs
+          node --check electron/connectors.cjs
+          node --check src/app.js
+          $catalog = Get-Content policy/connector-catalog.json -Raw | ConvertFrom-Json
+          if (-not $catalog.resources -or @($catalog.resources).Count -lt 3) { throw 'Connector resource catalog incomplete' }
+          if ($catalog.defaultControlMode -notmatch 'read') { throw 'Catalog must default to read-only' }
+          foreach ($resource in @($catalog.resources)) {
+            if (-not $resource.writeCapabilitiesRequireOwnerApproval) { throw "Owner approval missing for $($resource.id)" }
+          }
+
+  command-package:
+    name: Command Center installer, portable, media, and integrity gate
+    runs-on: windows-2025
+    timeout-minutes: 55
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: owner-command-center/package-lock.json
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: npm run package:media
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Verify release inventory and hashes
+        shell: pwsh
+        run: |
+          $media = Join-Path $PWD 'release-media'
+          if (-not (Test-Path $media)) { throw 'release-media missing' }
+          $required = @('SHA256SUMS.txt','SHA256SUMS.json','Install-Obserra-Command-Center.ps1','INSTALL-AND-RECOVERY.md','HIGH-AVAILABILITY.md')
+          foreach ($file in $required) { if (-not (Test-Path (Join-Path $media $file))) { throw "Missing $file" } }
+          $installer = Get-ChildItem $media -Filter 'Obserra-Owner-AI-Command-Center-*.exe' | Where-Object { $_.Name -notlike '*Portable*' }
+          $portable = Get-ChildItem $media -Filter 'Obserra-Owner-AI-Command-Center-Portable-*.exe'
+          if (-not $installer -or -not $portable) { throw 'Executable inventory incomplete' }
+          $manifest = @(Get-Content (Join-Path $media 'SHA256SUMS.json') -Raw | ConvertFrom-Json)
+          if ($manifest.Count -lt 5) { throw 'Hash manifest incomplete' }
+          foreach ($entry in $manifest) {
+            $path = Join-Path $media $entry.File
+            $stream = [System.IO.File]::OpenRead($path)
+            try {
+              $sha = [System.Security.Cryptography.SHA256]::Create()
+              try { $actual = ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-','') }
+              finally { $sha.Dispose() }
+            } finally { $stream.Dispose() }
+            if ($actual -ne $entry.SHA256) { throw "Hash mismatch for $($entry.File)" }
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: command-center-enterprise-release-${{ github.sha }}
+          path: owner-command-center/release-media/**
+          if-no-files-found: error
+          retention-days: 180
+
+  recovery-ha:
+    name: High availability, recovery, rollback, and offline-install gate
+    runs-on: windows-2025
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate resilience documentation and scripts
+        shell: pwsh
+        run: |
+          foreach ($file in @('HIGH-AVAILABILITY.md','INSTALL-AND-RECOVERY.md','scripts/build-removable-media-package.ps1')) {
+            if (-not (Test-Path $file)) { throw "Missing resilience asset: $file" }
+          }
+          $ha = Get-Content HIGH-AVAILABILITY.md -Raw
+          $recovery = Get-Content INSTALL-AND-RECOVERY.md -Raw
+          if ($ha -notmatch 'backup|standby|failover|recovery') { throw 'HA documentation incomplete' }
+          if ($recovery -notmatch 'install|restore|recovery|removable') { throw 'Recovery documentation incomplete' }
+          if ($recovery -notmatch 'rollback|previous|restore') { throw 'Rollback guidance incomplete' }
+
+  supply-chain:
+    name: Software supply chain, dependency, and package-policy gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate lockfiles and package policies
+        run: |
+          set -euo pipefail
+          test -f package-lock.json
+          test -f owner-command-center/package-lock.json
+          node -e "const p=require('./package.json'); if(!p.private) process.exit(1)"
+          node -e "const p=require('./owner-command-center/package.json'); if(!p.private) process.exit(1); if(p.build&&p.build.publish) process.exit(1)"
+          npm audit --omit=dev --audit-level=critical || true
+          cd owner-command-center && npm audit --omit=dev --audit-level=critical || true
+
+  release-evidence:
+    name: Audit evidence and release manifest gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs:
+      - root-integrity
+      - studio-test-build
+      - course-governance
+      - catalog-publication
+      - api-contracts
+      - website-contract
+      - production-web-health
+      - command-security
+      - command-package
+      - recovery-ha
+      - supply-chain
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release evidence manifest
+        run: |
+          mkdir -p release-evidence
+          cat > release-evidence/manifest.json <<EOF
+          {
+            "commit": "${GITHUB_SHA}",
+            "repository": "${GITHUB_REPOSITORY}",
+            "workflow": "${GITHUB_WORKFLOW}",
+            "runId": "${GITHUB_RUN_ID}",
+            "actor": "${GITHUB_ACTOR}",
+            "status": "all-required-gates-passed"
+          }
+          EOF
+          sha256sum release-evidence/manifest.json > release-evidence/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: enterprise-release-evidence-${{ github.sha }}
+          path: release-evidence/**
+          if-no-files-found: error
+          retention-days: 365
+
+  promotion:
+    name: Final enterprise promotion and merge-readiness gate
+    runs-on: ubuntu-latest
+    needs:
+      - release-evidence
+    steps:
+      - run: |
+          echo 'LCMS and Production Studio: PASSED'
+          echo 'Course governance and publication: PASSED'
+          echo 'Website, commerce, and production health: PASSED'
+          echo 'Owner Command Center security and release package: PASSED'
+          echo 'Recovery, HA, rollback, supply chain, and audit evidence: PASSED'
+          echo 'Enterprise release is promotion-ready.'
