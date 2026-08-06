@@ -1,1 +1,149 @@
-placeholder
+name: Obserra Production Contract Release Gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "courses/**"
+      - "studio/**"
+      - "owner-command-center/**"
+      - ".github/workflows/production-contract-release-gate.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  academy-studio:
+    name: Academy Studio production integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DATABASE_URL: postgresql://obserra_ci:obserra_ci@127.0.0.1:5432/obserra_ci
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
+      CLERK_SECRET_KEY: sk_test_ci_only_not_a_real_secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run test
+      - run: npm run validate
+      - run: npm run catalog
+      - run: npm run db:validate
+      - run: npm run build
+
+  live-commerce-contract:
+    name: Live website commerce and fulfillment contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify public routes and security headers
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in / /academy /contact; do
+            code=$(curl --location --silent --show-error --max-time 30 -D /tmp/headers.txt -o /tmp/body.html -w '%{http_code}' "https://www.obserrallc.com${path}")
+            test "$code" = "200"
+            test -s /tmp/body.html
+            grep -Eqi '^strict-transport-security:' /tmp/headers.txt
+            grep -Eqi '^content-security-policy:' /tmp/headers.txt
+            grep -Eqi '^x-content-type-options:' /tmp/headers.txt
+            grep -Eqi '^x-frame-options:' /tmp/headers.txt
+          done
+      - name: Verify sanitized commerce health contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 -D /tmp/health-headers.txt https://www.obserrallc.com/api/academy/commerce-health -o /tmp/health.json
+          python - <<'PY'
+          import json
+          with open('/tmp/health.json', encoding='utf-8') as handle:
+              data = json.load(handle)
+          assert data['contract'] == 'academy-commerce-health-v1'
+          assert data['operational'] is True
+          assert data['paymentProvider'] == 'stripe'
+          assert data['webhookVerification'] == 'required'
+          assert data['claimPolicy'] == 'purchaser-email-match-v1'
+          assert set(data['checkoutModes']) == {'authenticated', 'guest-email'}
+          assert data['fulfillment']['guest'] == 'paid-pending-account-claim'
+          assert data['fulfillment']['idempotencyKey'] == 'stripe-checkout-session-id'
+          PY
+          grep -Eqi '^x-obserra-commerce-contract: academy-commerce-health-v1' /tmp/health-headers.txt
+          grep -Eqi '^x-obserra-claim-policy: purchaser-email-match-v1' /tmp/health-headers.txt
+      - name: Verify live Stripe redirect and claim policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl --silent --show-error --max-time 45 -D /tmp/checkout-headers.txt -o /tmp/checkout-body.txt -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=ai-ready-workforce')
+          test "$code" = "302" -o "$code" = "303" -o "$code" = "307" -o "$code" = "308"
+          grep -Eqi '^location: https://(checkout\.stripe\.com|buy\.stripe\.com)/' /tmp/checkout-headers.txt
+          grep -Eqi '^x-obserra-commerce-mode: (guest-email|authenticated)' /tmp/checkout-headers.txt
+          grep -Eqi '^x-obserra-claim-policy: purchaser-email-match-v1' /tmp/checkout-headers.txt
+      - name: Verify webhook signature enforcement and invalid-course containment
+        shell: bash
+        run: |
+          set -euo pipefail
+          webhook_code=$(curl --silent --show-error --max-time 30 -X POST -H 'content-type: application/json' -d '{}' -o /tmp/webhook.json -w '%{http_code}' https://www.obserrallc.com/api/webhook/stripe)
+          test "$webhook_code" = "400"
+          grep -Eqi 'Webhook not configured|Invalid webhook signature' /tmp/webhook.json
+          invalid_code=$(curl --silent --show-error --max-time 30 -o /tmp/invalid.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=not-a-real-course')
+          test "$invalid_code" -lt 500
+
+  command-center-release:
+    name: Owner Command Center Windows and removable-media release
+    runs-on: windows-2025
+    timeout-minutes: 65
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: npm run verify
+      - run: npm run package:media
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - name: Verify release inventory and hashes
+        shell: pwsh
+        run: |
+          $media = Join-Path $PWD 'release-media'
+          $required = @('SHA256SUMS.txt','SHA256SUMS.json','Install-Obserra-Command-Center.ps1','INSTALL-AND-RECOVERY.md','HIGH-AVAILABILITY.md')
+          foreach ($file in $required) { if (-not (Test-Path (Join-Path $media $file))) { throw "Missing $file" } }
+          $installer = Get-ChildItem $media -Filter 'Obserra-Owner-AI-Command-Center-*.exe' | Where-Object { $_.Name -notlike '*Portable*' }
+          $portable = Get-ChildItem $media -Filter 'Obserra-Owner-AI-Command-Center-Portable-*.exe'
+          if (-not $installer -or -not $portable) { throw 'Executable inventory incomplete' }
+          $manifest = @(Get-Content (Join-Path $media 'SHA256SUMS.json') -Raw | ConvertFrom-Json)
+          foreach ($entry in $manifest) {
+            $path = Join-Path $media $entry.File
+            $actual = (Get-FileHash -Algorithm SHA256 -Path $path).Hash
+            if ($actual -ne $entry.SHA256) { throw "Hash mismatch for $($entry.File)" }
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-contract-command-center-${{ github.sha }}
+          path: owner-command-center/release-media/**
+          if-no-files-found: error
+          retention-days: 180
+
+  promotion:
+    name: Cross-project production promotion
+    runs-on: ubuntu-latest
+    needs: [academy-studio, live-commerce-contract, command-center-release]
+    steps:
+      - run: |
+          echo 'Academy Studio build and governed catalog: PASSED'
+          echo 'Live website, Stripe commerce, webhook enforcement, and claim policy: PASSED'
+          echo 'Owner Command Center Windows and removable-media release: PASSED'
+          echo 'Cross-project production contract is promotion-ready.'
