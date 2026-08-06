@@ -23,6 +23,12 @@ for (const channel of ["remediation:getSnapshot", "remediation:propose", "remedi
 }
 requirePattern(wrapper, /require\("\.\/main\.cjs"\)/, "existing Command Center runtime must remain active");
 requirePattern(wrapper, /createRemediationQueue/, "durable remediation queue must be instantiated");
+requirePattern(wrapper, /security\.lastScan/, "remediation must be bound to the latest verified security scan");
+requirePattern(wrapper, /resolveVerifiedFinding/, "verified findings must be resolved from stored evidence");
+requirePattern(wrapper, /knownBad\s*!==\s*true/, "unverified findings must be rejected");
+requirePattern(wrapper, /high[\s\S]*critical/, "only high or critical verified findings may be remediated");
+requirePattern(wrapper, /mappings do not match/, "requested mappings must match verified scan evidence");
+requirePattern(wrapper, /severity does not match/, "requested severity must match verified scan evidence");
 
 for (const method of ["getRemediationSnapshot", "proposeRemediation", "decideRemediation", "executeRemediation"]) {
   requirePattern(preload, new RegExp(`${method}\\s*:`), `sandbox bridge must expose ${method}`);
@@ -49,4 +55,4 @@ requirePattern(engine, /branch[\s\S]*-D/, "failed remediation must remove its is
 requirePattern(engine, /forcePushAllowed:\s*false/, "force pushes must remain prohibited");
 requirePattern(engine, /automaticProductionDeploymentAllowed:\s*false/, "automatic production deployment must remain prohibited");
 
-console.log("[Owner Command Center] Governed remediation runtime, owner controls, draft PR, and rollback verification passed.");
+console.log("[Owner Command Center] Verified-scan-bound remediation runtime, owner controls, draft PR, and rollback verification passed.");
