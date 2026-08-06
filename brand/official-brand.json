@@ -44,6 +44,28 @@
     "defaultClassification": "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.",
     "publicReleaseRequiresApproval": true
   },
+  "disclaimer": {
+    "required": true,
+    "type": "informational-use-only",
+    "shortText": "For educational and informational purposes only.",
+    "fullText": "This course and its related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC for educational and informational purposes only. They do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, or professional-services relationship; and should not be relied upon as a substitute for qualified professional judgment, applicable law, contractual requirements, authoritative standards, or organization-specific policies. Learners and organizations are responsible for independently evaluating applicability, obtaining appropriate professional advice, and making decisions based on their specific facts, risks, obligations, and operating environment.",
+    "requiredPlacements": [
+      "course-manifest",
+      "instructor-manuscript-front-matter",
+      "instructor-manuscript-footer",
+      "learner-guide-front-matter",
+      "learner-guide-footer",
+      "workbook-front-matter",
+      "workbook-footer",
+      "assessment-bank",
+      "answer-key",
+      "visual-brief",
+      "catalog-record",
+      "lcms-database-record",
+      "certificate-metadata",
+      "video-opening-or-description"
+    ]
+  },
   "requiredCourseTags": [
     "industry",
     "domain",
