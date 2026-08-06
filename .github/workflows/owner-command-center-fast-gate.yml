@@ -31,7 +31,7 @@ concurrency:
 jobs:
   fast-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -71,7 +71,5 @@ jobs:
       - name: Run Command Center governance and packaging verification
         working-directory: owner-command-center
         run: npm run verify
-      - name: Run Studio and Command Center 500x workload
-        run: npm run verify:500x
-      - name: Run governed 1000x remediation workload
-        run: npm run verify:1000x
+      - name: Run complete Studio and Command Center resilience suite
+        run: npm run verify:2000x
