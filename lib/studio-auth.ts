@@ -6,6 +6,8 @@ export type StudioPermission =
   | "build:start"
   | "release:approve"
   | "source:collect"
+  | "ai:execute"
+  | "prompt:manage"
   | "admin:manage";
 
 export type StudioPrincipal = {
@@ -16,10 +18,24 @@ export type StudioPrincipal = {
 };
 
 const rolePermissions: Record<string, ReadonlySet<StudioPermission>> = {
-  "org:admin": new Set(["course:create", "build:start", "release:approve", "source:collect", "admin:manage"]),
-  "org:executive": new Set(["course:create", "build:start", "release:approve", "source:collect"]),
+  "org:admin": new Set([
+    "course:create",
+    "build:start",
+    "release:approve",
+    "source:collect",
+    "ai:execute",
+    "prompt:manage",
+    "admin:manage",
+  ]),
+  "org:executive": new Set([
+    "course:create",
+    "build:start",
+    "release:approve",
+    "source:collect",
+    "ai:execute",
+  ]),
   "org:publisher": new Set(["build:start", "release:approve"]),
-  "org:author": new Set(["course:create", "build:start", "source:collect"]),
+  "org:author": new Set(["course:create", "build:start", "source:collect", "ai:execute"]),
   "org:reviewer": new Set([]),
 };
 
