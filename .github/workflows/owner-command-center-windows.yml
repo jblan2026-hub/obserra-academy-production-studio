@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - agent/owner-ai-command-center-production
     paths:
       - "owner-command-center/**"
