@@ -1,41 +1,36 @@
+import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { expertPanel, metrics, productionQueue, sourceSystems } from "@/lib/studio-data";
 
 function MetricCard({ label, value, detail }: { label: string; value: string | number; detail: string }) {
-  return (
-    <article className="metric-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{detail}</small>
-    </article>
-  );
+  return <article className="metric-card"><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>;
 }
 
-export default function StudioDashboard() {
+export default async function StudioDashboard() {
+  const { userId, orgId, orgRole } = await auth();
+  if (!userId) redirect("/sign-in");
+  if (!orgId) redirect("/select-organization");
+
   return (
     <main className="studio-shell">
       <aside className="studio-nav">
-        <div className="brand-block">
-          <span>OBSERRA</span>
-          <strong>ACADEMY STUDIO</strong>
-          <small>Enterprise LCMS</small>
+        <div className="brand-block"><span>OBSERRA</span><strong>ACADEMY STUDIO</strong><small>Enterprise LCMS</small></div>
+        <div className="identity-block">
+          <OrganizationSwitcher hidePersonal afterSelectOrganizationUrl="/" afterCreateOrganizationUrl="/" />
+          <div><UserButton /><small>{orgRole ?? "organization member"}</small></div>
         </div>
         <nav aria-label="Studio navigation">
-          {[
-            "Mission Control", "Production Queue", "Expert Panel", "Source Intelligence",
-            "Course Authoring", "Visual Production", "Video Production", "Quality Gates",
-            "Review and Approval", "Publishing Center", "Analytics", "Administration"
-          ].map((item, index) => <a key={item} className={index === 0 ? "active" : ""} href={`#${item.toLowerCase().replaceAll(" ", "-")}`}>{item}</a>)}
+          {["Mission Control", "Production Queue", "Expert Panel", "Source Intelligence", "Course Authoring", "Visual Production", "Video Production", "Quality Gates", "Review and Approval", "Publishing Center", "Analytics", "Administration"].map((item, index) => (
+            <a key={item} className={index === 0 ? "active" : ""} href={`#${item.toLowerCase().replaceAll(" ", "-")}`}>{item}</a>
+          ))}
         </nav>
-        <div className="nav-status"><span className="status-dot" />Staging environment operational</div>
+        <div className="nav-status"><span className="status-dot" />Organization scoped session active</div>
       </aside>
 
       <section className="studio-main">
         <header className="studio-header">
-          <div>
-            <p className="eyebrow">EXECUTIVE MISSION CONTROL</p>
-            <h1>Academy production, governance, and publishing intelligence.</h1>
-            <p>One governed workspace for course authoring, expert review, media production, compliance validation, packaging, publication, licensing, certificates, and analytics.</p>
-          </div>
+          <div><p className="eyebrow">EXECUTIVE MISSION CONTROL</p><h1>Academy production, governance, and publishing intelligence.</h1><p>One governed workspace for course authoring, expert review, media production, compliance validation, packaging, publication, licensing, certificates, and analytics.</p></div>
           <div className="header-actions"><button>Collect sources</button><button className="primary">Create course</button></div>
         </header>
 
@@ -52,41 +47,16 @@ export default function StudioDashboard() {
           <div className="panel-heading"><div><p className="eyebrow">PRODUCTION QUEUE</p><h2>Course lifecycle command view</h2></div><button>View all courses</button></div>
           <div className="queue-table">
             <div className="queue-row queue-head"><span>Course</span><span>Stage</span><span>Quality</span><span>Lead expert</span><span>Updated</span></div>
-            {productionQueue.map((course) => (
-              <div className="queue-row" key={course.id}>
-                <strong>{course.title}</strong>
-                <span><b className={`stage stage-${course.status.toLowerCase()}`}>{course.status}</b></span>
-                <span>{course.quality}%</span>
-                <span>{course.owner}</span>
-                <span>{course.updated}</span>
-              </div>
-            ))}
+            {productionQueue.map((course) => <div className="queue-row" key={course.id}><strong>{course.title}</strong><span><b className={`stage stage-${course.status.toLowerCase()}`}>{course.status}</b></span><span>{course.quality}%</span><span>{course.owner}</span><span>{course.updated}</span></div>)}
           </div>
         </section>
 
         <div className="two-column">
-          <section className="panel" id="expert-panel">
-            <div className="panel-heading"><div><p className="eyebrow">AI EXPERT PANEL</p><h2>Structured contributors</h2></div><span>{expertPanel.length} active</span></div>
-            <div className="expert-grid">{expertPanel.map((expert) => <span key={expert}>{expert}</span>)}</div>
-          </section>
-
-          <section className="panel" id="source-intelligence">
-            <div className="panel-heading"><div><p className="eyebrow">SOURCE INTELLIGENCE</p><h2>Authoritative collection status</h2></div><button>Run collection</button></div>
-            <div className="source-list">
-              {sourceSystems.map((source) => (
-                <article key={source.name}>
-                  <div><strong>{source.name}</strong><small>Collected {source.lastCollection}</small></div>
-                  <div><span className={source.status === "Healthy" ? "healthy" : "review"}>{source.status}</span><small>{source.impactedCourses} impacted courses</small></div>
-                </article>
-              ))}
-            </div>
-          </section>
+          <section className="panel" id="expert-panel"><div className="panel-heading"><div><p className="eyebrow">AI EXPERT PANEL</p><h2>Structured contributors</h2></div><span>{expertPanel.length} active</span></div><div className="expert-grid">{expertPanel.map((expert) => <span key={expert}>{expert}</span>)}</div></section>
+          <section className="panel" id="source-intelligence"><div className="panel-heading"><div><p className="eyebrow">SOURCE INTELLIGENCE</p><h2>Authoritative collection status</h2></div><button>Run collection</button></div><div className="source-list">{sourceSystems.map((source) => <article key={source.name}><div><strong>{source.name}</strong><small>Collected {source.lastCollection}</small></div><div><span className={source.status === "Healthy" ? "healthy" : "review"}>{source.status}</span><small>{source.impactedCourses} impacted courses</small></div></article>)}</div></section>
         </div>
 
-        <section className="panel release-panel">
-          <div><p className="eyebrow">CONTROLLED PUBLISHING</p><h2>One approved action, governed downstream execution.</h2><p>Approved releases will synchronize Academy delivery, website catalog, marketplace commerce, licensing, learner entitlements, certificates, SEO, deployment, and administrator notifications.</p></div>
-          <div className="release-flow"><span>Approve</span><b>→</b><span>Package</span><b>→</b><span>Publish</span><b>→</b><span>Synchronize</span><b>→</b><span>Verify</span></div>
-        </section>
+        <section className="panel release-panel"><div><p className="eyebrow">CONTROLLED PUBLISHING</p><h2>One approved action, governed downstream execution.</h2><p>Approved releases synchronize Academy delivery, website catalog, marketplace commerce, licensing, learner entitlements, certificates, SEO, deployment, and administrator notifications.</p></div><div className="release-flow"><span>Approve</span><b>→</b><span>Package</span><b>→</b><span>Publish</span><b>→</b><span>Synchronize</span><b>→</b><span>Verify</span></div></section>
       </section>
     </main>
   );
