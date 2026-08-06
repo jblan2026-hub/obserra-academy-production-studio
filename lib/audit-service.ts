@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 type AuditInput = {
@@ -9,8 +10,14 @@ type AuditInput = {
   resourceId?: string;
   correlationId?: string;
   outcome: "success" | "failure" | "denied";
-  metadata?: Record<string, unknown>;
+  metadata?: unknown;
 };
+
+function normalizeMetadata(metadata: unknown): Prisma.InputJsonValue | undefined {
+  if (metadata === undefined) return undefined;
+
+  return JSON.parse(JSON.stringify(metadata)) as Prisma.InputJsonValue;
+}
 
 export async function recordAuditEvent(input: AuditInput): Promise<void> {
   if (!process.env.DATABASE_URL) return;
@@ -26,7 +33,7 @@ export async function recordAuditEvent(input: AuditInput): Promise<void> {
         resourceId: input.resourceId,
         correlationId: input.correlationId,
         outcome: input.outcome,
-        metadata: input.metadata,
+        metadata: normalizeMetadata(input.metadata),
       },
     });
   } catch (error) {
