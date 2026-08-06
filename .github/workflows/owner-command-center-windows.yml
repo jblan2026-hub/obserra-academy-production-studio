@@ -8,12 +8,20 @@ on:
       - agent/owner-ai-command-center-production
     paths:
       - "owner-command-center/**"
+      - "studio/**"
+      - "courses/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/owner-command-center-windows.yml"
   pull_request:
     branches:
       - main
     paths:
       - "owner-command-center/**"
+      - "studio/**"
+      - "courses/**"
+      - "package.json"
+      - "package-lock.json"
       - ".github/workflows/owner-command-center-windows.yml"
 
 permissions:
@@ -27,7 +35,7 @@ jobs:
   production-gate:
     name: Validate, package, and verify Windows release
     runs-on: windows-2025
-    timeout-minutes: 60
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: owner-command-center
@@ -39,9 +47,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            owner-command-center/package-lock.json
 
-      - name: Install dependencies once
-        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install Studio dependencies
+        working-directory: .
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install Command Center dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Validate source syntax and policy JSON
         shell: pwsh
@@ -49,11 +65,17 @@ jobs:
           node --check electron/main.cjs
           node --check electron/preload.cjs
           node --check electron/connectors.cjs
+          node --check electron/academy-studio.cjs
+          node --check electron/academy-preview.cjs
           node --check src/app.js
           node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('policy/connector-catalog.json','utf8')); console.log('JSON policy validation passed')"
 
-      - name: Run local-only security and installer policy gates
+      - name: Run Command Center security and Academy Operations gates
         run: npm run verify
+
+      - name: Validate Academy Studio production contracts
+        working-directory: .
+        run: npm run test:70x-extension
 
       - name: Build installer, portable executable, and removable-media bundle
         shell: pwsh
