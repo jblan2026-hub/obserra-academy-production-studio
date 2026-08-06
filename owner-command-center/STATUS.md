@@ -30,4 +30,10 @@ Current development status: active.
 - Commerce and licensing status
 - Security and audit events
 
+## Enterprise release execution
+
+The active branch is now validated through the full enterprise mega release gate. The coordinated gate executes repository integrity, Studio production build, course governance, catalog publication, API contracts, website and commerce contracts, production web health, Command Center security, Windows packaging, recovery and high availability, software supply chain, release evidence, and final promotion readiness.
+
+Latest coordinated execution trigger: 2026-08-05 22:18 ET.
+
 This package remains isolated from the public Studio application and must never be included in a cloud deployment artifact.
