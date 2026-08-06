@@ -1,4 +1,4 @@
-name: Obserra 20x Enterprise Production Gate
+name: Obserra 40x Enterprise Production Gate
 
 on:
   workflow_dispatch:
@@ -20,14 +20,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: obserra-20x-production-${{ github.ref }}
+  group: obserra-40x-production-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  academy-studio:
-    name: Academy Studio tests, schema, governed sources, and production build
+  academy-quality:
+    name: Academy tests, validation, schema, and production build
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 55
     env:
       DATABASE_URL: postgresql://obserra_ci:obserra_ci@127.0.0.1:5432/obserra_ci
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
@@ -43,11 +43,19 @@ jobs:
       - run: npm run catalog
       - run: npm run db:validate
       - run: npm run build
-      - name: Validate every governed Studio source manifest
+
+  academy-governance:
+    name: Governed course sources, branding, taxonomy, and claims
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate every governed Studio source
         shell: bash
         run: |
           set -euo pipefail
           test -d courses
+          test -d studio
           source_count=$(find courses -type f | wc -l | tr -d ' ')
           test "$source_count" -ge 1
           grep -RIlE 'OBSERRA|Obserra' courses studio | head -n 1
@@ -56,26 +64,73 @@ jobs:
           grep -RIlE 'informational|not for certification|not a state license' courses studio | head -n 1
           if grep -RInE 'guaranteed certification|guaranteed compliance|certifies compliance' courses studio; then exit 1; fi
 
-  website-public-and-brand:
-    name: Public website, legal brand, 60 course publication, routes, and headers
+  repository-security:
+    name: Repository secrets, private keys, and executable policy
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
     steps:
-      - name: Validate domains and critical routes
+      - uses: actions/checkout@v4
+      - name: Reject committed credentials and private keys
         shell: bash
         run: |
           set -euo pipefail
-          for url in https://www.obserrallc.com/ https://obserrallc.com/ https://www.obserrallc.com/academy https://www.obserrallc.com/contact https://www.obserrallc.com/apps; do
+          if find . -path './.git' -prune -o -path './node_modules' -prune -o -type f \( -name '*.pem' -o -name '*.pfx' -o -name '*.key' \) -print | grep -q .; then exit 1; fi
+          if grep -RInE --exclude-dir=.git --exclude-dir=node_modules '(sk_live_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' .; then exit 1; fi
+          test -s package.json
+          test -s prisma/schema.prisma
+
+  website-route-matrix:
+    name: Production domains, critical routes, content, and redirect matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Validate public route matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          for url in \
+            https://www.obserrallc.com/ \
+            https://obserrallc.com/ \
+            https://www.obserrallc.com/academy \
+            https://www.obserrallc.com/contact \
+            https://www.obserrallc.com/apps; do
             code=$(curl --location --silent --show-error --max-time 30 -D /tmp/headers.txt -o /tmp/body.html -w '%{http_code}' "$url")
             test "$code" = "200"
             test -s /tmp/body.html
             grep -Eqi 'Obserra' /tmp/body.html
+          done
+      - name: Validate canonical domain redirect behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl --silent --show-error --max-time 30 -D /tmp/root-headers.txt -o /dev/null -w '%{http_code}' https://obserrallc.com/)
+          case "$code" in 200|301|302|307|308) ;; *) exit 1 ;; esac
+
+  website-security-headers:
+    name: Production transport and browser security controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Validate headers on representative routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in / /academy /contact /api/academy/commerce-health; do
+            curl --silent --show-error --max-time 30 -D /tmp/headers.txt -o /dev/null "https://www.obserrallc.com${path}"
             grep -Eqi '^strict-transport-security:' /tmp/headers.txt
             grep -Eqi '^content-security-policy:' /tmp/headers.txt
-            grep -Eqi '^x-content-type-options:' /tmp/headers.txt
-            grep -Eqi '^x-frame-options:' /tmp/headers.txt
+            grep -Eqi '^x-content-type-options: nosniff' /tmp/headers.txt
+            grep -Eqi '^x-frame-options: (DENY|SAMEORIGIN)' /tmp/headers.txt
+            grep -Eqi '^referrer-policy:' /tmp/headers.txt
+            grep -Eqi '^permissions-policy:' /tmp/headers.txt
           done
-      - name: Validate legal name and exactly 60 published courses
+
+  legal-brand-and-catalog:
+    name: Full legal company name, Academy disclaimers, and 60 course publication
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Validate public legal and catalog evidence
         shell: bash
         run: |
           set -euo pipefail
@@ -85,12 +140,12 @@ jobs:
           grep -Eqi 'not a state license|not.*third.party professional certification|not for certification' /tmp/academy.html
           grep -Eqi '/api/academy/checkout\?course=' /tmp/academy.html
 
-  live-commerce-contract:
-    name: Live Stripe commerce, fulfillment contract, and claim security
+  commerce-contract:
+    name: Live Stripe readiness, fulfillment states, and claim policy
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - name: Verify production commerce contract
+      - name: Validate sanitized commerce health contract
         shell: bash
         run: |
           set -euo pipefail
@@ -112,27 +167,51 @@ jobs:
           PY
           grep -Eqi '^x-obserra-commerce-contract: academy-commerce-health-v1' /tmp/health-headers.txt
           grep -Eqi '^x-obserra-claim-policy: purchaser-email-match-v1' /tmp/health-headers.txt
-      - name: Verify governed Stripe checkout
+
+  commerce-checkout-matrix:
+    name: Governed Stripe checkout and invalid course containment
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Validate multiple governed course checkout paths
         shell: bash
         run: |
           set -euo pipefail
-          code=$(curl --silent --show-error --max-time 45 -D /tmp/checkout-headers.txt -o /tmp/checkout-body.txt -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=ai-ready-workforce')
-          case "$code" in 302|303|307|308) ;; *) exit 1 ;; esac
-          grep -Eqi '^location: https://(checkout\.stripe\.com|buy\.stripe\.com)/' /tmp/checkout-headers.txt
-          grep -Eqi '^x-obserra-commerce-mode: (guest-email|authenticated)' /tmp/checkout-headers.txt
-          grep -Eqi '^x-obserra-claim-policy: purchaser-email-match-v1' /tmp/checkout-headers.txt
-      - name: Verify webhook enforcement and invalid course containment
+          for course in ai-ready-workforce zero-trust-strategy; do
+            code=$(curl --silent --show-error --max-time 45 -D /tmp/checkout-headers.txt -o /tmp/checkout-body.txt -w '%{http_code}' "https://www.obserrallc.com/api/academy/checkout?course=${course}")
+            case "$code" in 302|303|307|308) ;; *) cat /tmp/checkout-body.txt >&2; exit 1 ;; esac
+            grep -Eqi '^location: https://(checkout\.stripe\.com|buy\.stripe\.com)/' /tmp/checkout-headers.txt
+            grep -Eqi '^x-obserra-commerce-mode: (guest-email|authenticated)' /tmp/checkout-headers.txt
+            grep -Eqi '^x-obserra-claim-policy: purchaser-email-match-v1' /tmp/checkout-headers.txt
+          done
+      - name: Validate invalid course containment
+        shell: bash
+        run: |
+          set -euo pipefail
+          invalid_code=$(curl --silent --show-error --max-time 30 -D /tmp/invalid-headers.txt -o /tmp/invalid.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=not-a-real-course')
+          test "$invalid_code" -lt 500
+
+  webhook-boundary:
+    name: Stripe webhook signature enforcement and method containment
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Reject unsigned webhook requests
         shell: bash
         run: |
           set -euo pipefail
           webhook_code=$(curl --silent --show-error --max-time 30 -X POST -H 'content-type: application/json' -d '{}' -o /tmp/webhook.json -w '%{http_code}' https://www.obserrallc.com/api/webhook/stripe)
           test "$webhook_code" = "400"
           grep -Eqi 'Webhook not configured|Invalid webhook signature' /tmp/webhook.json
-          invalid_code=$(curl --silent --show-error --max-time 30 -o /tmp/invalid.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=not-a-real-course')
-          test "$invalid_code" -lt 500
+      - name: Ensure webhook route never returns 5xx for unsupported GET
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl --silent --show-error --max-time 30 -o /tmp/get-body.txt -w '%{http_code}' https://www.obserrallc.com/api/webhook/stripe)
+          test "$code" -lt 500
 
-  identity-and-access-containment:
-    name: Identity degradation and protected route containment
+  identity-containment:
+    name: Identity degradation and protected access containment
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -145,13 +224,17 @@ jobs:
             test "$code" -lt 500
             case "$code" in 200|302|303|307|308|401|403) ;; *) exit 1 ;; esac
           done
+      - name: Require explicit identity state
+        shell: bash
+        run: |
+          set -euo pipefail
           curl --silent --show-error --max-time 30 -D /tmp/identity-headers.txt -o /dev/null https://www.obserrallc.com/api/academy/commerce-health
           grep -Eqi '^x-obserra-identity-status: (operational|configuration-required)' /tmp/identity-headers.txt
 
-  command-center-security:
-    name: Owner Command Center source and connector governance
+  command-center-governance:
+    name: Owner Command Center source, owner control, and connector governance
     runs-on: windows-2025
-    timeout-minutes: 35
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: owner-command-center
@@ -162,7 +245,7 @@ jobs:
           node-version: 22
       - run: npm install --ignore-scripts --no-audit --no-fund
       - run: npm run verify
-      - name: Validate governed connector catalog
+      - name: Validate source and governed connector catalog
         shell: pwsh
         run: |
           node --check electron/main.cjs
@@ -172,12 +255,14 @@ jobs:
           $catalog = Get-Content policy/connector-catalog.json -Raw | ConvertFrom-Json
           if (-not $catalog.resources -or @($catalog.resources).Count -lt 3) { throw 'Resource catalog incomplete' }
           if ($catalog.defaultControlMode -notmatch 'read') { throw 'Catalog must default to read only' }
-          foreach ($resource in @($catalog.resources)) { if (-not $resource.writeCapabilitiesRequireOwnerApproval) { throw "Owner approval missing for $($resource.id)" } }
+          foreach ($resource in @($catalog.resources)) {
+            if (-not $resource.writeCapabilitiesRequireOwnerApproval) { throw "Owner approval missing for $($resource.id)" }
+          }
 
   command-center-release:
-    name: Windows installer, portable package, removable media, recovery, and integrity
+    name: Windows installer, portable executable, removable media, and integrity
     runs-on: windows-2025
-    timeout-minutes: 70
+    timeout-minutes: 75
     defaults:
       run:
         working-directory: owner-command-center
@@ -190,7 +275,7 @@ jobs:
       - run: npm run package:media
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-      - name: Verify inventory and SHA256 manifests
+      - name: Verify release inventory and SHA256 manifests
         shell: pwsh
         run: |
           $media = Join-Path $PWD 'release-media'
@@ -208,18 +293,18 @@ jobs:
           }
       - uses: actions/upload-artifact@v4
         with:
-          name: obserra-20x-command-center-release-${{ github.sha }}
+          name: obserra-40x-command-center-release-${{ github.sha }}
           path: owner-command-center/release-media/**
           if-no-files-found: error
           retention-days: 180
 
-  resilience-and-audit:
-    name: High availability, recovery, rollback, and release evidence
+  resilience-and-recovery:
+    name: High availability, recovery, rollback, and removable media evidence
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Validate resilience and publish immutable evidence
+      - name: Validate resilience documentation
         shell: bash
         run: |
           set -euo pipefail
@@ -227,26 +312,50 @@ jobs:
           test -s owner-command-center/INSTALL-AND-RECOVERY.md
           grep -Eqi 'standby|failover|backup|recovery' owner-command-center/HIGH-AVAILABILITY.md
           grep -Eqi 'install|restore|rollback|removable' owner-command-center/INSTALL-AND-RECOVERY.md
+
+  release-evidence:
+    name: Immutable cross-project release evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Generate signed-by-hash evidence manifest
+        shell: bash
+        run: |
+          set -euo pipefail
           mkdir -p release-evidence
-          printf '{"commit":"%s","repository":"%s","workflow":"%s","runId":"%s","actor":"%s","commerceContract":"academy-commerce-health-v1","claimPolicy":"purchaser-email-match-v1"}\n' "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_WORKFLOW" "$GITHUB_RUN_ID" "$GITHUB_ACTOR" > release-evidence/manifest.json
+          printf '{"commit":"%s","repository":"%s","workflow":"%s","runId":"%s","actor":"%s","commerceContract":"academy-commerce-health-v1","claimPolicy":"purchaser-email-match-v1","gate":"40x"}\n' "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_WORKFLOW" "$GITHUB_RUN_ID" "$GITHUB_ACTOR" > release-evidence/manifest.json
           sha256sum release-evidence/manifest.json > release-evidence/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: obserra-20x-enterprise-evidence-${{ github.sha }}
+          name: obserra-40x-enterprise-evidence-${{ github.sha }}
           path: release-evidence/**
           if-no-files-found: error
           retention-days: 365
 
   promotion:
-    name: Final 20x enterprise production promotion
+    name: Final 40x enterprise production promotion
     runs-on: ubuntu-latest
-    needs: [academy-studio, website-public-and-brand, live-commerce-contract, identity-and-access-containment, command-center-security, command-center-release, resilience-and-audit]
+    needs:
+      - academy-quality
+      - academy-governance
+      - repository-security
+      - website-route-matrix
+      - website-security-headers
+      - legal-brand-and-catalog
+      - commerce-contract
+      - commerce-checkout-matrix
+      - webhook-boundary
+      - identity-containment
+      - command-center-governance
+      - command-center-release
+      - resilience-and-recovery
+      - release-evidence
     steps:
       - run: |
-          echo 'Academy LCMS and Production Studio: PASSED'
-          echo 'Public website, legal branding, 60 course publication, and security headers: PASSED'
-          echo 'Stripe commerce, webhook enforcement, and secure claim policy: PASSED'
-          echo 'Identity and protected route containment: PASSED'
-          echo 'Owner Command Center owner controls and Windows release: PASSED'
-          echo 'Recovery, high availability, integrity, and audit evidence: PASSED'
-          echo 'Obserra 20x enterprise production gate is promotion ready.'
+          echo 'Academy quality, governance, schema, catalog, and production build: PASSED'
+          echo 'Website routes, legal branding, 60 course publication, and browser security: PASSED'
+          echo 'Stripe commerce, webhook enforcement, fulfillment contract, and secure claim policy: PASSED'
+          echo 'Identity degradation and protected route containment: PASSED'
+          echo 'Owner Command Center governance and Windows release: PASSED'
+          echo 'Recovery, high availability, removable media, integrity, and immutable evidence: PASSED'
+          echo 'Obserra 40x enterprise production gate is promotion ready.'
