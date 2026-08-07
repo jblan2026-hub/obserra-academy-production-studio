@@ -1,0 +1,115 @@
+name: Academy Authoring Provider Preflight
+run-name: Academy provider preflight • ${{ github.ref_name }} • ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/continue-course-buildout
+    paths:
+      - ".github/workflows/academy-provider-preflight.yml"
+      - "studio/preflight-authoring-provider.mjs"
+      - "studio/provider-http.mjs"
+      - "studio/authoring-provider-errors.mjs"
+      - "package.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: academy-authoring-provider-preflight-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  provider-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ACADEMY_AUTHORING_PROVIDER: openai
+      ACADEMY_AUTHORING_PREFLIGHT_TIMEOUT_MS: 120000
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
+      OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
+
+    steps:
+      - name: Checkout Academy Studio
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Normalize protected provider selectors
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const output = process.env.GITHUB_ENV;
+          if (!output) throw new Error('GITHUB_ENV is unavailable.');
+
+          function normalize(name) {
+            let value = String(process.env[name] ?? '').trim();
+            const quoted = (value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"));
+            if (quoted) value = value.slice(1, -1).trim();
+            if (value && /\r|\n/.test(value)) throw new Error(`${name} contains an unexpected newline.`);
+            if (value) fs.appendFileSync(output, `${name}=${value}\n`);
+            return Boolean(value);
+          }
+
+          const credential = normalize('OPENAI_API_KEY');
+          const organization = normalize('OPENAI_ORGANIZATION');
+          const project = normalize('OPENAI_PROJECT');
+          console.log(`[Academy Studio] Provider selectors normalized. credential=${credential} organizationSelector=${organization} projectSelector=${project}`);
+          NODE
+
+      - name: Require protected authoring credential
+        shell: bash
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "OPENAI_API_KEY is not configured for the Academy authoring provider."
+            exit 1
+          fi
+
+      - name: Verify funded provider authentication, routing, model access, and request capacity
+        run: npm run preflight:authoring
+
+      - name: Publish redacted provider evidence summary
+        if: always()
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = 'catalog/authoring-provider-preflight.json';
+          if (!fs.existsSync(path)) {
+            console.log('No provider evidence file was produced.');
+            process.exit(0);
+          }
+          const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const summary = [
+            '## Academy authoring provider preflight',
+            '',
+            `- Ready: ${Boolean(report.ready)}`,
+            `- Provider: ${report.provider ?? 'unknown'}`,
+            `- Model: ${report.model ?? 'unknown'}`,
+            `- HTTP status: ${report.httpStatus ?? report.status ?? 'not available'}`,
+            `- Failure category: ${report.category ?? 'none'}`,
+            `- Provider code: ${report.providerCode ?? 'none'}`,
+            `- Organization fingerprint present: ${Boolean(report.organizationFingerprint)}`,
+            `- Project fingerprint present: ${Boolean(report.projectFingerprint)}`,
+            `- Checked at: ${report.checkedAt ?? 'unknown'}`,
+            '',
+            report.limitation ?? 'This preflight does not authorize course publication or production release.',
+          ].join('\n');
+          if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
+          console.log(summary);
+          NODE
+
+      - name: Upload non-sensitive provider preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-authoring-provider-preflight-${{ github.run_id }}
+          path: catalog/authoring-provider-preflight.json
+          if-no-files-found: warn
+          retention-days: 180
