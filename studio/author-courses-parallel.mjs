@@ -5,10 +5,25 @@ import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const reportPath = path.join(root, "catalog", "continuous-course-audit.json");
+
+function boundedNumber(value, fallback, minimum, maximum) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(minimum, Math.min(maximum, parsed));
+}
+
 const provider = process.env.ACADEMY_AUTHORING_PROVIDER || "openai";
-const concurrency = Math.max(1, Math.min(12, Number(process.env.ACADEMY_AUTHORING_CONCURRENCY || 6)));
-const maxAttempts = Math.max(1, Math.min(5, Number(process.env.ACADEMY_AUTHORING_MAX_ATTEMPTS || 3)));
-const baseDelayMs = Math.max(1000, Number(process.env.ACADEMY_AUTHORING_RETRY_BASE_MS || 5000));
+const concurrency = boundedNumber(process.env.ACADEMY_AUTHORING_CONCURRENCY, 6, 1, 12);
+const maxAttempts = boundedNumber(process.env.ACADEMY_AUTHORING_MAX_ATTEMPTS, 3, 1, 5);
+const baseDelayMs = boundedNumber(process.env.ACADEMY_AUTHORING_RETRY_BASE_MS, 5000, 1000, 120000);
+const processTimeoutMs = boundedNumber(
+  process.env.ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS,
+  20 * 60 * 1000,
+  2 * 60 * 1000,
+  30 * 60 * 1000,
+);
+const terminationGraceMs = 10000;
+const heartbeatIntervalMs = 60 * 1000;
 
 if (!fs.existsSync(reportPath)) {
   throw new Error(`Course audit report not found: ${reportPath}`);
@@ -29,6 +44,19 @@ function delay(ms) {
 
 function runAuthoring(courseId, attempt) {
   return new Promise((resolve) => {
+    let settled = false;
+    let timedOut = false;
+    let forceKillTimer = null;
+    let timeoutTimer = null;
+
+    const finalize = (result) => {
+      if (settled) return;
+      settled = true;
+      if (timeoutTimer) clearTimeout(timeoutTimer);
+      if (forceKillTimer) clearTimeout(forceKillTimer);
+      resolve(result);
+    };
+
     const child = spawn(
       process.execPath,
       ["studio/author-course-ai.mjs", "--course", courseId, "--provider", provider, "--force"],
@@ -39,16 +67,33 @@ function runAuthoring(courseId, attempt) {
       },
     );
 
+    timeoutTimer = setTimeout(() => {
+      timedOut = true;
+      console.error(`[Academy Studio] Authoring process for ${courseId} exceeded ${Math.round(processTimeoutMs / 1000)} seconds; terminating for retry.`);
+      if (child.exitCode === null && !child.killed) {
+        child.kill("SIGTERM");
+        forceKillTimer = setTimeout(() => {
+          if (child.exitCode === null) child.kill("SIGKILL");
+        }, terminationGraceMs);
+      }
+    }, processTimeoutMs);
+
     child.on("error", (error) => {
-      resolve({ ok: false, error: String(error), code: null, attempt });
+      finalize({ ok: false, error: String(error), code: null, signal: null, timedOut, attempt });
     });
 
     child.on("exit", (code, signal) => {
-      resolve({
-        ok: code === 0,
+      const ok = code === 0 && !timedOut;
+      finalize({
+        ok,
         code,
         signal,
-        error: code === 0 ? null : `authoring process exited with code ${code ?? "unknown"}${signal ? ` signal ${signal}` : ""}`,
+        timedOut,
+        error: ok
+          ? null
+          : timedOut
+            ? `authoring process timed out after ${Math.round(processTimeoutMs / 1000)} seconds`
+            : `authoring process exited with code ${code ?? "unknown"}${signal ? ` signal ${signal}` : ""}`,
         attempt,
       });
     });
@@ -93,24 +138,38 @@ if (targets.length === 0) {
   process.exit(0);
 }
 
-console.log(`[Academy Studio] Starting governed parallel authoring for ${targets.length} course(s) with concurrency ${concurrency}.`);
+console.log(`[Academy Studio] Starting governed parallel authoring for ${targets.length} course(s) with concurrency ${concurrency}, request timeout ${Math.round(boundedNumber(process.env.ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS, 15 * 60 * 1000, 60 * 1000, 30 * 60 * 1000) / 1000)} seconds, and process timeout ${Math.round(processTimeoutMs / 1000)} seconds.`);
 const queue = [...targets];
 const results = { started: 0, completed: [] };
+const startedAt = Date.now();
+const heartbeat = setInterval(() => {
+  const active = Math.max(0, results.started - results.completed.length);
+  const elapsedMinutes = Math.max(1, Math.round((Date.now() - startedAt) / 60000));
+  console.log(`[Academy Studio] Parallel authoring heartbeat: ${results.completed.length}/${targets.length} complete, ${active} active, ${queue.length} queued, ${elapsedMinutes} minute(s) elapsed.`);
+}, heartbeatIntervalMs);
+heartbeat.unref?.();
+
 const workers = Array.from({ length: Math.min(concurrency, targets.length) }, (_, index) => worker(index + 1, queue, results));
-await Promise.all(workers);
+try {
+  await Promise.all(workers);
+} finally {
+  clearInterval(heartbeat);
+}
 
 const failures = results.completed.filter((result) => !result.ok);
 const summaryPath = path.join(root, "catalog", "parallel-authoring-summary.json");
 fs.writeFileSync(summaryPath, `${JSON.stringify({
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
   provider,
   concurrency,
   maxAttempts,
+  processTimeoutMs,
   requestedCourses: targets.length,
   completedCourses: results.completed.length,
   successfulCourses: results.completed.length - failures.length,
   failedCourses: failures.length,
+  elapsedMs: Date.now() - startedAt,
   results: results.completed,
 }, null, 2)}\n`);
 
