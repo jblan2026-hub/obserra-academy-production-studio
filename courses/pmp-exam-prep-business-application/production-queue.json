@@ -6,7 +6,7 @@
   "releaseStatus": "not-ready",
   "publicRepresentationAllowed": false,
   "sourceOfTruth": "courses/pmp-exam-prep-business-application/course-manifest.json",
-  "updatedAt": "2026-08-07T00:00:00Z",
+  "updatedAt": "2026-08-07T05:40:00Z",
   "completedAssets": [
     "course-manifest.json",
     "authoritative-sources.json",
@@ -30,8 +30,10 @@
     "video/module-01/lesson-02/production-script.md",
     "video/module-01/lesson-03/production-script.md",
     "video/module-01/lesson-04/production-script.md",
+    "video/module-02/lesson-01/production-script.md",
     "docs/AI-NATIVE-EVIDENCE-GROUNDED-COURSE-STANDARD.md",
-    "Owner-only exact student experience final review gate",
+    "Owner-only exact final learner package review gate",
+    "Governed owner final-review tutor proxy",
     "AI-native packaging and validation support"
   ],
   "progress": {
@@ -45,7 +47,7 @@
     "ecoTasksRequired": 26,
     "practiceQuestionsDrafted": 30,
     "practiceQuestionsRequired": 180,
-    "videoScriptsDrafted": 4,
+    "videoScriptsDrafted": 5,
     "videoScriptsRequired": 35,
     "renderedVideosCompleted": 0,
     "renderedVideosRequired": 35,
@@ -67,7 +69,7 @@
     },
     {
       "priority": 2,
-      "work": "Draft production scripts, source cards, visual treatments, interactions, knowledge checks, and tutor handoffs for the remaining 31 lessons.",
+      "work": "Draft production scripts, source cards, visual treatments, interactions, knowledge checks, and tutor handoffs for the remaining 30 lessons.",
       "owner": "Instructional and Video Production",
       "gate": "Every factual claim mapped to an approved source or labeled instructor interpretation"
     },
@@ -85,7 +87,7 @@
     },
     {
       "priority": 5,
-      "work": "Implement entitlement-scoped Obserrian PMP Coach activation, source-grounded answers, protected-assessment lockout, learner isolation, feedback memory, and explainable remediation in the learner platform.",
+      "work": "Implement and verify entitlement-scoped Obserrian PMP Coach activation, source-grounded answers, protected-assessment lockout, learner isolation, feedback memory, explainable remediation, and owner final-review parity.",
       "owner": "Academy Engineering and AI Governance",
       "gate": "Security, privacy, assessment integrity, audit, rollback, and human-oversight verification"
     },
@@ -116,11 +118,12 @@
   },
   "releaseBlockers": [
     "Only 30 of 180 original protected-exam questions are drafted.",
-    "Only four of 35 lesson production scripts are drafted.",
+    "Only five of 35 lesson production scripts are drafted.",
     "No mastered lesson videos, captions, transcripts, storyboards, or completed per-video rights records exist yet.",
     "PMP SME, legal, brand, accessibility, assessment, AI, media, commerce, and owner reviews are pending.",
     "The public Obserra Academy catalog does not yet contain an owner-approved PMP course record controlling the public title, price, checkout, and release claims.",
-    "Repository validation and FINAL package generation have not been executed in the current session."
+    "The final learner package cannot enter the admin review queue until the database-backed media, accessibility, AI, entitlement, staged-release, and pre-owner review gates all pass.",
+    "GitHub-hosted validation is still required against the latest branch head."
   ],
   "truthfulness": {
     "courseMayBeCalledComplete": false,
@@ -129,6 +132,6 @@
     "courseMayGuaranteeEligibility": false,
     "courseMayGuaranteeExamSuccess": false,
     "videoMayBeCalledRendered": false,
-    "currentAccurateDescription": "A governed 35-hour PMP course production foundation with full ECO mapping, source-grounded instructional materials, an entitlement-scoped AI tutor profile, cinematic production standards, four detailed lesson scripts, the first 30 original assessment items, and a fail-closed owner final-review gate that will display only the exact staged paid learner experience."
+    "currentAccurateDescription": "A governed 35-hour PMP course production foundation with full ECO mapping, source-grounded instructional materials, an entitlement-scoped AI tutor profile, cinematic production standards, five detailed lesson scripts, the first 30 original assessment items, and a fail-closed owner final-review gate that renders only the exact staged paid learner package."
   }
 }
