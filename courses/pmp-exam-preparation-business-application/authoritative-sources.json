@@ -1,0 +1,311 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-preparation-business-application",
+  "verifiedOn": "2026-08-07",
+  "sourcePolicy": {
+    "primarySourcesPreferred": true,
+    "currentSourceVerificationRequired": true,
+    "directQuotationLimit": "Use only short, necessary quotations with exact attribution. Paraphrase copyrighted standards and proprietary guidance unless Obserra holds an applicable license.",
+    "examContentBoundary": "Do not reproduce confidential PMP examination content, exam dumps, proprietary PMI item banks, or copyrighted courseware. Teach published objectives and use original Obserra questions and scenarios.",
+    "learnerCitationRequirement": "Each lesson, video transcript, workbook exercise, AI tutor answer, and assessment rationale must cite the source identifiers that support substantive claims."
+  },
+  "sources": [
+    {
+      "id": "PMI-ECO-2026",
+      "owner": "Project Management Institute",
+      "title": "Project Management Professional Examination Content Outline, July 2026",
+      "publicationDate": "2026-07",
+      "sourceType": "official certification examination content outline",
+      "authority": "primary",
+      "url": "https://www.pmi.org/-/media/pmi/documents/public/pdf/certifications/new-pmp-examination-content-outline-2026.pdf",
+      "courseUse": [
+        "Controls all exam domain, task, eligibility, training-hour, question-format, timing, break, retake, and examination-integrity alignment.",
+        "Supports the People 33 percent, Process 41 percent, and Business Environment 26 percent weighting.",
+        "Supports the approximate 40 percent predictive and 60 percent adaptive, agile, and hybrid distribution."
+      ],
+      "limitations": "The outline defines what is tested but is not a complete textbook, question bank, or guarantee of examination success."
+    },
+    {
+      "id": "PMI-PMP-CERT",
+      "owner": "Project Management Institute",
+      "title": "Project Management Professional Certification",
+      "publicationDate": null,
+      "sourceType": "official certification webpage",
+      "authority": "primary",
+      "url": "https://www.pmi.org/certifications/project-management-pmp",
+      "courseUse": [
+        "Current public eligibility paths and project leadership experience requirements.",
+        "Current 35-hour Project Professional training requirement.",
+        "Current public exam facts and certification pathway."
+      ],
+      "limitations": "PMI may update eligibility, fees, scheduling, audit, and training-provider requirements. Learners must verify the current page before applying."
+    },
+    {
+      "id": "PMI-NEW-EXAM-2026",
+      "owner": "Project Management Institute",
+      "title": "What Is New in the Updated PMP Exam",
+      "publicationDate": "2026",
+      "sourceType": "official examination update webpage",
+      "authority": "primary",
+      "url": "https://www.pmi.org/certifications/project-management-pmp/new-exam",
+      "courseUse": [
+        "Supports the July 2026 launch and changed domain weights.",
+        "Supports the increased emphasis on AI, sustainability, stakeholder engagement, outcomes, value, and business impact.",
+        "Supports current public guidance on self-paced and live training-provider eligibility."
+      ],
+      "limitations": "Training-provider requirements are time-sensitive. Obserra must not claim Authorized Training Partner status unless separately verified and approved."
+    },
+    {
+      "id": "PMI-PMP-PREP",
+      "owner": "Project Management Institute",
+      "title": "PMP Exam Preparation",
+      "publicationDate": null,
+      "sourceType": "official exam preparation webpage",
+      "authority": "primary",
+      "url": "https://www.pmi.org/certifications/project-management-pmp/pmp-exam-preparation",
+      "courseUse": [
+        "Provides official public context for exam preparation resources and 35-hour training.",
+        "Supports differentiation between PMI official offerings, Authorized Training Partner offerings, and independent preparation."
+      ],
+      "limitations": "Obserra materials are independent and must not be represented as PMI-developed or PMI-authorized courseware."
+    },
+    {
+      "id": "PMI-EXAM-SECURITY",
+      "owner": "Project Management Institute",
+      "title": "Exam Security",
+      "publicationDate": null,
+      "sourceType": "official certification security policy webpage",
+      "authority": "primary",
+      "url": "https://www.pmi.org/certifications/certification-resources/exam-security",
+      "courseUse": [
+        "Defines the confidentiality and conduct boundary for examination questions and answers.",
+        "Supports the prohibition on exam dumps, live-exam assistance, confidential question disclosure, and AI assistance during the actual examination."
+      ],
+      "limitations": "Learners must review and accept the current PMI candidate security acknowledgement and certification policies."
+    },
+    {
+      "id": "PMI-PMBOK-8",
+      "owner": "Project Management Institute",
+      "title": "A Guide to the Project Management Body of Knowledge, Eighth Edition, and The Standard for Project Management",
+      "publicationDate": "2025",
+      "sourceType": "professional standard and guide",
+      "authority": "primary professional standard",
+      "url": "https://www.pmi.org/standards/pmbok",
+      "courseUse": [
+        "Project management principles, performance domains, value delivery, adaptability, accountability, AI, PMO, procurement, and evolved process guidance.",
+        "Supports practical application across predictive, adaptive, agile, and hybrid environments."
+      ],
+      "limitations": "Copyrighted publication. Obserra may summarize and cite but must not reproduce protected text, figures, or tables without permission. The PMP examination is not written from a single book."
+    },
+    {
+      "id": "PMI-AGILE-2",
+      "owner": "Project Management Institute and Agile Alliance",
+      "title": "Agile Practice Guide, Second Edition",
+      "publicationDate": "2026-07",
+      "sourceType": "professional practice guide",
+      "authority": "primary professional guidance",
+      "url": "https://www.pmi.org/standards/agile",
+      "courseUse": [
+        "Agile mindset, Lean thinking, Kanban, design thinking, product delivery, distributed work, psychological safety, flow, value, scaling, AI, sustainability, and ethical design.",
+        "Supports adaptive and hybrid scenario reasoning."
+      ],
+      "limitations": "Copyrighted publication. Use original Obserra explanations and scenarios rather than reproducing protected content."
+    },
+    {
+      "id": "PMI-PROCESS-GROUPS",
+      "owner": "Project Management Institute",
+      "title": "Process Groups: A Practice Guide",
+      "publicationDate": "2022-11",
+      "sourceType": "professional practice guide",
+      "authority": "primary professional guidance",
+      "url": "https://www.pmi.org/standards/process-groups",
+      "courseUse": [
+        "Predictive initiating, planning, executing, monitoring and controlling, and closing practices.",
+        "Supports process relationships, integration, scope, schedule, procurement, closure, and artifact discussions."
+      ],
+      "limitations": "Copyrighted publication. The course teaches concepts through original explanation and application."
+    },
+    {
+      "id": "PMI-ETHICS-2025",
+      "owner": "Project Management Institute",
+      "title": "PMI Code of Ethics and Professional Conduct and Ethics Guidelines",
+      "publicationDate": "2025-11-17",
+      "sourceType": "professional code and ethics guidance",
+      "authority": "primary professional code",
+      "url": "https://www.pmi.org/about/ethics/guidelines",
+      "courseUse": [
+        "Responsibility, respect, fairness, honesty, ethical decision-making, and candidate obligations.",
+        "Supports ethics scenarios and professional judgment across all domains."
+      ],
+      "limitations": "Learners must review the current complete code. Course summaries do not replace the controlling PMI text."
+    },
+    {
+      "id": "PMI-EVM",
+      "owner": "Project Management Institute",
+      "title": "The Standard for Earned Value Management",
+      "publicationDate": "2020-02",
+      "sourceType": "professional standard",
+      "authority": "primary professional standard",
+      "url": "https://www.pmi.org/standards/earned-value-management",
+      "courseUse": [
+        "Integration of scope, schedule, and resources for objective performance measurement and forecasting.",
+        "Supports earned value formulas, interpretation, limitations, and management action."
+      ],
+      "limitations": "Copyrighted standard. Course formulas and examples are original and must not reproduce protected figures or explanatory text."
+    },
+    {
+      "id": "PMI-RISK",
+      "owner": "Project Management Institute",
+      "title": "Risk Management in Portfolios, Programs, and Projects",
+      "publicationDate": "2024 update",
+      "sourceType": "professional practice guidance",
+      "authority": "primary professional guidance",
+      "url": "https://www.pmi.org/standards/risk-management",
+      "courseUse": [
+        "Risk principles, environment, lifecycle, opportunities, threats, response, monitoring, and enterprise context.",
+        "Supports Business Environment risk scenarios and integrated reserve decisions."
+      ],
+      "limitations": "Copyrighted publication. Course treatment is an original summary and application."
+    },
+    {
+      "id": "PMI-P5-SUSTAINABILITY",
+      "owner": "Project Management Institute and Green Project Management",
+      "title": "PMI GPM P5 Standard for Sustainability in Project Management, Version 4.0",
+      "publicationDate": "2026",
+      "sourceType": "professional sustainability standard",
+      "authority": "primary professional standard",
+      "url": "https://www.pmi.org/standards/gpm-p5-standard-for-sustainability-in-project-management",
+      "courseUse": [
+        "Sustainability governance, lifecycle integration, risk, value, and measurable outcomes.",
+        "Supports 2026 examination scenarios involving sustainability and business impact."
+      ],
+      "limitations": "Copyrighted standard. Applicability depends on project context and organizational obligations."
+    },
+    {
+      "id": "ISO-21502",
+      "owner": "International Organization for Standardization",
+      "title": "ISO 21502:2020 Project, Programme and Portfolio Management, Guidance on Project Management",
+      "publicationDate": "2020",
+      "sourceType": "international standard",
+      "authority": "primary consensus standard",
+      "url": "https://www.iso.org/standard/74947.html",
+      "courseUse": [
+        "Cross-industry guidance on project management concepts and practices.",
+        "Supports comparison of professional standards and business implementation."
+      ],
+      "limitations": "Copyrighted standard. Obserra does not reproduce the standard and does not represent course completion as ISO conformity or certification."
+    },
+    {
+      "id": "NIST-AI-RMF",
+      "owner": "National Institute of Standards and Technology",
+      "title": "Artificial Intelligence Risk Management Framework 1.0",
+      "publicationDate": "2023-01-26",
+      "sourceType": "United States government framework",
+      "authority": "primary government guidance",
+      "url": "https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10",
+      "courseUse": [
+        "Supports trustworthy, risk-aware use of AI in project data analysis and decision support.",
+        "Supports discussion of human oversight, validity, reliability, transparency, privacy, security, and accountability."
+      ],
+      "limitations": "Voluntary framework. It does not establish legal compliance or authorize AI use for a specific organization."
+    },
+    {
+      "id": "GAO-AGILE-GUIDE",
+      "owner": "United States Government Accountability Office",
+      "title": "Agile Assessment Guide: Best Practices for Agile Adoption and Implementation",
+      "publicationDate": "2020-09-28",
+      "sourceType": "United States government best-practice guide",
+      "authority": "primary government guidance",
+      "url": "https://www.gao.gov/products/gao-20-590g",
+      "courseUse": [
+        "Agile adoption, iterative delivery, customer feedback, quality, implementation assessment, and transition considerations.",
+        "Provides a public reference for realistic agile and hybrid business scenarios."
+      ],
+      "limitations": "The guide supports assessment and implementation but does not prescribe one universal agile method."
+    },
+    {
+      "id": "GAO-SCHEDULE-GUIDE",
+      "owner": "United States Government Accountability Office",
+      "title": "GAO Schedule Assessment Guide: Best Practices for Project Schedules",
+      "publicationDate": "2015-12-22",
+      "sourceType": "United States government best-practice guide",
+      "authority": "primary government guidance",
+      "url": "https://www.gao.gov/products/gao-16-89g",
+      "courseUse": [
+        "Reliable integrated schedules, logical sequencing, critical path, float, schedule risk, baseline control, and forecast credibility.",
+        "Supports original scheduling examples and audit-style schedule interpretation."
+      ],
+      "limitations": "The guide is detailed audit and program guidance. Techniques must be tailored to the scale and nature of the project."
+    },
+    {
+      "id": "GAO-COST-GUIDE",
+      "owner": "United States Government Accountability Office",
+      "title": "Cost Estimating and Assessment Guide: Best Practices for Developing and Managing Program Costs",
+      "publicationDate": "2020",
+      "sourceType": "United States government best-practice guide",
+      "authority": "primary government guidance",
+      "url": "https://www.gao.gov/products/gao-20-195g",
+      "courseUse": [
+        "Cost-estimate scope, assumptions, data, methods, sensitivity, risk, documentation, updating, and management use.",
+        "Supports financial planning, reserve, forecasting, and estimate credibility exercises."
+      ],
+      "limitations": "The course uses selected principles and original calculations. It is not a substitute for a complete estimate or independent cost assessment."
+    },
+    {
+      "id": "HEALTHCARE-GOV-GAO",
+      "owner": "United States Government Accountability Office",
+      "title": "Healthcare.gov: CMS Has Taken Steps to Address Problems, but Needs to Further Implement Systems Development Best Practices",
+      "publicationDate": "2015-03-04",
+      "sourceType": "government audit and documented public case",
+      "authority": "primary case source",
+      "url": "https://www.gao.gov/products/gao-15-238",
+      "courseUse": [
+        "Documented case involving inadequate capacity planning, coding errors, incomplete functionality, requirements weakness, testing weakness, unreliable scheduling, documentation weakness, and limited oversight.",
+        "Supports quality, schedule, requirements, governance, risk, and readiness scenarios."
+      ],
+      "limitations": "The report concerns a specific federal initiative and time period. Course lessons must avoid simplistic single-cause conclusions."
+    },
+    {
+      "id": "JWST-GAO-2021",
+      "owner": "United States Government Accountability Office",
+      "title": "James Webb Space Telescope: Project Nearing Completion, but Work to Resolve Challenges Continues",
+      "publicationDate": "2021-05-13",
+      "sourceType": "government audit and documented public case",
+      "authority": "primary case source",
+      "url": "https://www.gao.gov/products/gao-21-406",
+      "courseUse": [
+        "Documented cost growth, schedule delay, technical risk, integration, testing, reserve, contractor, and oversight lessons.",
+        "Supports schedule risk, reserve, uncertainty, forecasting, and governance exercises."
+      ],
+      "limitations": "The project ultimately achieved major mission outcomes. The course must present both the delivery achievement and the documented management challenges."
+    },
+    {
+      "id": "CROSSRAIL-NAO",
+      "owner": "United Kingdom National Audit Office",
+      "title": "Completing Crossrail",
+      "publicationDate": "2019-05-03",
+      "sourceType": "government audit and documented public case",
+      "authority": "primary case source",
+      "url": "https://www.nao.org.uk/reports/crossrail/",
+      "courseUse": [
+        "Documented case involving compressed schedules, contract model effects, unrealistic planning, cost pressure, governance, and benefit-delivery risk.",
+        "Supports schedule, governance, procurement, reporting, and executive decision scenarios."
+      ],
+      "limitations": "The report did not apportion blame and was published before final services and costs were complete. Course use must preserve that context."
+    },
+    {
+      "id": "SENTINEL-DOJ-OIG",
+      "owner": "United States Department of Justice Office of the Inspector General",
+      "title": "Interim and Oversight Reports on the FBI Sentinel Project",
+      "publicationDate": "2006 to 2012",
+      "sourceType": "government audit and documented public case",
+      "authority": "primary case source",
+      "url": "https://oig.justice.gov/reports/interim-report-federal-bureau-investigations-implementation-sentinel-project",
+      "courseUse": [
+        "Program management office staffing, management controls, iterative delivery, oversight, earned value, risk, documentation, and recovery from prior program failure.",
+        "Supports governance, resource, agile transition, and accountability scenarios."
+      ],
+      "limitations": "The case spans multiple reports and phases. Instructors must identify the report date and avoid combining findings without chronology."
+    }
+  ]
+}
