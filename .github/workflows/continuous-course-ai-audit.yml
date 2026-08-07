@@ -35,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
+      # Protected learner authoring runs only in this controlled ephemeral workflow workspace.
       ACADEMY_AUTHORING_PROVIDER: openai
       ACADEMY_AUTHORING_CONCURRENCY: 6
       ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
