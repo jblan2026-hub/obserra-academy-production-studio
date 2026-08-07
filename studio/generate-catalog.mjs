@@ -63,6 +63,7 @@ function publicCourse(manifest) {
     completion: {
       allLessonsRequired: manifest.completion.allLessonsRequired,
       assessmentRequired: manifest.completion.assessmentRequired,
+      assessmentDuration: manifest.completion.assessmentDuration ?? null,
       passingScore: manifest.completion.passingScore,
       certificateIssued: manifest.completion.certificateIssued,
       credentialType: "certificate-of-course-completion-only",
@@ -93,9 +94,14 @@ function learnerCourse(manifest, authored) {
 
   return {
     ...publicCourse(manifest),
+    publication: {
+      approved: manifest.release?.publishToAcademy === true && ["approved", "published"].includes(manifest.release?.status),
+      status: manifest.release?.status ?? "draft",
+    },
     access: {
       surface: "post-purchase-learner",
       requiresEntitlement: true,
+      ownerReviewEligible: manifest.release?.status !== "archived",
       ownerReviewBypassSupported: true,
       purchaseNotRequiredForOwnerReview: true,
     },
@@ -158,11 +164,13 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true })) {
   if (!fs.existsSync(manifestPath)) continue;
   const manifest = readJson(manifestPath);
   assertBrandAndTags(manifest, manifestPath);
-  if (!manifest.release.publishToAcademy || !["approved", "published"].includes(manifest.release.status)) continue;
 
+  const publicationApproved = manifest.release.publishToAcademy === true && ["approved", "published"].includes(manifest.release.status);
+  const ownerReviewEligible = manifest.release?.status !== "archived";
   const authored = authoredPackage(courseDir);
-  publicCourses.push(publicCourse(manifest));
-  learnerCourses.push(learnerCourse(manifest, authored));
+
+  if (publicationApproved) publicCourses.push(publicCourse(manifest));
+  if (ownerReviewEligible) learnerCourses.push(learnerCourse(manifest, authored));
 }
 
 publicCourses.sort((a, b) => a.title.localeCompare(b.title));
@@ -176,15 +184,16 @@ const shared = {
   disclaimer: officialBrand.disclaimer,
 };
 
-fs.writeFileSync(publicCatalogPath, `${JSON.stringify({ schemaVersion: "1.3", ...shared, courses: publicCourses }, null, 2)}\n`);
+fs.writeFileSync(publicCatalogPath, `${JSON.stringify({ schemaVersion: "1.4", ...shared, courses: publicCourses }, null, 2)}\n`);
 fs.writeFileSync(learnerCatalogPath, `${JSON.stringify({
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   ...shared,
-  accessClassification: "protected-learner-content",
+  accessClassification: "protected-owner-review-and-learner-content",
   ownerReviewSupported: true,
+  productionPublicationIndependent: true,
   courses: learnerCourses,
 }, null, 2)}\n`);
 
 const learnerReady = learnerCourses.filter((course) => course.authoring.available && course.learnerExperience.modules.every((module) => module.lessonNarrative && module.knowledgeChecks.length > 0)).length;
-console.log(`[Academy Studio] Generated governed public catalog with ${publicCourses.length} approved course(s).`);
-console.log(`[Academy Studio] Generated protected learner catalog with ${learnerCourses.length} course(s), ${learnerReady} learner-content-ready.`);
+console.log(`[Academy Studio] Generated governed public catalog with ${publicCourses.length} publication-approved course(s).`);
+console.log(`[Academy Studio] Generated protected owner-review learner catalog with ${learnerCourses.length} course(s), ${learnerReady} learner-content-ready.`);
