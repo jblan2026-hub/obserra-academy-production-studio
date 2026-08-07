@@ -55,7 +55,10 @@ check("governed course policy command exists", typeof scripts["apply:course-poli
 check("legal asset enforcement is part of course build", /enforce-course-legal-assets/.test(scripts["build:course"] ?? ""));
 check("legal asset enforcement is part of all-course build", /enforce-course-legal-assets/.test(scripts["build:all"] ?? ""));
 check("verification includes tests", /npm run test(?:\s|$)/.test(verificationChain));
-check("verification includes catalog", /npm run catalog(?:\s|$)/.test(verificationChain));
+check(
+  "verification includes catalog",
+  /npm run catalog(?:\s|$)/.test(verificationChain) || /node\s+studio\/generate-catalog\.mjs(?:\s|$)/.test(verificationChain),
+);
 check("verification includes schema validation", /npm run db:validate(?:\s|$)/.test(verificationChain));
 check("CI includes production build", /npm run build/.test(scripts.ci ?? ""));
 
