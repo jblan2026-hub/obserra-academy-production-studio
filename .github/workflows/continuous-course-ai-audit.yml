@@ -62,6 +62,7 @@ jobs:
       ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
       ACADEMY_EXPECTED_REVIEW_COURSES: 60
       ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
+      ACADEMY_SUPABASE_REGION: us-east-1
       ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: ${{ (github.ref == 'refs/heads/agent/continue-course-buildout' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'agent/continue-course-buildout')) && 'true' || 'false' }}
       STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
       STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
@@ -99,12 +100,25 @@ jobs:
             return quoted ? value.slice(1, -1).trim() : value;
           }
 
+          function stripDatabaseAssignment(value) {
+            const match = value.match(/^(?:ACADEMY_DATABASE_URL|DATABASE_URL)\s*=\s*(.+)$/is);
+            return match ? trimOuterQuotes(match[1].trim()) : value;
+          }
+
           function normalizeDatabaseUrl(raw) {
-            const value = trimOuterQuotes(raw.trim());
+            let value = stripDatabaseAssignment(trimOuterQuotes(raw.trim()));
             if (!value) throw new Error('DATABASE_URL is empty after normalization.');
             if (/\r|\n/.test(value)) throw new Error('DATABASE_URL contains an unexpected newline.');
+
             if (!/^postgres(?:ql)?:\/\//i.test(value)) {
-              throw new Error('DATABASE_URL must begin with postgres:// or postgresql://.');
+              const projectRef = String(process.env.ACADEMY_SUPABASE_PROJECT_REF ?? '').trim();
+              const region = String(process.env.ACADEMY_SUPABASE_REGION ?? '').trim();
+              if (!projectRef || !region) {
+                throw new Error('Supabase project metadata is required when ACADEMY_DATABASE_URL contains only the protected database password.');
+              }
+              const username = `postgres.${projectRef}`;
+              const host = `aws-0-${region}.pooler.supabase.com`;
+              value = `postgresql://${encodeURIComponent(username)}:${encodeURIComponent(value)}@${host}:5432/postgres?schema=public&sslmode=require&connect_timeout=30`;
             }
 
             try {
