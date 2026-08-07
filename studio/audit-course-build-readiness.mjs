@@ -15,6 +15,11 @@ const requiredGeneratedFiles = [
   "answer-key.json",
   "visual-brief.md",
 ];
+const authoringFindings = [
+  "missing-ai-course-package",
+  "stale-ai-course-package",
+  "untraceable-ai-course-package",
+];
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -98,11 +103,12 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
   if (!authoringMissing) {
     const authored = readJson(authoringPath);
     packageManifestHash = authored.sourceManifestHash ?? authored.manifestHash ?? null;
-    if (packageManifestHash && packageManifestHash !== manifestHash) courseFindings.push("stale-ai-course-package");
+    if (!packageManifestHash) courseFindings.push("untraceable-ai-course-package");
+    else if (packageManifestHash !== manifestHash) courseFindings.push("stale-ai-course-package");
   }
 
   const publicationApproved = manifest.release?.publishToAcademy === true && ["approved", "published"].includes(manifest.release?.status);
-  const ownerReviewEligible = !["archived"].includes(String(manifest.release?.status ?? "draft"));
+  const ownerReviewEligible = !["retired", "archived"].includes(String(manifest.release?.status ?? "draft"));
   courses.push({
     courseId,
     title: course.title,
@@ -123,20 +129,24 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
 
 const publicationApprovedCourses = courses.filter((course) => course.publicationApproved);
 const ownerReviewCourses = courses.filter((course) => course.ownerReviewEligible);
-const authoringRequired = ownerReviewCourses.some((course) => course.authoringMissing || course.findings.includes("stale-ai-course-package"));
+const authoringRequired = ownerReviewCourses.some((course) => authoringFindings.some((finding) => course.findings.includes(finding)));
 const buildRequired = ownerReviewCourses.some((course) => course.findings.length > 0);
-const blockingFindings = findings.filter(({ finding }) => !["missing-ai-course-package", "stale-ai-course-package", ...requiredGeneratedFiles.map((name) => `missing-generated-${name}`)].includes(finding));
+const nonBlockingFindings = new Set([
+  ...authoringFindings,
+  ...requiredGeneratedFiles.map((name) => `missing-generated-${name}`),
+]);
+const blockingFindings = findings.filter(({ finding }) => !nonBlockingFindings.has(finding));
 
 fs.mkdirSync(catalogRoot, { recursive: true });
 const report = {
-  schemaVersion: "1.1",
+  schemaVersion: "1.2",
   generatedAt: new Date().toISOString(),
   policy: {
     lessonCount: "manifest-defined-per-course",
     duration: "module-durations-plus-final-assessment-duration-must-equal-advertised-course-duration",
-    authoring: "owner-review-eligible-missing-or-stale-packages-trigger-ai-authoring",
-    build: "owner-review-eligible-missing-or-stale-assets-trigger-governed-build",
-    publication: "production publication remains separately approval-controlled",
+    authoring: "all owner-review-eligible missing, stale, or untraceable packages trigger AI authoring",
+    build: "all owner-review-eligible missing or stale assets trigger governed build",
+    publication: "only explicitly approved or published courses can enter the public catalog",
     directProductionPublish: false,
   },
   totals: {
