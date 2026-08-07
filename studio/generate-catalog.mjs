@@ -107,6 +107,9 @@ function learnerCourse(manifest, authored) {
     },
     learnerExperience: {
       courseSummary: authoredContent.courseSummary ?? null,
+      sourceRegister: authoredContent.sourceRegister ?? [],
+      frameworkAlignment: authoredContent.frameworkAlignment ?? [],
+      assessmentBlueprint: authoredContent.assessmentBlueprint ?? null,
       modules: manifest.course.modules.map((module, index) => {
         const lesson = authoredModules.get(module.id) ?? {};
         const learnerWorkbook = workbook.get(module.id) ?? null;
@@ -135,12 +138,14 @@ function learnerCourse(manifest, authored) {
       }),
       finalAssessment: authoredContent.finalAssessment ?? [],
       learnerWorkbook: authoredContent.learnerWorkbook ?? [],
+      instructorGuide: authoredContent.instructorGuide ?? null,
     },
     authoring: {
       available: Boolean(authored),
       reviewStatus: authored?.reviewStatus ?? "missing",
       provider: authored?.provider ?? null,
       model: authored?.model ?? null,
+      authoringPolicyVersion: authored?.authoringPolicyVersion ?? null,
       generatedAt: authored?.generatedAt ?? null,
       sourceManifestHash: authored?.sourceManifestHash ?? null,
     },
@@ -186,7 +191,7 @@ const shared = {
 
 fs.writeFileSync(publicCatalogPath, `${JSON.stringify({ schemaVersion: "1.4", ...shared, courses: publicCourses }, null, 2)}\n`);
 fs.writeFileSync(learnerCatalogPath, `${JSON.stringify({
-  schemaVersion: "1.1",
+  schemaVersion: "1.2",
   ...shared,
   accessClassification: "protected-owner-review-and-learner-content",
   ownerReviewSupported: true,
@@ -194,6 +199,11 @@ fs.writeFileSync(learnerCatalogPath, `${JSON.stringify({
   courses: learnerCourses,
 }, null, 2)}\n`);
 
-const learnerReady = learnerCourses.filter((course) => course.authoring.available && course.learnerExperience.modules.every((module) => module.lessonNarrative && module.knowledgeChecks.length > 0)).length;
+const learnerReady = learnerCourses.filter((course) =>
+  course.authoring.available &&
+  course.learnerExperience.assessmentBlueprint &&
+  Array.isArray(course.learnerExperience.sourceRegister) &&
+  course.learnerExperience.modules.every((module) => module.lessonNarrative && module.knowledgeChecks.length > 0),
+).length;
 console.log(`[Academy Studio] Generated governed public catalog with ${publicCourses.length} publication-approved course(s).`);
 console.log(`[Academy Studio] Generated protected owner-review learner catalog with ${learnerCourses.length} course(s), ${learnerReady} learner-content-ready.`);
