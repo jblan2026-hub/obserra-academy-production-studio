@@ -21,7 +21,17 @@ function authoredPackage(courseDir) {
   return readJson(packagePath);
 }
 
-function publicCourse(manifest) {
+function tutorProfile(courseDir) {
+  const tutorPath = path.join(courseDir, "ai-tutor-profile.json");
+  if (!fs.existsSync(tutorPath)) return null;
+  return readJson(tutorPath);
+}
+
+function publicCourse(manifest, courseDir) {
+  const modules = Array.isArray(manifest.course.modules) ? manifest.course.modules : [];
+  const nestedLessons = modules.flatMap((module) => Array.isArray(module.lessons) ? module.lessons : []);
+  const tutor = tutorProfile(courseDir);
+
   return {
     id: manifest.course.id,
     title: manifest.course.title,
@@ -31,17 +41,38 @@ function publicCourse(manifest) {
     audience: manifest.course.audience,
     description: manifest.course.description,
     duration: manifest.course.duration,
+    instructionalHours: manifest.course.instructionalHours ?? null,
+    lessonCount: manifest.course.lessonCount ?? nestedLessons.length || modules.length,
+    aiNative: manifest.course.aiNative === true,
+    sourceOfTruth: manifest.course.sourceOfTruth ?? null,
+    sourceVerifiedAt: manifest.course.examAlignment?.currentAsOf ?? null,
     prerequisites: manifest.course.prerequisites || [],
     outcomes: manifest.course.outcomes,
-    modules: manifest.course.modules.map((module, index) => ({
+    examAlignment: manifest.course.examAlignment ?? null,
+    trademarkNotice: manifest.trademarkNotice ?? null,
+    modules: modules.map((module, index) => ({
       id: module.id,
       sequence: index + 1,
       title: module.title,
       duration: module.duration,
       format: module.format,
       description: module.description,
+      lessonCount: Array.isArray(module.lessons) ? module.lessons.length : null,
+      lessons: Array.isArray(module.lessons)
+        ? module.lessons.map((lesson, lessonIndex) => ({
+            id: lesson.id,
+            sequence: lessonIndex + 1,
+            title: lesson.title,
+            durationMinutes: lesson.durationMinutes,
+            format: lesson.format,
+            description: lesson.description,
+            objectives: lesson.objectives ?? [],
+            sourceIds: lesson.sourceIds ?? [],
+            videoPackage: lesson.videoPackage ?? null,
+          }))
+        : [],
     })),
-    moduleCount: manifest.course.modules.length,
+    moduleCount: modules.length,
     tags: manifest.tags,
     commerce: {
       model: manifest.commerce.model,
@@ -60,6 +91,18 @@ function publicCourse(manifest) {
       expiresAtCompletion: true,
       completionRecordRetained: true,
     },
+    aiTutor: tutor
+      ? {
+          assistantId: tutor.assistantId,
+          displayName: tutor.displayName,
+          entitlementCode: tutor.access?.entitlementCode ?? null,
+          activation: tutor.access?.activation ?? null,
+          courseScoped: tutor.access?.crossCourseAccess === false,
+          assessmentAnswerDisclosure: tutor.assessmentMode?.answerDisclosure === true,
+          adaptiveLearning: tutor.adaptiveLearning?.enabled === true,
+          disclaimer: tutor.disclaimer ?? null,
+        }
+      : null,
     completion: {
       allLessonsRequired: manifest.completion.allLessonsRequired,
       assessmentRequired: manifest.completion.assessmentRequired,
@@ -87,21 +130,21 @@ function publicCourse(manifest) {
   };
 }
 
-function learnerCourse(manifest, authored) {
+function learnerCourse(manifest, authored, courseDir) {
   const authoredContent = authored?.content ?? {};
   const authoredModules = new Map((authoredContent.modules ?? []).map((module) => [module.id, module]));
   const workbook = new Map((authoredContent.learnerWorkbook ?? []).map((entry) => [entry.moduleId, entry]));
 
   return {
-    ...publicCourse(manifest),
+    ...publicCourse(manifest, courseDir),
     publication: {
-      approved: manifest.release?.publishToAcademy === true && ["approved", "published"].includes(manifest.release?.status),
+      approved: manifest.release?.publishToAcademy === true && ["approved", "published"].includes(String(manifest.release?.status ?? "").toLowerCase()),
       status: manifest.release?.status ?? "draft",
     },
     access: {
       surface: "post-purchase-learner",
       requiresEntitlement: true,
-      ownerReviewEligible: manifest.release?.status !== "archived",
+      ownerReviewEligible: !["archived", "retired"].includes(String(manifest.release?.status ?? "draft").toLowerCase()),
       ownerReviewBypassSupported: true,
       purchaseNotRequiredForOwnerReview: true,
     },
@@ -111,7 +154,7 @@ function learnerCourse(manifest, authored) {
       frameworkAlignment: authoredContent.frameworkAlignment ?? [],
       assessmentBlueprint: authoredContent.assessmentBlueprint ?? null,
       modules: manifest.course.modules.map((module, index) => {
-        const lesson = authoredModules.get(module.id) ?? {};
+        const authoredModule = authoredModules.get(module.id) ?? {};
         const learnerWorkbook = workbook.get(module.id) ?? null;
         return {
           id: module.id,
@@ -120,19 +163,20 @@ function learnerCourse(manifest, authored) {
           duration: module.duration,
           format: module.format,
           description: module.description,
-          learningObjectives: lesson.learningObjectives ?? [],
-          openingContext: lesson.openingContext ?? "",
-          lessonNarrative: lesson.lessonNarrative ?? "",
-          keyConcepts: lesson.keyConcepts ?? [],
-          executiveExample: lesson.executiveExample ?? "",
-          operationalExample: lesson.operationalExample ?? "",
-          scenario: lesson.scenario ?? null,
-          exercise: lesson.exercise ?? null,
-          knowledgeChecks: lesson.knowledgeChecks ?? [],
-          slideNarrative: lesson.slideNarrative ?? [],
-          videoScript: lesson.videoScript ?? null,
-          accessibilityNotes: lesson.accessibilityNotes ?? [],
-          sourcePlaceholders: lesson.sourcePlaceholders ?? [],
+          manifestLessons: Array.isArray(module.lessons) ? module.lessons : [],
+          learningObjectives: authoredModule.learningObjectives ?? [],
+          openingContext: authoredModule.openingContext ?? "",
+          lessonNarrative: authoredModule.lessonNarrative ?? "",
+          keyConcepts: authoredModule.keyConcepts ?? [],
+          executiveExample: authoredModule.executiveExample ?? "",
+          operationalExample: authoredModule.operationalExample ?? "",
+          scenario: authoredModule.scenario ?? null,
+          exercise: authoredModule.exercise ?? null,
+          knowledgeChecks: authoredModule.knowledgeChecks ?? [],
+          slideNarrative: authoredModule.slideNarrative ?? [],
+          videoScript: authoredModule.videoScript ?? null,
+          accessibilityNotes: authoredModule.accessibilityNotes ?? [],
+          sourcePlaceholders: authoredModule.sourcePlaceholders ?? [],
           workbook: learnerWorkbook,
         };
       }),
@@ -170,12 +214,13 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true })) {
   const manifest = readJson(manifestPath);
   assertBrandAndTags(manifest, manifestPath);
 
-  const publicationApproved = manifest.release.publishToAcademy === true && ["approved", "published"].includes(manifest.release.status);
-  const ownerReviewEligible = manifest.release?.status !== "archived";
+  const releaseStatus = String(manifest.release?.status ?? "draft").toLowerCase();
+  const publicationApproved = manifest.release?.publishToAcademy === true && ["approved", "published"].includes(releaseStatus);
+  const ownerReviewEligible = !["archived", "retired"].includes(releaseStatus);
   const authored = authoredPackage(courseDir);
 
-  if (publicationApproved) publicCourses.push(publicCourse(manifest));
-  if (ownerReviewEligible) learnerCourses.push(learnerCourse(manifest, authored));
+  if (publicationApproved) publicCourses.push(publicCourse(manifest, courseDir));
+  if (ownerReviewEligible) learnerCourses.push(learnerCourse(manifest, authored, courseDir));
 }
 
 publicCourses.sort((a, b) => a.title.localeCompare(b.title));
@@ -189,9 +234,9 @@ const shared = {
   disclaimer: officialBrand.disclaimer,
 };
 
-fs.writeFileSync(publicCatalogPath, `${JSON.stringify({ schemaVersion: "1.4", ...shared, courses: publicCourses }, null, 2)}\n`);
+fs.writeFileSync(publicCatalogPath, `${JSON.stringify({ schemaVersion: "1.5", ...shared, courses: publicCourses }, null, 2)}\n`);
 fs.writeFileSync(learnerCatalogPath, `${JSON.stringify({
-  schemaVersion: "1.2",
+  schemaVersion: "1.3",
   ...shared,
   accessClassification: "protected-owner-review-and-learner-content",
   ownerReviewSupported: true,
@@ -200,10 +245,10 @@ fs.writeFileSync(learnerCatalogPath, `${JSON.stringify({
 }, null, 2)}\n`);
 
 const learnerReady = learnerCourses.filter((course) =>
-  course.authoring.available &&
-  course.learnerExperience.assessmentBlueprint &&
-  Array.isArray(course.learnerExperience.sourceRegister) &&
-  course.learnerExperience.modules.every((module) => module.lessonNarrative && module.knowledgeChecks.length > 0),
+  course.authoring.available
+  && course.learnerExperience.assessmentBlueprint
+  && Array.isArray(course.learnerExperience.sourceRegister)
+  && course.learnerExperience.modules.every((module) => module.lessonNarrative && module.knowledgeChecks.length > 0),
 ).length;
 console.log(`[Academy Studio] Generated governed public catalog with ${publicCourses.length} publication-approved course(s).`);
 console.log(`[Academy Studio] Generated protected owner-review learner catalog with ${learnerCourses.length} course(s), ${learnerReady} learner-content-ready.`);
