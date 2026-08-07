@@ -35,7 +35,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      # Protected learner authoring runs only in this controlled ephemeral workflow workspace.
       ACADEMY_AUTHORING_PROVIDER: openai
       ACADEMY_AUTHORING_CONCURRENCY: 6
       ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
@@ -68,23 +67,53 @@ jobs:
 
       - name: Stop unsafe automatic repair for invalid manifests
         if: steps.audit.outputs.blocking_findings != '0'
+        shell: bash
         run: |
-          gh issue create \
-            --title "Academy course manifest alignment failure" \
-            --body "The continuous Academy audit found ${{ steps.audit.outputs.blocking_findings }} blocking manifest alignment finding(s). Automatic authoring and build were stopped. Review catalog/continuous-course-audit.json from workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          TITLE="Academy course manifest alignment failure"
+          BODY="The continuous Academy audit found ${{ steps.audit.outputs.blocking_findings }} blocking manifest alignment finding(s). Automatic authoring and build were stopped. Review catalog/continuous-course-audit.json from workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          ISSUE_NUMBER="$(gh issue list --state open --search \"$TITLE in:title\" --json number --jq '.[0].number // empty')"
+          if [ -n "$ISSUE_NUMBER" ]; then
+            gh issue edit "$ISSUE_NUMBER" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY"
+          fi
           exit 1
+
+      - name: Close resolved manifest blocker issue
+        if: steps.audit.outputs.blocking_findings == '0'
+        shell: bash
+        run: |
+          TITLE="Academy course manifest alignment failure"
+          ISSUE_NUMBER="$(gh issue list --state open --search \"$TITLE in:title\" --json number --jq '.[0].number // empty')"
+          if [ -n "$ISSUE_NUMBER" ]; then
+            gh issue close "$ISSUE_NUMBER" --comment "Resolved by workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          fi
 
       - name: Require protected authoring and LCMS credentials
         if: steps.audit.outputs.authoring_required == 'true'
+        shell: bash
         run: |
           MISSING=""
           test -n "$OPENAI_API_KEY" || MISSING="OPENAI_API_KEY"
           test -n "$DATABASE_URL" || MISSING="${MISSING:+$MISSING, }ACADEMY_DATABASE_URL"
+          TITLE="Academy protected learner build credentials required"
           if [ -n "$MISSING" ]; then
-            gh issue create \
-              --title "Academy protected learner build credentials required" \
-              --body "The 60-course owner-review learner build requires protected credentials that are not configured: $MISSING. Protected learner content will not be generated or written to the public repository. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            BODY="The 60-course owner-review learner build requires protected credentials that are not configured: $MISSING. Protected learner content will not be generated or written to the public repository. Latest workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            ISSUE_NUMBER="$(gh issue list --state open --search \"$TITLE in:title\" --json number --jq '.[0].number // empty')"
+            if [ -n "$ISSUE_NUMBER" ]; then
+              gh issue edit "$ISSUE_NUMBER" --body "$BODY"
+            else
+              gh issue create --title "$TITLE" --body "$BODY"
+            fi
             exit 1
+          fi
+
+          ISSUE_NUMBERS="$(gh issue list --state open --search \"$TITLE in:title\" --json number --jq '.[].number')"
+          if [ -n "$ISSUE_NUMBERS" ]; then
+            while read -r ISSUE_NUMBER; do
+              [ -n "$ISSUE_NUMBER" ] || continue
+              gh issue close "$ISSUE_NUMBER" --comment "Protected Academy credentials are configured. Resolved by workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            done <<< "$ISSUE_NUMBERS"
           fi
 
       - name: AI author owner-review courses with controlled parallel workers
