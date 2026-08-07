@@ -5,6 +5,7 @@ import { canPerformFinalCourseReview } from "@/lib/final-review-auth";
 import { finalReviewStudentExperienceUrl } from "@/lib/final-review-student-url";
 import { getFinalReviewReadiness } from "@/lib/repositories/final-review-repository";
 import { submitFinalReviewDecision } from "../actions";
+import { StudentExperienceReview } from "../StudentExperienceReview";
 import styles from "../final-review.module.css";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ export default async function FinalReviewCoursePage({
         <div className={styles.brand}>
           <span>OBSERRA</span>
           <strong>ACADEMY FINAL REVIEW</strong>
-          <small>Exact paid learner experience</small>
+          <small>Exact paid learner package · owner-only gate</small>
         </div>
         <div className={styles.actions}>
           <Link className={styles.link} href="/admin/final-review">Back to Final Review Queue</Link>
@@ -44,7 +45,7 @@ export default async function FinalReviewCoursePage({
             rel="noreferrer"
             target="_blank"
           >
-            Open student experience in new window
+            Run end-to-end student route check
           </a>
         </div>
       </div>
@@ -55,9 +56,10 @@ export default async function FinalReviewCoursePage({
             <p className={styles.eyebrow}>OWNER FINAL REVIEW · PAID LEARNER EXPERIENCE</p>
             <h1>{preview.title}</h1>
             <p>
-              This frame loads the staged learner route used after paid entitlement. It is not a
-              script view, internal storyboard, static approximation, or prototype. Approval records
-              your owner decision but does not publish the course.
+              This page renders the staged final learner package directly from the governed LCMS
+              records used to build the paid experience. Draft scripts, partial media, prototypes,
+              and incomplete lessons cannot enter this route. The external route check opens the
+              entitlement-protected Academy page for a final end-to-end validation.
             </p>
           </div>
           <div className={styles.reviewFacts}>
@@ -69,18 +71,7 @@ export default async function FinalReviewCoursePage({
           </div>
         </header>
 
-        <section className={styles.experienceFrame} aria-label="Exact staged paid learner experience">
-          <div className={styles.frameLabel}>
-            OWNER REVIEW FRAME · EXACT STAGED STUDENT ROUTE · NO AUTOMATIC PUBLICATION
-          </div>
-          <iframe
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-            referrerPolicy="no-referrer"
-            src={studentExperienceUrl}
-            title={`${preview.title} paid learner experience`}
-          />
-        </section>
+        <StudentExperienceReview preview={preview} />
 
         <div className={styles.reviewGrid}>
           <section className={styles.reviewPanel}>
@@ -116,7 +107,7 @@ export default async function FinalReviewCoursePage({
               />
               <label className={styles.confirmation}>
                 <input name="studentExperienceReviewed" required type="checkbox" value="confirmed" />
-                <span>I reviewed the actual staged experience presented to an entitled paying learner.</span>
+                <span>I reviewed the actual final package and completed the entitlement-protected student-route check.</span>
               </label>
               <label className={styles.confirmation}>
                 <input name="noAutomaticPublication" required type="checkbox" value="confirmed" />
