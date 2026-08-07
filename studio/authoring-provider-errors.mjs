@@ -44,8 +44,12 @@ export function classifyProviderHttpFailure({ provider, status, body }) {
   const quotaExhausted =
     status === 429 && (
       code.includes("insufficient_quota") ||
+      code.includes("credit_balance_exhausted") ||
       type.includes("insufficient_quota") ||
+      type.includes("credit_balance_exhausted") ||
       message.includes("exceeded your current quota") ||
+      message.includes("no credits remaining") ||
+      message.includes("add credits to continue") ||
       message.includes("billing quota") ||
       message.includes("billing limit")
     );
@@ -74,7 +78,7 @@ export function classifyProviderHttpFailure({ provider, status, body }) {
     };
   }
 
-  if ([400, 404, 413, 422].includes(status)) {
+  if ([300, 301, 302, 303, 307, 308, 400, 404, 413, 422].includes(status)) {
     return {
       provider,
       category: "provider_request_invalid",
