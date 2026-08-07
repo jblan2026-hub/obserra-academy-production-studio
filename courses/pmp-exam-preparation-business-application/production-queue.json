@@ -20,6 +20,8 @@
     "answer-key.json - section one draft",
     "video-scripts/01-course-orientation.md",
     "video-scripts/02-exam-architecture.md",
+    "video-scripts/03-people-common-vision.md",
+    "video-scripts/04-people-conflict.md",
     "docs/AI-NATIVE-EVIDENCE-GROUNDED-COURSE-STANDARD.md",
     "AI-native course packaging support in studio/build-course.mjs"
   ],
@@ -36,7 +38,7 @@
     "practiceQuestionsRequired": 180,
     "practiceQuestionsReleaseEligible": 59,
     "practiceQuestionsBlockedByQualityReview": 1,
-    "videoScriptsDrafted": 2,
+    "videoScriptsDrafted": 4,
     "videoScriptsRequired": 31,
     "protectedAssessmentSectionsSpecified": 3,
     "protectedAssessmentSectionsRequired": 3,
@@ -66,7 +68,7 @@
     },
     {
       "priority": 3,
-      "work": "Create detailed narration scripts, source cards, visual treatments, interactions, knowledge checks, and tutor handoffs for the remaining 29 instructional videos.",
+      "work": "Create detailed narration scripts, source cards, visual treatments, interactions, knowledge checks, and tutor handoffs for the remaining 27 instructional videos.",
       "owner": "Instructional and Video Production",
       "gate": "Every claim mapped to an approved source or labeled instructor interpretation"
     },
@@ -116,7 +118,7 @@
   "releaseBlockers": [
     "Only 60 of 180 original protected-exam questions are drafted.",
     "One drafted question is explicitly blocked for correction.",
-    "Only two of 31 instructional video scripts are drafted.",
+    "Only four of 31 instructional video scripts are drafted.",
     "No mastered lesson videos, captions, transcripts, storyboards, or rights ledger exist yet.",
     "PMP SME, legal, brand, accessibility, assessment, AI, commerce, and owner reviews are pending.",
     "The public Obserra Academy catalog does not yet contain an approved PMP course record to control public title, price, checkout, and release claims.",
@@ -129,6 +131,6 @@
     "courseMayGuaranteeEligibility": false,
     "courseMayGuaranteeExamSuccess": false,
     "videoMayBeCalledRendered": false,
-    "currentAccurateDescription": "A governed PMP course production foundation with a complete 35-hour architecture, full ECO task mapping, detailed source-grounded instructional materials, AI tutor policy, cinematic production standard, two production scripts, and the first 60 original assessment items."
+    "currentAccurateDescription": "A governed PMP course production foundation with a complete 35-hour architecture, full ECO task mapping, detailed source-grounded instructional materials, AI tutor policy, cinematic production standard, four production scripts, and the first 60 original assessment items."
   }
 }
