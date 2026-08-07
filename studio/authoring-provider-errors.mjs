@@ -2,6 +2,7 @@ export const AUTHORING_EXIT_CODES = Object.freeze({
   PROVIDER_QUOTA_EXHAUSTED: 42,
   PROVIDER_AUTHENTICATION_FAILED: 43,
   PROVIDER_REQUEST_INVALID: 44,
+  CHECKPOINT_PERSISTENCE_FAILED: 45,
 });
 
 export class ProviderAuthoringError extends Error {
@@ -130,6 +131,13 @@ export function classificationFromAuthoringExit({ exitCode, timedOut = false, si
   if (exitCode === AUTHORING_EXIT_CODES.PROVIDER_REQUEST_INVALID) {
     return {
       category: "provider_request_invalid",
+      retryable: false,
+      exitCode,
+    };
+  }
+  if (exitCode === AUTHORING_EXIT_CODES.CHECKPOINT_PERSISTENCE_FAILED) {
+    return {
+      category: "authoring_checkpoint_persistence_failed",
       retryable: false,
       exitCode,
     };
