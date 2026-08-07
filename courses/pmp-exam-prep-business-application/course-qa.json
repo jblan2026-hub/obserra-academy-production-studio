@@ -3,7 +3,7 @@
   "courseId": "pmp-exam-prep-business-application",
   "courseVersion": "0.1.0",
   "status": "not-release-ready",
-  "recordedAt": "2026-08-07T05:40:00Z",
+  "recordedAt": "2026-08-07T06:10:00Z",
   "automatedRepositoryValidationExecutedInCurrentSession": false,
   "automatedValidationLimitation": "GitHub-hosted validation is running against the evolving branch. A complete current-head success result has not yet been recorded, so repository, package, catalog, LCMS, security, and rollback validation remain open release gates.",
   "structuralObservations": {
@@ -13,9 +13,12 @@
     "ecoDomainsMapped": 3,
     "ecoTasksMapped": 26,
     "authoritativeSourceArtifacts": 1,
-    "videoScriptsDrafted": 5,
+    "authoritativeSourcesExpandedForTeamLearning": true,
+    "videoScriptsDrafted": 9,
     "assessmentQuestionsDrafted": 30,
     "assessmentTarget": 180,
+    "examOrientationModuleScriptsComplete": true,
+    "peopleVisionLeadershipModuleScriptsComplete": true,
     "duplicateCourseManifestRemoved": true,
     "ownerFinalReviewGateImplemented": true,
     "ownerFinalReviewRendersDatabasePackageDirectly": true,
@@ -36,9 +39,9 @@
     },
     {
       "id": "QA-003",
-      "check": "Primary-source and PMBOK knowledge records exist",
+      "check": "Primary-source, standards, government, and peer-reviewed research records exist",
       "status": "pass-structural",
-      "evidence": "Authoritative source, crosswalk, traceability, and knowledge-spine records are present."
+      "evidence": "The governed source register includes PMI, ISO, GAO, NASA investigation, and peer-reviewed team-learning and psychological-safety research with usage limitations."
     },
     {
       "id": "QA-004",
@@ -50,13 +53,13 @@
       "id": "QA-005",
       "check": "Cinematic video production system exists",
       "status": "pass-structural",
-      "evidence": "Video production bible, visual brief, and the first five detailed lesson scripts exist."
+      "evidence": "Video production bible, visual brief, and the first nine detailed lesson scripts exist. The complete exam-orientation and first People leadership module script sets are drafted."
     },
     {
       "id": "QA-006",
       "check": "All 35 lesson scripts are complete",
       "status": "fail-incomplete",
-      "evidence": "Five of 35 production scripts are drafted."
+      "evidence": "Nine of 35 production scripts are drafted."
     },
     {
       "id": "QA-007",
@@ -111,6 +114,12 @@
       "check": "Owner approval cannot publish automatically",
       "status": "pass-structural",
       "evidence": "Approval records an immutable owner decision and moves the staged release to approved and course to ready while audit metadata explicitly records publicationTriggered false."
+    },
+    {
+      "id": "QA-016",
+      "check": "Documented public cases include limitations and respectful treatment",
+      "status": "pass-structural",
+      "evidence": "GAO and NASA cases are source-labeled, separated from synthetic scenarios, and include limitations against unsupported causal claims or sensational treatment."
     }
   ],
   "releaseDecision": {
