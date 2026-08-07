@@ -7,6 +7,7 @@ import { officialBrand } from "./brand-policy.mjs";
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
 const catalogRoot = path.join(root, "catalog");
+const AUTHORING_POLICY_VERSION = "2026.08.07.2";
 const requiredGeneratedFiles = [
   "instructor-manuscript.md",
   "learner-guide.md",
@@ -15,13 +16,13 @@ const requiredGeneratedFiles = [
   "answer-key.json",
   "visual-brief.md",
 ];
-const nonBlockingFindings = new Set([
+const authoringFindings = [
   "missing-ai-course-package",
   "stale-ai-course-package",
-  "draft-commerce-price-unset",
-  "draft-branding-not-applied",
-  ...requiredGeneratedFiles.map((name) => `missing-generated-${name}`),
-]);
+  "untraceable-ai-course-package",
+  "outdated-ai-authoring-policy",
+];
+const draftFindings = ["draft-commerce-price-unset", "draft-branding-not-applied"];
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -29,6 +30,10 @@ function readJson(filePath) {
 
 function stableHash(value) {
   return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+function authoringSourceHash(manifest) {
+  return stableHash({ authoringPolicyVersion: AUTHORING_POLICY_VERSION, manifest });
 }
 
 function parseDurationMinutes(value) {
@@ -59,15 +64,16 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
   const courseId = course.id ?? entry.name;
   const modules = Array.isArray(course.modules) ? course.modules : [];
   const nestedLessons = modules.flatMap((module) => Array.isArray(module?.lessons) ? module.lessons : []);
-  const releaseApproved = manifest.release?.publishToAcademy === true
-    && ["approved", "published"].includes(String(manifest.release?.status ?? "").toLowerCase());
+  const releaseStatus = String(manifest.release?.status ?? "draft").toLowerCase();
+  const publicationApproved = manifest.release?.publishToAcademy === true && ["approved", "published"].includes(releaseStatus);
+  const ownerReviewEligible = !["retired", "archived"].includes(releaseStatus);
   const courseFindings = [];
 
   if (courseId !== entry.name) courseFindings.push("directory-course-id-mismatch");
   for (const field of ["id", "title", "description", "duration", "department", "level", "track", "audience"]) {
     if (!String(course[field] ?? "").trim()) courseFindings.push(`missing-course-${field}`);
   }
-  if (!Array.isArray(course?.outcomes) || course.outcomes.length === 0) courseFindings.push("missing-course-outcomes");
+  if (!Array.isArray(course.outcomes) || course.outcomes.length === 0) courseFindings.push("missing-course-outcomes");
   if (modules.length === 0) courseFindings.push("missing-course-modules");
 
   const moduleIds = new Set();
@@ -83,16 +89,18 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
     else moduleMinutes += minutes;
   }
 
+  const assessmentMinutes = parseDurationMinutes(manifest.completion?.assessmentDuration);
+  const accountedMinutes = moduleMinutes + (Number.isFinite(assessmentMinutes) && assessmentMinutes > 0 ? assessmentMinutes : 0);
   const advertisedMinutes = parseDurationMinutes(course.duration);
   if (!Number.isFinite(advertisedMinutes) || advertisedMinutes <= 0) courseFindings.push("invalid-course-duration");
-  else if (moduleMinutes !== advertisedMinutes) courseFindings.push(`duration-mismatch-${moduleMinutes}-vs-${advertisedMinutes}`);
+  else if (accountedMinutes !== advertisedMinutes) courseFindings.push(`duration-mismatch-${accountedMinutes}-vs-${advertisedMinutes}`);
 
   const price = Number(manifest.commerce?.price);
   if (!manifest.commerce || !Number.isFinite(price) || price < 0) {
     courseFindings.push("invalid-commerce-price");
-  } else if (releaseApproved && price <= 0) {
+  } else if (publicationApproved && price <= 0) {
     courseFindings.push("invalid-commerce-price");
-  } else if (!releaseApproved && price <= 0) {
+  } else if (!publicationApproved && price <= 0) {
     courseFindings.push("draft-commerce-price-unset");
   }
 
@@ -101,9 +109,8 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
   if (!Number.isFinite(Number(manifest.completion?.passingScore)) || Number(manifest.completion.passingScore) < 1) courseFindings.push("invalid-passing-score");
   if (manifest.completion?.certificateIssued !== true) courseFindings.push("certificate-not-enabled");
 
-  const logoAsset = manifest.branding?.logoAsset;
-  if (logoAsset !== officialBrand.officialLogo.assetPath) {
-    courseFindings.push(releaseApproved ? "official-logo-mismatch" : "draft-branding-not-applied");
+  if (manifest.branding?.logoAsset !== officialBrand.officialLogo.assetPath) {
+    courseFindings.push(publicationApproved ? "official-logo-mismatch" : "draft-branding-not-applied");
   }
 
   const missingGenerated = requiredGeneratedFiles.filter((name) => !fs.existsSync(path.join(courseDir, name)));
@@ -113,60 +120,90 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
   const authoringMissing = !fs.existsSync(authoringPath);
   if (authoringMissing) courseFindings.push("missing-ai-course-package");
 
-  const manifestHash = stableHash(manifest);
+  const manifestHash = authoringSourceHash(manifest);
   let packageManifestHash = null;
+  let packageAuthoringPolicyVersion = null;
   if (!authoringMissing) {
     const authored = readJson(authoringPath);
     packageManifestHash = authored.sourceManifestHash ?? authored.manifestHash ?? null;
-    if (packageManifestHash && packageManifestHash !== manifestHash) courseFindings.push("stale-ai-course-package");
+    packageAuthoringPolicyVersion = authored.authoringPolicyVersion ?? null;
+    if (!packageManifestHash) courseFindings.push("untraceable-ai-course-package");
+    else if (packageManifestHash !== manifestHash) courseFindings.push("stale-ai-course-package");
+    if (packageAuthoringPolicyVersion !== AUTHORING_POLICY_VERSION) courseFindings.push("outdated-ai-authoring-policy");
   }
 
+  const nonBlockingFindings = new Set([
+    ...authoringFindings,
+    ...draftFindings,
+    ...requiredGeneratedFiles.map((name) => `missing-generated-${name}`),
+  ]);
   const courseBlockingFindings = courseFindings.filter((finding) => !nonBlockingFindings.has(finding));
+
   courses.push({
     courseId,
     title: course.title,
-    approved: releaseApproved,
+    publicationApproved,
+    ownerReviewEligible,
+    aiNative: course.aiNative === true,
     moduleCount: modules.length,
     lessonCount: nestedLessons.length || modules.length,
     moduleMinutes,
+    assessmentMinutes: Number.isFinite(assessmentMinutes) ? assessmentMinutes : 0,
+    accountedMinutes,
     advertisedMinutes,
+    authoringPolicyVersion: AUTHORING_POLICY_VERSION,
     manifestHash,
     packageManifestHash,
+    packageAuthoringPolicyVersion,
     authoringMissing,
     findings: courseFindings,
     blockingFindings: courseBlockingFindings,
   });
   for (const finding of courseFindings) {
-    findings.push({
-      courseId,
-      finding,
-      blocking: !nonBlockingFindings.has(finding),
-    });
+    findings.push({ courseId, finding, blocking: !nonBlockingFindings.has(finding) });
   }
 }
 
-const approvedCourses = courses.filter((course) => course.approved);
-const authoringRequired = approvedCourses.some((course) => course.authoringMissing || course.findings.includes("stale-ai-course-package"));
-const buildRequired = approvedCourses.some((course) => course.blockingFindings.length > 0);
+const publicationApprovedCourses = courses.filter((course) => course.publicationApproved);
+const ownerReviewCourses = courses.filter((course) => course.ownerReviewEligible);
+const expectedOwnerReviewCourses = Number(process.env.ACADEMY_EXPECTED_REVIEW_COURSES ?? 0);
+if (Number.isInteger(expectedOwnerReviewCourses) && expectedOwnerReviewCourses > 0 && ownerReviewCourses.length !== expectedOwnerReviewCourses) {
+  findings.push({
+    courseId: "academy-catalog",
+    finding: `owner-review-course-count-mismatch-${ownerReviewCourses.length}-vs-${expectedOwnerReviewCourses}`,
+    blocking: true,
+  });
+}
+
+const authoringRequired = ownerReviewCourses.some((course) =>
+  authoringFindings.some((finding) => course.findings.includes(finding)),
+);
+const buildRequired = ownerReviewCourses.some((course) =>
+  course.blockingFindings.length > 0
+  || course.findings.some((finding) => finding.startsWith("missing-generated-")),
+);
 const blockingFindings = findings.filter((item) => item.blocking);
 
 fs.mkdirSync(catalogRoot, { recursive: true });
 const report = {
-  schemaVersion: "1.1",
+  schemaVersion: "1.4",
   generatedAt: new Date().toISOString(),
   policy: {
-    lessonCount: "manifest-defined-per-course",
-    duration: "sum-of-manifest-module-durations-must-equal-advertised-course-duration",
+    authoringPolicyVersion: AUTHORING_POLICY_VERSION,
+    lessonCount: "manifest-defined-per-course-with-nested-lesson-support",
+    duration: "module-durations-plus-explicit-final-assessment-duration-must-equal-advertised-course-duration",
     draftCommerce: "draft courses may retain a zero placeholder until owner and commerce approval",
-    officialLogo: officialBrand.officialLogo.assetPath,
     releaseBranding: "approved and published courses must use the owner-approved official logo",
-    authoring: "approved-missing-or-stale-packages-trigger-ai-authoring",
-    build: "approved-missing-or-stale-assets-trigger-governed-build",
+    authoring: "all owner-review-eligible missing, stale, untraceable, or older-policy packages trigger AI authoring",
+    build: "all owner-review-eligible missing assets or blocking findings trigger governed build",
+    publication: "only explicitly approved or published courses can enter the public catalog",
     directProductionPublish: false,
   },
   totals: {
     discovered: courses.length,
-    approved: approvedCourses.length,
+    ownerReviewEligible: ownerReviewCourses.length,
+    expectedOwnerReviewEligible: Number.isInteger(expectedOwnerReviewCourses) && expectedOwnerReviewCourses > 0 ? expectedOwnerReviewCourses : null,
+    publicationApproved: publicationApprovedCourses.length,
     findings: findings.length,
     blockingFindings: blockingFindings.length,
   },
@@ -178,9 +215,11 @@ fs.writeFileSync(path.join(catalogRoot, "continuous-course-audit.json"), `${JSON
 writeOutput("authoring_required", String(authoringRequired));
 writeOutput("build_required", String(buildRequired));
 writeOutput("blocking_findings", String(blockingFindings.length));
-writeOutput("approved_courses", String(approvedCourses.length));
+writeOutput("owner_review_courses", String(ownerReviewCourses.length));
+writeOutput("publication_approved_courses", String(publicationApprovedCourses.length));
+writeOutput("approved_courses", String(publicationApprovedCourses.length));
 
-console.log(`[Academy Studio] Audited ${courses.length} course manifests, including ${approvedCourses.length} approved course(s).`);
+console.log(`[Academy Studio] Audited ${courses.length} course manifests under authoring policy ${AUTHORING_POLICY_VERSION}, including ${ownerReviewCourses.length} owner-review-eligible and ${publicationApprovedCourses.length} publication-approved course(s).`);
 console.log(`[Academy Studio] AI authoring required: ${authoringRequired}. Governed build required: ${buildRequired}. Blocking findings: ${blockingFindings.length}.`);
 if (blockingFindings.length > 0) {
   for (const item of blockingFindings.slice(0, 100)) console.error(`[Academy Studio] ${item.courseId}: ${item.finding}`);
