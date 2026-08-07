@@ -4,20 +4,21 @@ import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const catalogPath = path.join(root, "catalog", "academy-learner-course-catalog.json");
-const expectedPublishedCourses = Number(process.env.ACADEMY_EXPECTED_PUBLISHED_COURSES || 60);
+const expectedReviewCourses = Number(process.env.ACADEMY_EXPECTED_REVIEW_COURSES || 60);
 
 if (!fs.existsSync(catalogPath)) throw new Error(`Learner catalog not found: ${catalogPath}`);
 const catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
 const courses = Array.isArray(catalog.courses) ? catalog.courses : [];
 const findings = [];
 
-if (courses.length !== expectedPublishedCourses) {
-  findings.push(`expected-${expectedPublishedCourses}-published-courses-found-${courses.length}`);
+if (courses.length !== expectedReviewCourses) {
+  findings.push(`expected-${expectedReviewCourses}-owner-review-courses-found-${courses.length}`);
 }
 
 for (const course of courses) {
   const prefix = course.id || course.title || "unknown-course";
   const modules = course.learnerExperience?.modules ?? [];
+  if (course.access?.ownerReviewEligible !== true) findings.push(`${prefix}:owner-review-not-eligible`);
   if (!course.authoring?.available) findings.push(`${prefix}:missing-authored-package`);
   if (!course.authoring?.sourceManifestHash) findings.push(`${prefix}:missing-source-manifest-hash`);
   if (!modules.length) findings.push(`${prefix}:missing-learner-modules`);
@@ -50,19 +51,20 @@ for (const course of courses) {
 
 const reportPath = path.join(root, "catalog", "learner-catalog-readiness.json");
 fs.writeFileSync(reportPath, `${JSON.stringify({
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
-  expectedPublishedCourses,
+  expectedReviewCourses,
   discoveredCourses: courses.length,
   ready: findings.length === 0,
+  productionPublicationIndependent: true,
   findingCount: findings.length,
   findings,
 }, null, 2)}\n`);
 
 if (findings.length) {
-  console.error(`[Academy Studio] Learner catalog readiness failed with ${findings.length} finding(s).`);
+  console.error(`[Academy Studio] Learner owner-review readiness failed with ${findings.length} finding(s).`);
   for (const finding of findings.slice(0, 200)) console.error(`- ${finding}`);
   process.exit(2);
 }
 
-console.log(`[Academy Studio] Learner catalog readiness passed for all ${courses.length} published course(s).`);
+console.log(`[Academy Studio] Learner owner-review readiness passed for all ${courses.length} course(s).`);
