@@ -42,6 +42,7 @@ jobs:
       ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
       ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
       ACADEMY_EXPECTED_REVIEW_COURSES: 60
+      ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
       ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: ${{ github.ref == 'refs/heads/agent/continue-course-buildout' && 'true' || 'false' }}
       STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
       STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
