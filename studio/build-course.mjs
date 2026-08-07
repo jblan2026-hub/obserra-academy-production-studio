@@ -22,12 +22,21 @@ const releaseDir = path.join(root, "releases", courseId, "FINAL");
 fs.rmSync(releaseDir, { recursive: true, force: true });
 fs.mkdirSync(releaseDir, { recursive: true });
 
-const copyIfPresent = (name) => {
+const copyPathIfPresent = (name) => {
   const source = path.join(sourceDir, name);
-  if (fs.existsSync(source)) fs.copyFileSync(source, path.join(releaseDir, name));
+  const destination = path.join(releaseDir, name);
+  if (!fs.existsSync(source)) return false;
+  const stat = fs.statSync(source);
+  if (stat.isDirectory()) {
+    fs.cpSync(source, destination, { recursive: true });
+  } else {
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.copyFileSync(source, destination);
+  }
+  return true;
 };
 
-for (const file of [
+const standardAssets = [
   "course-manifest.json",
   "instructor-manuscript.md",
   "learner-guide.md",
@@ -35,25 +44,72 @@ for (const file of [
   "assessment-bank.json",
   "answer-key.json",
   "release-notes.md",
-]) copyIfPresent(file);
+  "production-queue.json",
+];
 
-const required = ["course-manifest.json", "instructor-manuscript.md", "learner-guide.md", "assessment-bank.json", "answer-key.json"];
-const missing = required.filter((file) => !fs.existsSync(path.join(releaseDir, file)));
+const aiNativeAssets = [
+  "authoritative-sources.json",
+  "lesson-traceability.json",
+  "ai-tutor-profile.json",
+  "video-production-bible.md",
+  "video",
+];
+
+for (const asset of standardAssets) copyPathIfPresent(asset);
+if (manifest.course.aiNative === true) {
+  for (const asset of aiNativeAssets) copyPathIfPresent(asset);
+}
+
+const required = [
+  "course-manifest.json",
+  "instructor-manuscript.md",
+  "learner-guide.md",
+  "assessment-bank.json",
+  "answer-key.json",
+];
+if (manifest.course.aiNative === true) {
+  required.push(
+    "workbook.md",
+    "authoritative-sources.json",
+    "lesson-traceability.json",
+    "ai-tutor-profile.json",
+    "video-production-bible.md",
+    "video",
+  );
+}
+
+const missing = required.filter((asset) => !fs.existsSync(path.join(releaseDir, asset)));
 if (missing.length) {
   console.error(`[Academy Studio] Missing required production assets: ${missing.join(", ")}`);
   process.exit(1);
 }
 
+const nestedLessons = (manifest.course.modules ?? []).flatMap((module) => module.lessons ?? []);
 const releaseRecord = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   courseId: manifest.course.id,
   title: manifest.course.title,
   version: manifest.release.version,
   releaseStatus: manifest.release.status,
   publishToAcademy: manifest.release.publishToAcademy,
+  generatedAt: new Date().toISOString(),
+  sourceOfTruth: manifest.course.sourceOfTruth ?? null,
+  instructionalHours: manifest.course.instructionalHours ?? null,
+  lessonCount: manifest.course.lessonCount ?? nestedLessons.length,
+  aiNative: manifest.course.aiNative === true,
+  examAlignment: manifest.course.examAlignment ?? null,
+  trademarkNotice: manifest.trademarkNotice ?? null,
   commerce: manifest.commerce,
   completion: manifest.completion,
-  generatedAt: new Date().toISOString(),
+  access: manifest.course.aiNative === true
+    ? {
+        tutorActivation: "after-confirmed-paid-access",
+        courseScoped: true,
+        assessmentAnswerDisclosure: false,
+      }
+    : null,
+  packagedAssets: [...standardAssets, ...(manifest.course.aiNative === true ? aiNativeAssets : [])]
+    .filter((asset) => fs.existsSync(path.join(releaseDir, asset))),
 };
 fs.writeFileSync(path.join(releaseDir, "release-record.json"), `${JSON.stringify(releaseRecord, null, 2)}\n`);
 console.log(`[Academy Studio] Built FINAL release for ${manifest.course.title}`);
