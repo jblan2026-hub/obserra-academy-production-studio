@@ -14,6 +14,9 @@ on:
       - "studio/audit-course-build-readiness.mjs"
       - "studio/author-course-ai.mjs"
       - "studio/author-courses-parallel.mjs"
+      - "studio/authoring-provider-errors.mjs"
+      - "studio/preflight-authoring-provider.mjs"
+      - "studio/provider-http.mjs"
       - "studio/bootstrap-protected-database.mjs"
       - "studio/build-all-courses.mjs"
       - "studio/generate-catalog.mjs"
@@ -32,6 +35,9 @@ on:
       - "studio/audit-course-build-readiness.mjs"
       - "studio/author-course-ai.mjs"
       - "studio/author-courses-parallel.mjs"
+      - "studio/authoring-provider-errors.mjs"
+      - "studio/preflight-authoring-provider.mjs"
+      - "studio/provider-http.mjs"
       - "studio/bootstrap-protected-database.mjs"
       - "studio/build-all-courses.mjs"
       - "studio/generate-catalog.mjs"
@@ -54,12 +60,15 @@ jobs:
   audit-author-build:
     if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'agent/continue-course-buildout')
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 360
     env:
       ACADEMY_AUTHORING_PROVIDER: openai
       ACADEMY_AUTHORING_CONCURRENCY: 6
       ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
       ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
+      ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: 1200000
+      ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: 1500000
+      ACADEMY_AUTHORING_PREFLIGHT_TIMEOUT_MS: 120000
       ACADEMY_EXPECTED_REVIEW_COURSES: 60
       ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
       ACADEMY_SUPABASE_REGION: us-east-1
@@ -67,6 +76,8 @@ jobs:
       STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
       STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
+      OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
       DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -79,7 +90,7 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          BODY="Protected Academy owner-review build execution started. Authoring validation runs independently from protected LCMS database validation. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.head_ref || github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring target: 6 workers across 60 owner-review courses."
+          BODY="Protected Academy owner-review build execution started. Provider capacity preflight runs before any authoring worker. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.head_ref || github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring target: 6 workers across 60 owner-review courses."
           gh issue edit 17 --body "$BODY"
 
       - name: Configure Node.js
@@ -151,12 +162,15 @@ jobs:
           }
 
           const apiKey = trimOuterQuotes(String(process.env.OPENAI_API_KEY ?? '').trim());
-          if (apiKey && /\r|\n/.test(apiKey)) throw new Error('OPENAI_API_KEY contains an unexpected newline.');
+          const organization = trimOuterQuotes(String(process.env.OPENAI_ORGANIZATION ?? '').trim());
+          const project = trimOuterQuotes(String(process.env.OPENAI_PROJECT ?? '').trim());
+          for (const [name, value] of Object.entries({ OPENAI_API_KEY: apiKey, OPENAI_ORGANIZATION: organization, OPENAI_PROJECT: project })) {
+            if (value && /\r|\n/.test(value)) throw new Error(`${name} contains an unexpected newline.`);
+            if (value) fs.appendFileSync(output, `${name}=${value}\n`);
+          }
           const databaseUrl = normalizeDatabaseUrl(String(process.env.DATABASE_URL ?? ''));
-
-          if (apiKey) fs.appendFileSync(output, `OPENAI_API_KEY=${apiKey}\n`);
           if (databaseUrl) fs.appendFileSync(output, `DATABASE_URL=${databaseUrl}\n`);
-          console.log(`[Academy Studio] Protected secret formatting normalized. authoringCredential=${Boolean(apiKey)} databaseCredential=${Boolean(databaseUrl)}`);
+          console.log(`[Academy Studio] Protected secret formatting normalized. authoringCredential=${Boolean(apiKey)} organizationSelector=${Boolean(organization)} projectSelector=${Boolean(project)} databaseCredential=${Boolean(databaseUrl)}`);
           NODE
 
       - name: Install dependencies
@@ -207,7 +221,21 @@ jobs:
             gh issue edit 17 --body "$BODY" || true
             exit 1
           fi
-          echo "Protected authoring credential is present. Course generation can proceed independently from LCMS availability."
+          echo "Protected authoring credential is present. Provider capacity must pass before workers launch."
+
+      - name: Verify protected authoring provider capacity and routing
+        id: provider_preflight
+        if: steps.audit.outputs.authoring_required == 'true'
+        continue-on-error: true
+        run: npm run preflight:authoring
+
+      - name: Stop unavailable authoring provider before worker launch
+        if: steps.audit.outputs.authoring_required == 'true' && steps.provider_preflight.outcome != 'success'
+        shell: bash
+        run: |
+          BODY="The protected Academy authoring provider preflight failed before any course worker launched. No publication or LCMS load was attempted. Review catalog/authoring-provider-preflight.json in workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Confirm the API key belongs to the funded OpenAI organization and project, then rerun."
+          gh issue edit 17 --body "$BODY" || true
+          exit 1
 
       - name: AI author owner-review courses with controlled parallel workers
         if: steps.audit.outputs.authoring_required == 'true'
@@ -303,7 +331,7 @@ jobs:
         id: changes
         run: |
           git add -A courses catalog .gitignore
-          git reset -- catalog/academy-learner-course-catalog.json catalog/learner-catalog-readiness.json catalog/parallel-authoring-summary.json 2>/dev/null || true
+          git reset -- catalog/academy-learner-course-catalog.json catalog/learner-catalog-readiness.json catalog/parallel-authoring-summary.json catalog/authoring-provider-preflight.json 2>/dev/null || true
           git reset -- 'courses/*/generated/*' 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -342,11 +370,15 @@ jobs:
             --body "Automated governed build authored and validated the full owner-review learner catalog in a protected ephemeral workspace, then authenticated to the protected LCMS and loaded learner content. This PR contains only safe public manifests, metadata, and evidence. Production publication remains separately approval-controlled. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
 
       - name: Publish non-sensitive audit evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: continuous-academy-course-audit-${{ github.run_id }}
           path: |
+            catalog/authoring-provider-preflight.json
             catalog/continuous-course-audit.json
+            catalog/parallel-authoring-summary.json
             catalog/bulk-build-report.json
             catalog/academy-course-catalog.json
+          if-no-files-found: ignore
           retention-days: 180
