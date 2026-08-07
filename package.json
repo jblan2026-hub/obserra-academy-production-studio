@@ -14,6 +14,7 @@
     "validate": "npm run apply:course-policy && node studio/validate.mjs",
     "author:course": "node studio/author-course-ai.mjs",
     "author:all": "node studio/author-all-courses.mjs",
+    "author:parallel": "node studio/author-courses-parallel.mjs",
     "build:course": "npm run apply:course-policy && node studio/build-course.mjs && node studio/enforce-course-legal-assets.mjs",
     "build:all": "npm run apply:course-policy && node studio/build-all-courses.mjs && node studio/enforce-course-legal-assets.mjs",
     "catalog": "npm run apply:course-policy && node studio/generate-catalog.mjs",
