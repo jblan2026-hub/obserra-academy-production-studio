@@ -1,0 +1,246 @@
+{
+  "importedAt": "2026-08-07T09:43:03.021Z",
+  "sourcePath": "/home/runner/work/obserra-academy-production-studio/obserra-academy-production-studio/tmp/courseData.ts",
+  "courses": [
+    {
+      "id": "cybersecurity-foundations",
+      "status": "preserved-existing"
+    },
+    {
+      "id": "generative-ai-business-leaders",
+      "status": "created"
+    },
+    {
+      "id": "llms-for-leaders",
+      "status": "created"
+    },
+    {
+      "id": "security-awareness-high-risk",
+      "status": "created"
+    },
+    {
+      "id": "executive-travel-risk",
+      "status": "created"
+    },
+    {
+      "id": "digital-exposure-executive-privacy",
+      "status": "created"
+    },
+    {
+      "id": "ai-ready-workforce",
+      "status": "created"
+    },
+    {
+      "id": "coding-for-cyber-leaders",
+      "status": "created"
+    },
+    {
+      "id": "python-security-automation",
+      "status": "created"
+    },
+    {
+      "id": "api-security-integration",
+      "status": "created"
+    },
+    {
+      "id": "prompt-engineering-secure-workflows",
+      "status": "created"
+    },
+    {
+      "id": "zero-trust-strategy",
+      "status": "created"
+    },
+    {
+      "id": "cloud-security-executives",
+      "status": "created"
+    },
+    {
+      "id": "identity-security-access-governance",
+      "status": "created"
+    },
+    {
+      "id": "vulnerability-management",
+      "status": "created"
+    },
+    {
+      "id": "executive-protection-fundamentals",
+      "status": "created"
+    },
+    {
+      "id": "insider-threat-awareness",
+      "status": "created"
+    },
+    {
+      "id": "low-code-security-automation",
+      "status": "created"
+    },
+    {
+      "id": "cybersecurity-governance-policy",
+      "status": "created"
+    },
+    {
+      "id": "ai-executive-decision-making",
+      "status": "created"
+    },
+    {
+      "id": "ai-data-privacy-ip",
+      "status": "created"
+    },
+    {
+      "id": "executive-dashboards-data-ai",
+      "status": "created"
+    },
+    {
+      "id": "cybersecurity-business-leaders",
+      "status": "created"
+    },
+    {
+      "id": "building-trusted-teams",
+      "status": "created"
+    },
+    {
+      "id": "security-intelligence-careers",
+      "status": "created"
+    },
+    {
+      "id": "secure-enterprise-llm-deployment",
+      "status": "created"
+    },
+    {
+      "id": "ai-risk-ethics-governance",
+      "status": "created"
+    },
+    {
+      "id": "ai-policy-responsible-use",
+      "status": "created"
+    },
+    {
+      "id": "secure-ai-native-apps",
+      "status": "created"
+    },
+    {
+      "id": "secure-software-development-lifecycle",
+      "status": "created"
+    },
+    {
+      "id": "cloud-native-app-security",
+      "status": "created"
+    },
+    {
+      "id": "devsecops-enterprise-teams",
+      "status": "created"
+    },
+    {
+      "id": "incident-response-leadership",
+      "status": "created"
+    },
+    {
+      "id": "ransomware-readiness",
+      "status": "created"
+    },
+    {
+      "id": "digital-forensics-evidence",
+      "status": "created"
+    },
+    {
+      "id": "protective-intelligence-corporate-security",
+      "status": "created"
+    },
+    {
+      "id": "third-party-cyber-risk",
+      "status": "created"
+    },
+    {
+      "id": "business-continuity-cyber-resilience",
+      "status": "created"
+    },
+    {
+      "id": "crisis-communications-executives",
+      "status": "created"
+    },
+    {
+      "id": "executive-threat-assessment",
+      "status": "created"
+    },
+    {
+      "id": "ai-red-teaming-model-risk",
+      "status": "created"
+    },
+    {
+      "id": "cyber-risk-assessment",
+      "status": "created"
+    },
+    {
+      "id": "enterprise-risk-technology",
+      "status": "created"
+    },
+    {
+      "id": "building-security-program",
+      "status": "created"
+    },
+    {
+      "id": "crisis-leadership-cisos",
+      "status": "created"
+    },
+    {
+      "id": "board-communication-cybersecurity",
+      "status": "created"
+    },
+    {
+      "id": "cybersecurity-executive-metrics",
+      "status": "created"
+    },
+    {
+      "id": "workplace-violence-threat-management",
+      "status": "created"
+    },
+    {
+      "id": "family-security-digital-safety",
+      "status": "created"
+    },
+    {
+      "id": "regulatory-readiness-security",
+      "status": "created"
+    },
+    {
+      "id": "cybersecurity-budget-business-case",
+      "status": "created"
+    },
+    {
+      "id": "ciso-leadership-playbook",
+      "status": "created"
+    },
+    {
+      "id": "becoming-a-strategic-ciso",
+      "status": "created"
+    },
+    {
+      "id": "ciso-career-executive-presence",
+      "status": "created"
+    },
+    {
+      "id": "eios-enterprise-intelligence-overview",
+      "status": "created"
+    },
+    {
+      "id": "executive-decision-making-pressure",
+      "status": "created"
+    },
+    {
+      "id": "ethical-leadership-ai",
+      "status": "created"
+    },
+    {
+      "id": "leading-through-cyber-crisis",
+      "status": "created"
+    },
+    {
+      "id": "custom-ai-native-app-strategy",
+      "status": "created"
+    },
+    {
+      "id": "data-driven-risk-intelligence",
+      "status": "created"
+    }
+  ]
+}

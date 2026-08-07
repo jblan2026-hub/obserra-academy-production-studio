@@ -1,53 +1,284 @@
+<!-- OBSERRA-COURSE-LEGAL-START -->
+
+> **OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC**  \
+> **For educational and informational purposes only. Not certification, compliance validation, or professional advice.**
+
+### Informational-use disclaimer
+
+This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.
+
+### Assumption of risk, release, and limitation of liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.
+
+### Learner acknowledgement
+
+I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability.
+
+**Official brand:** brand/assets/obserra-official-logo.png  \
+**Classification:** OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.
+
+<!-- OBSERRA-COURSE-LEGAL-END -->
+
+> **OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC**  \n> **OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.**  \n> Official logo: `brand/assets/obserra-official-logo.png`  \n> For educational and informational purposes only. Not certification, compliance validation, or professional advice.
+
 # Cybersecurity Foundations for New Professionals
 
-## Instructor manuscript
+## Instructor Manuscript
 
-### Course purpose
+## Important informational-use notice
 
-This course introduces new professionals to the practical judgment required to recognize, communicate, and respond to common cybersecurity risks. The course is designed for learners who may not hold a dedicated security role but who make decisions affecting identity, data, systems, vendors, customers, and organizational trust.
+**For educational and informational purposes only. Not certification, compliance validation, or professional advice.**
 
-### Instructional approach
+This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.
 
-Each module uses plain-language explanation, realistic workplace context, decision points, and accountable next actions. Learners should not be taught to investigate beyond their authority. The course emphasizes recognition, preservation, escalation, and disciplined communication.
+## Assumption of risk, release, and limitation of liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.
+
+**Required acknowledgement:** I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability.
+
+
+**Department:** Cyber
+
+**Track:** Cyber Defense Academy
+
+**Level:** Foundation
+
+**Audience:** New cybersecurity professionals, technology staff, risk owners, and business partners
+
+**Course length:** 2.5 hours
+
+## Course description
+
+An original Obserra Academy foundation course that develops practical cybersecurity judgment, identity protection habits, incident reporting discipline, and risk-aware decision making for professionals entering security-related roles.
+
+## Learning outcomes
+
+- Explain core cybersecurity responsibilities using clear business and risk language.
+- Recognize common identity, data, endpoint, and social-engineering threats.
+- Apply proportionate escalation and incident-reporting decisions in realistic workplace scenarios.
+- Distinguish preventive, detective, responsive, and recovery controls.
+- Document accountable next actions after identifying a security concern.
+
+## Course tags
+
+- **industry:** cyber
+- **domain:** cyber-defense-academy, cyber
+- **audience:** new-cybersecurity-professionals, technology-staff, risk-owners, business-partners
+- **level:** foundation
+- **frameworks:** cis-controls
+- **deliveryFormat:** online-course, assessment
+- **commercialModel:** one-time-payment, until-completion
+- **brand:** obserra, obserra-academy, official-obserra-brand
+- **classification:** proprietary, internal-review
 
 ## Module 1: Security and Business Risk
 
-Cybersecurity is not limited to technology infrastructure. It protects the ability of an organization to operate, serve customers, protect people, preserve intellectual property, comply with obligations, and maintain confidence. A security event becomes a business event when it affects availability, confidentiality, integrity, safety, reputation, or decision quality.
+**Duration:** 24 minutes
 
-Learners should understand that risk is created by the combination of a valued asset, a threat, a weakness, and a plausible consequence. Not every weakness produces the same level of risk. Decisions should consider what could be affected, how likely the event is, what controls are already present, and how quickly the organization could recover.
+**Format:** Interactive lesson
 
-#### Scenario
+### Purpose
 
-A team member receives a spreadsheet containing customer information through an unapproved file-sharing service. The employee can open the file and assumes the transfer is acceptable because the sender is known.
+Connect cybersecurity responsibilities to business operations, people, data, trust, and organizational resilience.
 
-The correct response is not to accuse the sender or distribute the file further. The learner should stop unnecessary handling, preserve the message and link, verify the approved transfer method, and escalate through the established security or privacy channel.
+### Learning objective
+
+By the end of this module, the learner will be able to apply security and business risk to a realistic organizational decision.
+
+### Instructor narrative
+
+Explain the business context, relevant terminology, evidence requirements, decision authority, escalation path, and documentation expectations. Clearly distinguish educational examples from legal, regulatory, compliance, certification, audit, or professional determinations.
+
+### Applied scenario
+
+Present a realistic situation involving incomplete information, competing priorities, and a time-sensitive decision. Require the learner to identify the decision owner, evidence gaps, affected stakeholders, applicable requirements, and the safest proportionate next action.
+
+### Knowledge check
+
+1. What evidence is required before action?
+2. Who owns the decision and who must be consulted?
+3. Which authoritative requirement may apply?
+4. What should be documented for accountability?
+
+### Module completion evidence
+
+The learner records a concise decision statement, supporting evidence, selected action, escalation path, and expected outcome. Completion is educational only and is not evidence of certification or compliance.
 
 ## Module 2: Identity, Access, and Authentication
 
-Identity is a primary control boundary. Accounts, credentials, tokens, devices, and approval processes determine who can perform actions and access information. Secure identity practice includes unique accounts, strong authentication, multifactor authentication, least privilege, timely access removal, and resistance to approval fatigue.
+**Duration:** 26 minutes
 
-Learners should never approve a login, reset, or access request they did not initiate or verify. Shared credentials weaken accountability and make investigations harder. Administrative access should be limited, monitored, and used only when required.
+**Format:** Interactive lesson
 
-#### Scenario
+### Purpose
 
-A learner receives repeated multifactor prompts while not signing in. The correct action is to deny the request, change the password through the approved process, report the event, and review recent account activity with authorized support.
+Apply secure identity habits, least privilege, multifactor authentication, and safe access decisions.
+
+### Learning objective
+
+By the end of this module, the learner will be able to apply identity, access, and authentication to a realistic organizational decision.
+
+### Instructor narrative
+
+Explain the business context, relevant terminology, evidence requirements, decision authority, escalation path, and documentation expectations. Clearly distinguish educational examples from legal, regulatory, compliance, certification, audit, or professional determinations.
+
+### Applied scenario
+
+Present a realistic situation involving incomplete information, competing priorities, and a time-sensitive decision. Require the learner to identify the decision owner, evidence gaps, affected stakeholders, applicable requirements, and the safest proportionate next action.
+
+### Knowledge check
+
+1. What evidence is required before action?
+2. Who owns the decision and who must be consulted?
+3. Which authoritative requirement may apply?
+4. What should be documented for accountability?
+
+### Module completion evidence
+
+The learner records a concise decision statement, supporting evidence, selected action, escalation path, and expected outcome. Completion is educational only and is not evidence of certification or compliance.
 
 ## Module 3: Threat Recognition and Safe Response
 
-Common threats include phishing, malicious attachments, credential theft, fraudulent payment requests, unsafe software, removable media, social engineering, and misuse of legitimate tools. Warning signs include urgency, secrecy, unusual payment or access requests, mismatched domains, unexpected attachments, requests to bypass controls, and pressure to avoid established processes.
+**Duration:** 28 minutes
 
-A safe response avoids interacting further with the suspicious content. Learners should use approved reporting channels, preserve relevant evidence, and communicate facts rather than assumptions.
+**Format:** Scenario
+
+### Purpose
+
+Recognize phishing, social engineering, malicious files, unsafe requests, and indicators requiring escalation.
+
+### Learning objective
+
+By the end of this module, the learner will be able to apply threat recognition and safe response to a realistic organizational decision.
+
+### Instructor narrative
+
+Explain the business context, relevant terminology, evidence requirements, decision authority, escalation path, and documentation expectations. Clearly distinguish educational examples from legal, regulatory, compliance, certification, audit, or professional determinations.
+
+### Applied scenario
+
+Present a realistic situation involving incomplete information, competing priorities, and a time-sensitive decision. Require the learner to identify the decision owner, evidence gaps, affected stakeholders, applicable requirements, and the safest proportionate next action.
+
+### Knowledge check
+
+1. What evidence is required before action?
+2. Who owns the decision and who must be consulted?
+3. Which authoritative requirement may apply?
+4. What should be documented for accountability?
+
+### Module completion evidence
+
+The learner records a concise decision statement, supporting evidence, selected action, escalation path, and expected outcome. Completion is educational only and is not evidence of certification or compliance.
 
 ## Module 4: Incident Reporting and Evidence Preservation
 
-Early reporting improves containment and decision quality. A useful incident report identifies what happened, when it happened, what systems or data may be involved, what actions were taken, and what evidence is available. Learners should not delete messages, modify files, wipe devices, or conduct unauthorized searches.
+**Duration:** 30 minutes
 
-Evidence preservation means retaining the original context while limiting further exposure. Screenshots may help, but original messages, logs, files, and device state are often more useful to authorized responders.
+**Format:** Workshop
 
-## Module 5: Applied Assessment
+### Purpose
 
-The final assessment evaluates practical judgment rather than memorization. Questions should require learners to choose the safest authorized action, identify when escalation is required, distinguish facts from assumptions, and recognize the business consequences of security decisions.
+Practice timely reporting, factual documentation, evidence preservation, and responsible communication.
 
-### Completion standard
+### Learning objective
 
-Learners must complete every module and achieve at least 80 percent on the final assessment. Successful completion results in an Obserra Certificate of Training. The course does not confer academic credit, professional licensure, or third-party certification.
+By the end of this module, the learner will be able to apply incident reporting and evidence preservation to a realistic organizational decision.
+
+### Instructor narrative
+
+Explain the business context, relevant terminology, evidence requirements, decision authority, escalation path, and documentation expectations. Clearly distinguish educational examples from legal, regulatory, compliance, certification, audit, or professional determinations.
+
+### Applied scenario
+
+Present a realistic situation involving incomplete information, competing priorities, and a time-sensitive decision. Require the learner to identify the decision owner, evidence gaps, affected stakeholders, applicable requirements, and the safest proportionate next action.
+
+### Knowledge check
+
+1. What evidence is required before action?
+2. Who owns the decision and who must be consulted?
+3. Which authoritative requirement may apply?
+4. What should be documented for accountability?
+
+### Module completion evidence
+
+The learner records a concise decision statement, supporting evidence, selected action, escalation path, and expected outcome. Completion is educational only and is not evidence of certification or compliance.
+
+## Module 5: Applied Cybersecurity Foundations Assessment
+
+**Duration:** 42 minutes
+
+**Format:** Assessment
+
+### Purpose
+
+Demonstrate practical judgment across identity, threat recognition, escalation, control selection, and incident response.
+
+### Learning objective
+
+By the end of this module, the learner will be able to apply applied cybersecurity foundations assessment to a realistic organizational decision.
+
+### Instructor narrative
+
+Explain the business context, relevant terminology, evidence requirements, decision authority, escalation path, and documentation expectations. Clearly distinguish educational examples from legal, regulatory, compliance, certification, audit, or professional determinations.
+
+### Applied scenario
+
+Present a realistic situation involving incomplete information, competing priorities, and a time-sensitive decision. Require the learner to identify the decision owner, evidence gaps, affected stakeholders, applicable requirements, and the safest proportionate next action.
+
+### Knowledge check
+
+1. What evidence is required before action?
+2. Who owns the decision and who must be consulted?
+3. Which authoritative requirement may apply?
+4. What should be documented for accountability?
+
+### Module completion evidence
+
+The learner records a concise decision statement, supporting evidence, selected action, escalation path, and expected outcome. Completion is educational only and is not evidence of certification or compliance.
+
+
+## Completion statement
+
+A passing score records course completion only. It is not professional certification, licensure, accreditation, compliance validation, regulatory approval, or an audit opinion.
+
+## Important informational-use notice
+
+**For educational and informational purposes only. Not certification, compliance validation, or professional advice.**
+
+This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.
+
+## Assumption of risk, release, and limitation of liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.
+
+**Required acknowledgement:** I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability.
+
+---
+
+For educational and informational purposes only. Not certification, compliance validation, or professional advice.
+
+© 2026 OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC. All rights reserved. OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.
+
+<!-- OBSERRA-COURSE-LEGAL-START -->
+
+> **OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC**  \
+> **For educational and informational purposes only. Not certification, compliance validation, or professional advice.**
+
+### Informational-use disclaimer
+
+This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.
+
+### Assumption of risk, release, and limitation of liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.
+
+### Learner acknowledgement
+
+I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability.
+
+**Official brand:** brand/assets/obserra-official-logo.png  \
+**Classification:** OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.
+
+<!-- OBSERRA-COURSE-LEGAL-END -->

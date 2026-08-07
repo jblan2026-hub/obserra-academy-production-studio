@@ -1,43 +1,114 @@
-# Learner Guide
+<!-- OBSERRA-COURSE-LEGAL-START -->
 
-## Cybersecurity Foundations for New Professionals
+> **OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC**  \
+> **For educational and informational purposes only. Not certification, compliance validation, or professional advice.**
 
-### How to use this guide
+### Informational-use disclaimer
 
-Use this guide to capture key decisions, record scenario responses, and document actions you would take in your own organization. Always follow your organization’s approved policies, reporting channels, and authority structure.
+This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.
 
-## Core concepts
+### Assumption of risk, release, and limitation of liability
 
-Cybersecurity protects business operations, people, information, systems, trust, and organizational resilience. Strong security decisions are based on facts, proportional response, authorized action, and timely escalation.
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.
 
-### Security decision checklist
+### Learner acknowledgement
 
-1. What asset, person, process, or obligation could be affected?
-2. What facts are known?
-3. What assumptions remain unverified?
-4. What immediate action reduces harm without destroying evidence?
-5. Who has the authority to investigate, contain, or approve the next step?
-6. What should be documented?
+I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability.
 
-## Identity and access
+**Official brand:** brand/assets/obserra-official-logo.png  \
+**Classification:** OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.
 
-Use unique accounts, strong authentication, multifactor authentication, least privilege, and approved access processes. Never approve an unexpected authentication request. Report repeated prompts, unexplained password resets, or unusual account activity.
+<!-- OBSERRA-COURSE-LEGAL-END -->
 
-## Threat recognition
+> **OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC**  \n> **OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.**  \n> Official logo: `brand/assets/obserra-official-logo.png`  \n> For educational and informational purposes only. Not certification, compliance validation, or professional advice.
 
-Treat urgency, secrecy, unusual payment instructions, requests to bypass controls, unexpected files, mismatched domains, and unfamiliar login pages as warning signs. Do not continue interacting with suspicious content.
+# Cybersecurity Foundations for New Professionals
 
-## Incident reporting
+## Learner Guide
 
-A useful report includes:
+## Important informational-use notice
 
-- What happened
-- When it happened
-- Who or what may be affected
-- What actions were taken
-- What evidence exists
-- What remains unknown
+**For educational and informational purposes only. Not certification, compliance validation, or professional advice.**
+
+This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.
+
+## Assumption of risk, release, and limitation of liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.
+
+**Required acknowledgement:** I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability.
+
+
+**Length:** 2.5 hours
+
+**Audience:** New cybersecurity professionals, technology staff, risk owners, and business partners
+
+## Description
+
+An original Obserra Academy foundation course that develops practical cybersecurity judgment, identity protection habits, incident reporting discipline, and risk-aware decision making for professionals entering security-related roles.
+
+## Outcomes
+
+- Explain core cybersecurity responsibilities using clear business and risk language.
+- Recognize common identity, data, endpoint, and social-engineering threats.
+- Apply proportionate escalation and incident-reporting decisions in realistic workplace scenarios.
+- Distinguish preventive, detective, responsive, and recovery controls.
+- Document accountable next actions after identifying a security concern.
+
+## Course map
+
+1. **Security and Business Risk**. 24 minutes. Connect cybersecurity responsibilities to business operations, people, data, trust, and organizational resilience.
+2. **Identity, Access, and Authentication**. 26 minutes. Apply secure identity habits, least privilege, multifactor authentication, and safe access decisions.
+3. **Threat Recognition and Safe Response**. 28 minutes. Recognize phishing, social engineering, malicious files, unsafe requests, and indicators requiring escalation.
+4. **Incident Reporting and Evidence Preservation**. 30 minutes. Practice timely reporting, factual documentation, evidence preservation, and responsible communication.
+5. **Applied Cybersecurity Foundations Assessment**. 42 minutes. Demonstrate practical judgment across identity, threat recognition, escalation, control selection, and incident response.
 
 ## Completion requirements
 
-Complete every lesson and score at least 80 percent on the final assessment. Successful completion produces an Obserra Certificate of Training and a durable completion record.
+- Complete every module and required activity.
+- Achieve 80 percent or higher on the final assessment.
+- Accept the informational-use disclaimer and limitation-of-liability terms.
+
+## Completion record
+
+Any issued document is a certificate of course completion only and does not represent certification, licensure, accreditation, compliance, regulatory approval, or professional qualification.
+
+## Important informational-use notice
+
+**For educational and informational purposes only. Not certification, compliance validation, or professional advice.**
+
+This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.
+
+## Assumption of risk, release, and limitation of liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.
+
+**Required acknowledgement:** I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability.
+
+---
+
+For educational and informational purposes only. Not certification, compliance validation, or professional advice.
+
+© 2026 OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC. All rights reserved. OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.
+
+<!-- OBSERRA-COURSE-LEGAL-START -->
+
+> **OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC**  \
+> **For educational and informational purposes only. Not certification, compliance validation, or professional advice.**
+
+### Informational-use disclaimer
+
+This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.
+
+### Assumption of risk, release, and limitation of liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.
+
+### Learner acknowledgement
+
+I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability.
+
+**Official brand:** brand/assets/obserra-official-logo.png  \
+**Classification:** OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.
+
+<!-- OBSERRA-COURSE-LEGAL-END -->

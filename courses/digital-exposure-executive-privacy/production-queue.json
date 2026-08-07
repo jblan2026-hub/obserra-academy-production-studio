@@ -1,0 +1,17 @@
+{
+  "courseId": "digital-exposure-executive-privacy",
+  "source": "obserra-website/app/academy/courseData.ts",
+  "requiredArtifacts": [
+    "instructor-manuscript.md",
+    "learner-guide.md",
+    "workbook.md",
+    "assessment-bank.json",
+    "answer-key.json",
+    "slide-deck",
+    "visual-brief",
+    "training-video",
+    "captions"
+  ],
+  "status": "queued",
+  "queuedAt": "2026-08-07T09:43:03.011Z"
+}

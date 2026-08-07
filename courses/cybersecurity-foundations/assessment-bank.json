@@ -1,72 +1,441 @@
 {
   "courseId": "cybersecurity-foundations",
-  "version": "0.1.0",
+  "owner": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+  "logoAsset": "brand/assets/obserra-official-logo.png",
+  "classification": "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.",
+  "tags": {
+    "industry": [
+      "cyber"
+    ],
+    "domain": [
+      "cyber-defense-academy",
+      "cyber"
+    ],
+    "audience": [
+      "new-cybersecurity-professionals",
+      "technology-staff",
+      "risk-owners",
+      "business-partners"
+    ],
+    "level": [
+      "foundation"
+    ],
+    "frameworks": [
+      "cis-controls"
+    ],
+    "deliveryFormat": [
+      "online-course",
+      "assessment"
+    ],
+    "commercialModel": [
+      "one-time-payment",
+      "until-completion"
+    ],
+    "brand": [
+      "obserra",
+      "obserra-academy",
+      "official-obserra-brand"
+    ],
+    "classification": [
+      "proprietary",
+      "internal-review"
+    ]
+  },
+  "disclaimer": {
+    "type": "informational-use-only",
+    "shortText": "For educational and informational purposes only. Not certification, compliance validation, or professional advice.",
+    "fullText": "This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.",
+    "releaseAndLimitationOfLiability": "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.",
+    "acknowledgementRequired": true,
+    "acknowledgementText": "I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability."
+  },
+  "credentialType": "certificate-of-course-completion-only",
   "passingScore": 80,
   "questions": [
     {
-      "id": "q1",
-      "type": "multiple-choice",
-      "prompt": "You receive several unexpected multifactor authentication prompts. What is the safest response?",
+      "id": "q01",
+      "moduleId": "security-and-business-risk",
+      "moduleIndex": 0,
+      "type": "single-choice",
+      "question": "Which action best demonstrates accountable application of Security and Business Risk?",
       "options": [
-        "Approve one prompt to stop the notifications",
-        "Deny the prompts, secure the account through the approved process, and report the event",
-        "Ignore the prompts permanently",
-        "Ask a coworker to approve the prompt"
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
       ],
-      "correctOption": 1,
-      "rationale": "Unexpected prompts can indicate attempted account access and require denial, account protection, and escalation."
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
     },
     {
-      "id": "q2",
-      "type": "multiple-choice",
-      "prompt": "Which incident report statement is most appropriate?",
+      "id": "q02",
+      "moduleId": "security-and-business-risk",
+      "moduleIndex": 0,
+      "type": "single-choice",
+      "question": "What should be established first when evaluating a decision related to Security and Business Risk?",
       "options": [
-        "The attacker definitely stole everything",
-        "At 10:14 a.m., I opened an unexpected attachment and immediately disconnected from the network and contacted the service desk",
-        "Nothing important happened",
-        "The sender looked suspicious, so I deleted all messages"
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
       ],
-      "correctOption": 1,
-      "rationale": "Effective reporting separates known facts from assumptions and records time, action, and escalation."
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
     },
     {
-      "id": "q3",
-      "type": "multiple-choice",
-      "prompt": "A payment request appears to come from an executive and asks you to bypass the normal approval process. What should you do?",
+      "id": "q03",
+      "moduleId": "security-and-business-risk",
+      "moduleIndex": 0,
+      "type": "single-choice",
+      "question": "Which record provides the strongest evidence that Security and Business Risk was handled appropriately?",
       "options": [
-        "Complete the payment because the executive is senior",
-        "Reply to the message and request the password",
-        "Verify the request through an approved independent channel and follow established payment controls",
-        "Forward the request to external contacts"
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
       ],
-      "correctOption": 2,
-      "rationale": "Independent verification and established controls reduce fraud and social-engineering risk."
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
     },
     {
-      "id": "q4",
-      "type": "multiple-choice",
-      "prompt": "What is the primary purpose of least privilege?",
+      "id": "q04",
+      "moduleId": "security-and-business-risk",
+      "moduleIndex": 0,
+      "type": "single-choice",
+      "question": "When information is incomplete during Security and Business Risk, what is the most defensible response?",
       "options": [
-        "Give everyone administrator access",
-        "Limit access to what is required for authorized work",
-        "Eliminate the need for identity verification",
-        "Allow shared accounts"
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
       ],
-      "correctOption": 1,
-      "rationale": "Least privilege reduces unnecessary access and limits potential harm."
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
     },
     {
-      "id": "q5",
-      "type": "multiple-choice",
-      "prompt": "Which action best preserves evidence after a suspected security event?",
+      "id": "q05",
+      "moduleId": "security-and-business-risk",
+      "moduleIndex": 0,
+      "type": "single-choice",
+      "question": "Who should own the final decision involving Security and Business Risk?",
       "options": [
-        "Delete the suspicious message",
-        "Modify the file to test it",
-        "Preserve the original context and follow authorized reporting procedures",
-        "Post the evidence publicly"
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
       ],
-      "correctOption": 2,
-      "rationale": "Original context should be preserved and handled through authorized channels."
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q06",
+      "moduleId": "identity-and-access",
+      "moduleIndex": 1,
+      "type": "single-choice",
+      "question": "Which action best demonstrates accountable application of Identity, Access, and Authentication?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q07",
+      "moduleId": "identity-and-access",
+      "moduleIndex": 1,
+      "type": "single-choice",
+      "question": "What should be established first when evaluating a decision related to Identity, Access, and Authentication?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q08",
+      "moduleId": "identity-and-access",
+      "moduleIndex": 1,
+      "type": "single-choice",
+      "question": "Which record provides the strongest evidence that Identity, Access, and Authentication was handled appropriately?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q09",
+      "moduleId": "identity-and-access",
+      "moduleIndex": 1,
+      "type": "single-choice",
+      "question": "When information is incomplete during Identity, Access, and Authentication, what is the most defensible response?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q10",
+      "moduleId": "identity-and-access",
+      "moduleIndex": 1,
+      "type": "single-choice",
+      "question": "Who should own the final decision involving Identity, Access, and Authentication?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q11",
+      "moduleId": "threat-recognition",
+      "moduleIndex": 2,
+      "type": "single-choice",
+      "question": "Which action best demonstrates accountable application of Threat Recognition and Safe Response?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q12",
+      "moduleId": "threat-recognition",
+      "moduleIndex": 2,
+      "type": "single-choice",
+      "question": "What should be established first when evaluating a decision related to Threat Recognition and Safe Response?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q13",
+      "moduleId": "threat-recognition",
+      "moduleIndex": 2,
+      "type": "single-choice",
+      "question": "Which record provides the strongest evidence that Threat Recognition and Safe Response was handled appropriately?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q14",
+      "moduleId": "threat-recognition",
+      "moduleIndex": 2,
+      "type": "single-choice",
+      "question": "When information is incomplete during Threat Recognition and Safe Response, what is the most defensible response?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q15",
+      "moduleId": "threat-recognition",
+      "moduleIndex": 2,
+      "type": "single-choice",
+      "question": "Who should own the final decision involving Threat Recognition and Safe Response?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q16",
+      "moduleId": "incident-reporting",
+      "moduleIndex": 3,
+      "type": "single-choice",
+      "question": "Which action best demonstrates accountable application of Incident Reporting and Evidence Preservation?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q17",
+      "moduleId": "incident-reporting",
+      "moduleIndex": 3,
+      "type": "single-choice",
+      "question": "What should be established first when evaluating a decision related to Incident Reporting and Evidence Preservation?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q18",
+      "moduleId": "incident-reporting",
+      "moduleIndex": 3,
+      "type": "single-choice",
+      "question": "Which record provides the strongest evidence that Incident Reporting and Evidence Preservation was handled appropriately?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q19",
+      "moduleId": "incident-reporting",
+      "moduleIndex": 3,
+      "type": "single-choice",
+      "question": "When information is incomplete during Incident Reporting and Evidence Preservation, what is the most defensible response?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q20",
+      "moduleId": "incident-reporting",
+      "moduleIndex": 3,
+      "type": "single-choice",
+      "question": "Who should own the final decision involving Incident Reporting and Evidence Preservation?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q21",
+      "moduleId": "final-assessment",
+      "moduleIndex": 4,
+      "type": "single-choice",
+      "question": "Which action best demonstrates accountable application of Applied Cybersecurity Foundations Assessment?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q22",
+      "moduleId": "final-assessment",
+      "moduleIndex": 4,
+      "type": "single-choice",
+      "question": "What should be established first when evaluating a decision related to Applied Cybersecurity Foundations Assessment?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q23",
+      "moduleId": "final-assessment",
+      "moduleIndex": 4,
+      "type": "single-choice",
+      "question": "Which record provides the strongest evidence that Applied Cybersecurity Foundations Assessment was handled appropriately?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q24",
+      "moduleId": "final-assessment",
+      "moduleIndex": 4,
+      "type": "single-choice",
+      "question": "When information is incomplete during Applied Cybersecurity Foundations Assessment, what is the most defensible response?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
+    },
+    {
+      "id": "q25",
+      "moduleId": "final-assessment",
+      "moduleIndex": 4,
+      "type": "single-choice",
+      "question": "Who should own the final decision involving Applied Cybersecurity Foundations Assessment?",
+      "options": [
+        "Use verified evidence, defined authority, proportionate action, qualified advice, and documented rationale.",
+        "Act immediately without documenting assumptions.",
+        "Treat course completion as proof of compliance or certification.",
+        "Select the most convenient action regardless of policy or impact."
+      ],
+      "correctOption": 0,
+      "rationale": "Course content is informational only; defensible action requires verified evidence, authority, qualified judgment, and documentation."
     }
-  ]
+  ],
+  "branding": {
+    "legalName": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+    "brandName": "Obserra",
+    "academyName": "Obserra Academy",
+    "logoAsset": "brand/assets/obserra-official-logo.png",
+    "logoSha256": "a8f2a51a6a96364262b736978d9c2ff4ff48060ed5b80a0291bba064b39be8a8",
+    "classification": "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.",
+    "visualSystem": "official-obserra-executive",
+    "brandReviewRequired": true
+  }
 }

@@ -1,0 +1,90 @@
+{
+  "courseId": "low-code-security-automation",
+  "owner": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+  "logoAsset": "brand/assets/obserra-official-logo.png",
+  "classification": "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.",
+  "tags": {
+    "industry": [
+      "technologies"
+    ],
+    "domain": [
+      "obserra-technologies-academy",
+      "technologies"
+    ],
+    "audience": [
+      "technology-leaders",
+      "product-owners",
+      "architects",
+      "transformation-teams"
+    ],
+    "level": [
+      "professional"
+    ],
+    "frameworks": [
+      "cis-controls"
+    ],
+    "deliveryFormat": [
+      "online-course",
+      "assessment"
+    ],
+    "commercialModel": [
+      "one-time-payment",
+      "until-completion"
+    ],
+    "brand": [
+      "obserra",
+      "obserra-academy",
+      "official-obserra-brand"
+    ],
+    "classification": [
+      "proprietary",
+      "internal-review"
+    ]
+  },
+  "disclaimer": {
+    "type": "informational-use-only",
+    "shortText": "For educational and informational purposes only. Not certification, compliance validation, or professional advice.",
+    "fullText": "This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.",
+    "releaseAndLimitationOfLiability": "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.",
+    "acknowledgementRequired": true,
+    "acknowledgementText": "I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability."
+  },
+  "credentialType": "certificate-of-course-completion-only",
+  "answers": {
+    "q01": 0,
+    "q02": 0,
+    "q03": 0,
+    "q04": 0,
+    "q05": 0,
+    "q06": 0,
+    "q07": 0,
+    "q08": 0,
+    "q09": 0,
+    "q10": 0,
+    "q11": 0,
+    "q12": 0,
+    "q13": 0,
+    "q14": 0,
+    "q15": 0,
+    "q16": 0,
+    "q17": 0,
+    "q18": 0,
+    "q19": 0,
+    "q20": 0,
+    "q21": 0,
+    "q22": 0,
+    "q23": 0,
+    "q24": 0,
+    "q25": 0
+  },
+  "branding": {
+    "legalName": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+    "brandName": "Obserra",
+    "academyName": "Obserra Academy",
+    "logoAsset": "brand/assets/obserra-official-logo.png",
+    "logoSha256": "a8f2a51a6a96364262b736978d9c2ff4ff48060ed5b80a0291bba064b39be8a8",
+    "classification": "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.",
+    "visualSystem": "official-obserra-executive",
+    "brandReviewRequired": true
+  }
+}

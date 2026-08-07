@@ -1,0 +1,2667 @@
+{
+  "generatedAt": "2026-08-07T09:43:03.348Z",
+  "owner": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+  "logoAsset": "brand/assets/obserra-official-logo.png",
+  "classification": "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.",
+  "disclaimer": {
+    "required": true,
+    "type": "informational-use-only",
+    "shortText": "For educational and informational purposes only. Not certification, compliance validation, or professional advice.",
+    "fullText": "This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.",
+    "releaseAndLimitationOfLiability": "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.",
+    "acknowledgementRequired": true,
+    "acknowledgementText": "I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability.",
+    "requiredPlacements": [
+      "course-manifest",
+      "course-registration-or-purchase-acceptance",
+      "course-opening-screen",
+      "instructor-manuscript-front-matter",
+      "instructor-manuscript-footer",
+      "learner-guide-front-matter",
+      "learner-guide-footer",
+      "workbook-front-matter",
+      "workbook-footer",
+      "assessment-bank",
+      "answer-key",
+      "visual-brief",
+      "catalog-record",
+      "lcms-database-record",
+      "certificate-metadata",
+      "video-opening-or-description"
+    ]
+  },
+  "courses": [
+    {
+      "courseId": "ai-data-privacy-ip",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "ai-and-llm-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "ai-executive-decision-making",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "ai-and-llm-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "ai-policy-responsible-use",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "ai-and-llm-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "ai-ready-workforce",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "ai-and-llm-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "foundation"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "ai-red-teaming-model-risk",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "ai-and-llm-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "executive-intensive"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "ai-risk-ethics-governance",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "ai-and-llm-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "api-security-integration",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "obserra-technologies-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "becoming-a-strategic-ciso",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "ciso-masterclass"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "board-communication-cybersecurity",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "executive-intensive"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "building-security-program",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "executive-intensive"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "building-trusted-teams",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "intelligence"
+        ],
+        "domain": [
+          "professional-leadership-academy",
+          "intelligence"
+        ],
+        "audience": [
+          "leaders",
+          "analysts",
+          "investigators",
+          "operational-decision-makers"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "business-continuity-cyber-resilience",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "ciso-career-executive-presence",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "ciso-masterclass"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "ciso-leadership-playbook",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "ciso-masterclass"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "cloud-native-app-security",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "obserra-technologies-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "cloud-security-executives",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "coding-for-cyber-leaders",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "obserra-technologies-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "foundation"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "crisis-communications-executives",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "protection"
+        ],
+        "domain": [
+          "executive-protection-and-intelligence-academy",
+          "protection"
+        ],
+        "audience": [
+          "corporate-security-teams",
+          "executive-support-personnel",
+          "protection-professionals"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "crisis-leadership-cisos",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "executive-intensive"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "custom-ai-native-app-strategy",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "obserra-technologies-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "ciso-masterclass"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "cyber-risk-assessment",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "executive-intensive"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "cybersecurity-budget-business-case",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "executive-intensive"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "cybersecurity-business-leaders",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "foundation"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "cybersecurity-executive-metrics",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "executive-intensive"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "cybersecurity-foundations",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "new-cybersecurity-professionals",
+          "technology-staff",
+          "risk-owners",
+          "business-partners"
+        ],
+        "level": [
+          "foundation"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "cybersecurity-governance-policy",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "data-driven-risk-intelligence",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "intelligence"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "intelligence"
+        ],
+        "audience": [
+          "leaders",
+          "analysts",
+          "investigators",
+          "operational-decision-makers"
+        ],
+        "level": [
+          "ciso-masterclass"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "devsecops-enterprise-teams",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "obserra-technologies-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "digital-exposure-executive-privacy",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "protection"
+        ],
+        "domain": [
+          "executive-protection-and-intelligence-academy",
+          "protection"
+        ],
+        "audience": [
+          "corporate-security-teams",
+          "executive-support-personnel",
+          "protection-professionals"
+        ],
+        "level": [
+          "foundation"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "digital-forensics-evidence",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "eios-enterprise-intelligence-overview",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "obserra-technologies-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "ciso-masterclass"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "enterprise-risk-technology",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "executive-intensive"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "ethical-leadership-ai",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "intelligence"
+        ],
+        "domain": [
+          "professional-leadership-academy",
+          "intelligence"
+        ],
+        "audience": [
+          "leaders",
+          "analysts",
+          "investigators",
+          "operational-decision-makers"
+        ],
+        "level": [
+          "ciso-masterclass"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "executive-dashboards-data-ai",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "obserra-technologies-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "executive-decision-making-pressure",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "intelligence"
+        ],
+        "domain": [
+          "professional-leadership-academy",
+          "intelligence"
+        ],
+        "audience": [
+          "leaders",
+          "analysts",
+          "investigators",
+          "operational-decision-makers"
+        ],
+        "level": [
+          "ciso-masterclass"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "executive-protection-fundamentals",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "protection"
+        ],
+        "domain": [
+          "executive-protection-and-intelligence-academy",
+          "protection"
+        ],
+        "audience": [
+          "corporate-security-teams",
+          "executive-support-personnel",
+          "protection-professionals"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "executive-threat-assessment",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "protection"
+        ],
+        "domain": [
+          "executive-protection-and-intelligence-academy",
+          "protection"
+        ],
+        "audience": [
+          "corporate-security-teams",
+          "executive-support-personnel",
+          "protection-professionals"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "executive-travel-risk",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "protection"
+        ],
+        "domain": [
+          "executive-protection-and-intelligence-academy",
+          "protection"
+        ],
+        "audience": [
+          "corporate-security-teams",
+          "executive-support-personnel",
+          "protection-professionals"
+        ],
+        "level": [
+          "foundation"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "family-security-digital-safety",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "protection"
+        ],
+        "domain": [
+          "executive-protection-and-intelligence-academy",
+          "protection"
+        ],
+        "audience": [
+          "corporate-security-teams",
+          "executive-support-personnel",
+          "protection-professionals"
+        ],
+        "level": [
+          "executive-intensive"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "generative-ai-business-leaders",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "ai-and-llm-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "foundation"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "identity-security-access-governance",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "incident-response-leadership",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "insider-threat-awareness",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "leading-through-cyber-crisis",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "ciso-masterclass"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "llms-for-leaders",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "ai-and-llm-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "foundation"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "low-code-security-automation",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "obserra-technologies-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "prompt-engineering-secure-workflows",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "ai-and-llm-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "protective-intelligence-corporate-security",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "protection"
+        ],
+        "domain": [
+          "executive-protection-and-intelligence-academy",
+          "protection"
+        ],
+        "audience": [
+          "corporate-security-teams",
+          "executive-support-personnel",
+          "protection-professionals"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "python-security-automation",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "obserra-technologies-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "ransomware-readiness",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "regulatory-readiness-security",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "executive-intensive"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "secure-ai-native-apps",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "obserra-technologies-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "secure-enterprise-llm-deployment",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "ai-and-llm-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "secure-software-development-lifecycle",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "technologies"
+        ],
+        "domain": [
+          "obserra-technologies-academy",
+          "technologies"
+        ],
+        "audience": [
+          "technology-leaders",
+          "product-owners",
+          "architects",
+          "transformation-teams"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "security-awareness-high-risk",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "foundation"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "security-intelligence-careers",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "intelligence"
+        ],
+        "domain": [
+          "professional-leadership-academy",
+          "intelligence"
+        ],
+        "audience": [
+          "leaders",
+          "analysts",
+          "investigators",
+          "operational-decision-makers"
+        ],
+        "level": [
+          "foundation"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "third-party-cyber-risk",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "ciso-and-board-leadership-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "advanced"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "vulnerability-management",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "workplace-violence-threat-management",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "protection"
+        ],
+        "domain": [
+          "executive-protection-and-intelligence-academy",
+          "protection"
+        ],
+        "audience": [
+          "corporate-security-teams",
+          "executive-support-personnel",
+          "protection-professionals"
+        ],
+        "level": [
+          "executive-intensive"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    },
+    {
+      "courseId": "zero-trust-strategy",
+      "status": "governed-assets-regenerated",
+      "officialBrand": true,
+      "disclaimerEmbedded": true,
+      "tags": {
+        "industry": [
+          "cyber"
+        ],
+        "domain": [
+          "cyber-defense-academy",
+          "cyber"
+        ],
+        "audience": [
+          "security-leaders",
+          "technology-teams",
+          "risk-owners",
+          "business-decision-makers"
+        ],
+        "level": [
+          "professional"
+        ],
+        "frameworks": [
+          "cis-controls"
+        ],
+        "deliveryFormat": [
+          "online-course",
+          "assessment"
+        ],
+        "commercialModel": [
+          "one-time-payment",
+          "until-completion"
+        ],
+        "brand": [
+          "obserra",
+          "obserra-academy",
+          "official-obserra-brand"
+        ],
+        "classification": [
+          "proprietary",
+          "internal-review"
+        ]
+      }
+    }
+  ]
+}
