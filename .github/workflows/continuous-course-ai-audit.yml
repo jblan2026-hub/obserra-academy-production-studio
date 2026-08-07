@@ -56,6 +56,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Mark protected build execution started
+        shell: bash
+        run: |
+          TITLE="Academy protected learner build credentials required"
+          BODY="Protected Academy owner-review build execution started. Credential verification is pending. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring target: 6 workers across 60 owner-review courses."
+          ISSUE_NUMBER="$(gh issue list --state open --search \"$TITLE in:title\" --json number --jq '.[0].number // empty')"
+          if [ -n "$ISSUE_NUMBER" ]; then
+            gh issue edit "$ISSUE_NUMBER" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY"
+          fi
+
       - name: Configure Node.js
         uses: actions/setup-node@v4
         with:
