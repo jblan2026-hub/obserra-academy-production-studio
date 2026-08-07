@@ -9,9 +9,22 @@ const arg = (name) => {
   return index >= 0 ? process.argv[index + 1] : null;
 };
 
+function boundedNumber(value, fallback, minimum, maximum) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(minimum, Math.min(maximum, parsed));
+}
+
 const courseId = arg("--course");
 const provider = (arg("--provider") || process.env.ACADEMY_AUTHORING_PROVIDER || "openai").toLowerCase();
 const force = process.argv.includes("--force");
+const requestTimeoutMs = boundedNumber(
+  process.env.ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS,
+  15 * 60 * 1000,
+  60 * 1000,
+  30 * 60 * 1000,
+);
+
 if (!courseId) {
   console.error("Usage: node studio/author-course-ai.mjs --course <course-id> [--provider openai|anthropic] [--force]");
   process.exit(1);
@@ -96,20 +109,44 @@ Quality requirements:
 10. Preserve secure by design, ethical leadership, human oversight, and defensible decision making where relevant.`;
 }
 
+async function fetchWithAuthoringTimeout(providerName, url, init) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted || error?.name === "AbortError") {
+      throw new Error(`${providerName} authoring request timed out after ${Math.round(requestTimeoutMs / 1000)} seconds`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function boundedErrorText(response) {
+  const text = await response.text();
+  return text.length > 4000 ? `${text.slice(0, 4000)}...[truncated]` : text;
+}
+
 async function callOpenAI(prompt) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY is required");
-  const response = await fetch(process.env.OPENAI_API_URL || "https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: process.env.OPENAI_AUTHORING_MODEL || "gpt-5",
-      input: prompt,
-      text: { format: { type: "json_object" } },
-      reasoning: { effort: process.env.OPENAI_REASONING_EFFORT || "high" },
-    }),
-  });
-  if (!response.ok) throw new Error(`OpenAI authoring request failed: ${response.status} ${await response.text()}`);
+  const response = await fetchWithAuthoringTimeout(
+    "OpenAI",
+    process.env.OPENAI_API_URL || "https://api.openai.com/v1/responses",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: process.env.OPENAI_AUTHORING_MODEL || "gpt-5",
+        input: prompt,
+        text: { format: { type: "json_object" } },
+        reasoning: { effort: process.env.OPENAI_REASONING_EFFORT || "high" },
+      }),
+    },
+  );
+  if (!response.ok) throw new Error(`OpenAI authoring request failed: ${response.status} ${await boundedErrorText(response)}`);
   const payload = await response.json();
   const text = payload.output_text || payload.output?.flatMap((item) => item.content || []).find((item) => item.type === "output_text")?.text;
   if (!text) throw new Error("OpenAI response did not contain output text");
@@ -119,21 +156,25 @@ async function callOpenAI(prompt) {
 async function callAnthropic(prompt) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is required");
-  const response = await fetch(process.env.ANTHROPIC_API_URL || "https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": process.env.ANTHROPIC_VERSION || "2023-06-01",
+  const response = await fetchWithAuthoringTimeout(
+    "Anthropic",
+    process.env.ANTHROPIC_API_URL || "https://api.anthropic.com/v1/messages",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": process.env.ANTHROPIC_VERSION || "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: process.env.ANTHROPIC_AUTHORING_MODEL || "claude-sonnet-4-5",
+        max_tokens: Number(process.env.ANTHROPIC_MAX_TOKENS || 64000),
+        temperature: 0.3,
+        messages: [{ role: "user", content: prompt }],
+      }),
     },
-    body: JSON.stringify({
-      model: process.env.ANTHROPIC_AUTHORING_MODEL || "claude-sonnet-4-5",
-      max_tokens: Number(process.env.ANTHROPIC_MAX_TOKENS || 64000),
-      temperature: 0.3,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  if (!response.ok) throw new Error(`Anthropic authoring request failed: ${response.status} ${await response.text()}`);
+  );
+  if (!response.ok) throw new Error(`Anthropic authoring request failed: ${response.status} ${await boundedErrorText(response)}`);
   const payload = await response.json();
   const text = payload.content?.find((item) => item.type === "text")?.text;
   if (!text) throw new Error("Anthropic response did not contain text");
