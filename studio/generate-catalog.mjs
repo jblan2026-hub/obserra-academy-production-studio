@@ -42,7 +42,7 @@ function publicCourse(manifest, courseDir) {
     description: manifest.course.description,
     duration: manifest.course.duration,
     instructionalHours: manifest.course.instructionalHours ?? null,
-    lessonCount: manifest.course.lessonCount ?? nestedLessons.length || modules.length,
+    lessonCount: manifest.course.lessonCount ?? (nestedLessons.length || modules.length),
     aiNative: manifest.course.aiNative === true,
     sourceOfTruth: manifest.course.sourceOfTruth ?? null,
     sourceVerifiedAt: manifest.course.examAlignment?.currentAsOf ?? null,
