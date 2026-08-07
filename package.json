@@ -13,6 +13,7 @@
     "audit:courses": "node studio/audit-course-build-readiness.mjs",
     "validate": "npm run apply:course-policy && node studio/validate.mjs",
     "preflight:authoring": "node studio/preflight-authoring-provider.mjs",
+    "restore:authoring-checkpoints": "node studio/restore-authoring-checkpoints.mjs",
     "author:course": "node studio/author-course-ai.mjs",
     "author:all": "node studio/author-all-courses.mjs",
     "author:parallel": "node studio/author-courses-parallel.mjs",
