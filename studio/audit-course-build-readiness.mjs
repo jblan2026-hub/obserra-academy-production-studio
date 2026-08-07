@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { officialBrand } from "./brand-policy.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
@@ -14,6 +15,13 @@ const requiredGeneratedFiles = [
   "answer-key.json",
   "visual-brief.md",
 ];
+const nonBlockingFindings = new Set([
+  "missing-ai-course-package",
+  "stale-ai-course-package",
+  "draft-commerce-price-unset",
+  "draft-branding-not-applied",
+  ...requiredGeneratedFiles.map((name) => `missing-generated-${name}`),
+]);
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -50,17 +58,20 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
   const course = manifest.course ?? {};
   const courseId = course.id ?? entry.name;
   const modules = Array.isArray(course.modules) ? course.modules : [];
+  const nestedLessons = modules.flatMap((module) => Array.isArray(module?.lessons) ? module.lessons : []);
+  const releaseApproved = manifest.release?.publishToAcademy === true
+    && ["approved", "published"].includes(String(manifest.release?.status ?? "").toLowerCase());
   const courseFindings = [];
 
   if (courseId !== entry.name) courseFindings.push("directory-course-id-mismatch");
   for (const field of ["id", "title", "description", "duration", "department", "level", "track", "audience"]) {
     if (!String(course[field] ?? "").trim()) courseFindings.push(`missing-course-${field}`);
   }
-  if (!Array.isArray(course.outcomes) || course.outcomes.length === 0) courseFindings.push("missing-course-outcomes");
+  if (!Array.isArray(course?.outcomes) || course.outcomes.length === 0) courseFindings.push("missing-course-outcomes");
   if (modules.length === 0) courseFindings.push("missing-course-modules");
 
   const moduleIds = new Set();
-  let lessonMinutes = 0;
+  let moduleMinutes = 0;
   for (const [index, module] of modules.entries()) {
     for (const field of ["id", "title", "description", "duration", "format"]) {
       if (!String(module?.[field] ?? "").trim()) courseFindings.push(`module-${index + 1}-missing-${field}`);
@@ -69,19 +80,31 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
     moduleIds.add(module.id);
     const minutes = parseDurationMinutes(module.duration);
     if (!Number.isFinite(minutes) || minutes <= 0) courseFindings.push(`module-${index + 1}-invalid-duration`);
-    else lessonMinutes += minutes;
+    else moduleMinutes += minutes;
   }
 
   const advertisedMinutes = parseDurationMinutes(course.duration);
   if (!Number.isFinite(advertisedMinutes) || advertisedMinutes <= 0) courseFindings.push("invalid-course-duration");
-  else if (lessonMinutes !== advertisedMinutes) courseFindings.push(`duration-mismatch-${lessonMinutes}-vs-${advertisedMinutes}`);
+  else if (moduleMinutes !== advertisedMinutes) courseFindings.push(`duration-mismatch-${moduleMinutes}-vs-${advertisedMinutes}`);
 
-  if (!manifest.commerce || !Number.isFinite(Number(manifest.commerce.price)) || Number(manifest.commerce.price) <= 0) courseFindings.push("invalid-commerce-price");
+  const price = Number(manifest.commerce?.price);
+  if (!manifest.commerce || !Number.isFinite(price) || price < 0) {
+    courseFindings.push("invalid-commerce-price");
+  } else if (releaseApproved && price <= 0) {
+    courseFindings.push("invalid-commerce-price");
+  } else if (!releaseApproved && price <= 0) {
+    courseFindings.push("draft-commerce-price-unset");
+  }
+
   if (!manifest.completion?.allLessonsRequired) courseFindings.push("all-lessons-not-required");
   if (!manifest.completion?.assessmentRequired) courseFindings.push("assessment-not-required");
   if (!Number.isFinite(Number(manifest.completion?.passingScore)) || Number(manifest.completion.passingScore) < 1) courseFindings.push("invalid-passing-score");
   if (manifest.completion?.certificateIssued !== true) courseFindings.push("certificate-not-enabled");
-  if (manifest.branding?.logoAsset !== "/brand/obserra-logo.png") courseFindings.push("official-logo-mismatch");
+
+  const logoAsset = manifest.branding?.logoAsset;
+  if (logoAsset !== officialBrand.officialLogo.assetPath) {
+    courseFindings.push(releaseApproved ? "official-logo-mismatch" : "draft-branding-not-applied");
+  }
 
   const missingGenerated = requiredGeneratedFiles.filter((name) => !fs.existsSync(path.join(courseDir, name)));
   if (missingGenerated.length) courseFindings.push(...missingGenerated.map((name) => `missing-generated-${name}`));
@@ -98,34 +121,45 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
     if (packageManifestHash && packageManifestHash !== manifestHash) courseFindings.push("stale-ai-course-package");
   }
 
-  const approved = manifest.release?.publishToAcademy === true && ["approved", "published"].includes(manifest.release?.status);
+  const courseBlockingFindings = courseFindings.filter((finding) => !nonBlockingFindings.has(finding));
   courses.push({
     courseId,
     title: course.title,
-    approved,
-    lessonCount: modules.length,
-    lessonMinutes,
+    approved: releaseApproved,
+    moduleCount: modules.length,
+    lessonCount: nestedLessons.length || modules.length,
+    moduleMinutes,
     advertisedMinutes,
     manifestHash,
     packageManifestHash,
     authoringMissing,
     findings: courseFindings,
+    blockingFindings: courseBlockingFindings,
   });
-  for (const finding of courseFindings) findings.push({ courseId, finding });
+  for (const finding of courseFindings) {
+    findings.push({
+      courseId,
+      finding,
+      blocking: !nonBlockingFindings.has(finding),
+    });
+  }
 }
 
 const approvedCourses = courses.filter((course) => course.approved);
 const authoringRequired = approvedCourses.some((course) => course.authoringMissing || course.findings.includes("stale-ai-course-package"));
-const buildRequired = approvedCourses.some((course) => course.findings.length > 0);
-const blockingFindings = findings.filter(({ finding }) => !["missing-ai-course-package", "stale-ai-course-package", ...requiredGeneratedFiles.map((name) => `missing-generated-${name}`)].includes(finding));
+const buildRequired = approvedCourses.some((course) => course.blockingFindings.length > 0);
+const blockingFindings = findings.filter((item) => item.blocking);
 
 fs.mkdirSync(catalogRoot, { recursive: true });
 const report = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
   policy: {
     lessonCount: "manifest-defined-per-course",
     duration: "sum-of-manifest-module-durations-must-equal-advertised-course-duration",
+    draftCommerce: "draft courses may retain a zero placeholder until owner and commerce approval",
+    officialLogo: officialBrand.officialLogo.assetPath,
+    releaseBranding: "approved and published courses must use the owner-approved official logo",
     authoring: "approved-missing-or-stale-packages-trigger-ai-authoring",
     build: "approved-missing-or-stale-assets-trigger-governed-build",
     directProductionPublish: false,
