@@ -7,6 +7,10 @@ import {
   ProviderAuthoringError,
   providerAuthoringErrorFromHttp,
 } from "./authoring-provider-errors.mjs";
+import {
+  ProviderTransportError,
+  providerHttpRequest,
+} from "./provider-http.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const AUTHORING_POLICY_VERSION = "2026.08.07.2";
@@ -134,18 +138,42 @@ Quality requirements:
 20. The package remains draft AI generated content until governed subject matter, technical, legal where applicable, brand, accessibility, and owner review gates are satisfied.`;
 }
 
+function providerHeaders(providerName, apiKey) {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+  if (providerName === "openai") {
+    headers.Authorization = `Bearer ${apiKey}`;
+    const organization = String(process.env.OPENAI_ORGANIZATION ?? "").trim();
+    const project = String(process.env.OPENAI_PROJECT ?? "").trim();
+    if (organization) headers["OpenAI-Organization"] = organization;
+    if (project) headers["OpenAI-Project"] = project;
+  }
+  return headers;
+}
+
 async function fetchWithAuthoringTimeout(providerName, url, init) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    return await providerHttpRequest({
+      provider: providerName,
+      url,
+      method: init.method,
+      headers: init.headers,
+      body: init.body,
+      timeoutMs: requestTimeoutMs,
+    });
   } catch (error) {
-    if (controller.signal.aborted || error?.name === "AbortError") {
-      throw new Error(`${providerName} authoring request timed out after ${Math.round(requestTimeoutMs / 1000)} seconds`);
+    if (error instanceof ProviderTransportError) {
+      throw new ProviderAuthoringError({
+        provider: providerName.toLowerCase(),
+        category: "provider_transient_failure",
+        retryable: true,
+        exitCode: 1,
+        providerCode: error.category,
+        message: error.message,
+      });
     }
     throw error;
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -171,7 +199,7 @@ async function callOpenAI(prompt) {
     process.env.OPENAI_API_URL || "https://api.openai.com/v1/responses",
     {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      headers: providerHeaders("openai", apiKey),
       body: JSON.stringify({
         model: process.env.OPENAI_AUTHORING_MODEL || "gpt-5",
         input: prompt,
