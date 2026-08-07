@@ -7,7 +7,7 @@ import { classificationFromAuthoringExit } from "./authoring-provider-errors.mjs
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const reportPath = path.join(root, "catalog", "continuous-course-audit.json");
-const failureContractVersion = "1.0";
+const failureContractVersion = "1.1";
 
 function boundedNumber(value, fallback, minimum, maximum) {
   const parsed = Number(value);
@@ -62,7 +62,7 @@ function runAuthoring(courseId, attempt) {
 
     const child = spawn(
       process.execPath,
-      ["studio/author-course-ai.mjs", "--course", courseId, "--provider", provider, "--force"],
+      ["studio/author-course-with-checkpoint.mjs", "--course", courseId, "--provider", provider, "--force"],
       {
         cwd: root,
         env: process.env,
@@ -165,7 +165,7 @@ async function worker(workerId, queue, results) {
     const result = await authorWithRetry(course.courseId);
     results.completed.push(result);
     if (result.ok) {
-      console.log(`[Academy Studio] Worker ${workerId} completed ${course.courseId}`);
+      console.log(`[Academy Studio] Worker ${workerId} completed and checkpointed ${course.courseId}`);
     } else {
       console.error(`[Academy Studio] Worker ${workerId} failed ${course.courseId}: ${result.error}`);
       if (result.retryable === false) {
@@ -180,7 +180,7 @@ if (targets.length === 0) {
   process.exit(0);
 }
 
-console.log(`[Academy Studio] Starting governed parallel authoring for ${targets.length} course(s) with concurrency ${concurrency}, request timeout ${Math.round(boundedNumber(process.env.ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS, 15 * 60 * 1000, 60 * 1000, 30 * 60 * 1000) / 1000)} seconds, process timeout ${Math.round(processTimeoutMs / 1000)} seconds, and failure contract ${failureContractVersion}.`);
+console.log(`[Academy Studio] Starting governed parallel authoring for ${targets.length} course(s) with concurrency ${concurrency}, request timeout ${Math.round(boundedNumber(process.env.ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS, 15 * 60 * 1000, 60 * 1000, 30 * 60 * 1000) / 1000)} seconds, process timeout ${Math.round(processTimeoutMs / 1000)} seconds, checkpoint persistence enabled=${String(process.env.ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED ?? "false")}, and failure contract ${failureContractVersion}.`);
 const queue = [...targets];
 const results = {
   started: 0,
@@ -208,13 +208,14 @@ try {
 const failures = results.completed.filter((result) => !result.ok);
 const summaryPath = path.join(root, "catalog", "parallel-authoring-summary.json");
 fs.writeFileSync(summaryPath, `${JSON.stringify({
-  schemaVersion: "1.2",
+  schemaVersion: "1.3",
   failureContractVersion,
   generatedAt: new Date().toISOString(),
   provider,
   concurrency,
   maxAttempts,
   processTimeoutMs,
+  checkpointPersistenceRequired: String(process.env.ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED ?? "false").toLowerCase() === "true",
   requestedCourses: targets.length,
   startedCourses: results.started,
   completedCourses: results.completed.length,
@@ -230,9 +231,9 @@ fs.writeFileSync(summaryPath, `${JSON.stringify({
 if (failures.length > 0) {
   console.error(`[Academy Studio] Parallel authoring failed for ${failures.length} course(s): ${failures.map((item) => item.courseId).join(", ")}`);
   if (results.halted) {
-    console.error(`[Academy Studio] Failure is non-retryable at the current provider boundary: ${results.haltReason}. Restore the provider prerequisite before rerunning the protected authoring workflow.`);
+    console.error(`[Academy Studio] Failure is non-retryable at the current provider or checkpoint boundary: ${results.haltReason}. Restore the prerequisite before rerunning the protected authoring workflow.`);
   }
   process.exit(results.haltExitCode || 2);
 }
 
-console.log(`[Academy Studio] Parallel authoring completed successfully for all ${targets.length} course(s).`);
+console.log(`[Academy Studio] Parallel authoring completed successfully for all ${targets.length} course(s), with every generated package checkpointed when required.`);
