@@ -129,6 +129,14 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
 
 const publicationApprovedCourses = courses.filter((course) => course.publicationApproved);
 const ownerReviewCourses = courses.filter((course) => course.ownerReviewEligible);
+const expectedOwnerReviewCourses = Number(process.env.ACADEMY_EXPECTED_REVIEW_COURSES ?? 0);
+if (Number.isInteger(expectedOwnerReviewCourses) && expectedOwnerReviewCourses > 0 && ownerReviewCourses.length !== expectedOwnerReviewCourses) {
+  findings.push({
+    courseId: "academy-catalog",
+    finding: `owner-review-course-count-mismatch-${ownerReviewCourses.length}-vs-${expectedOwnerReviewCourses}`,
+  });
+}
+
 const authoringRequired = ownerReviewCourses.some((course) => authoringFindings.some((finding) => course.findings.includes(finding)));
 const buildRequired = ownerReviewCourses.some((course) => course.findings.length > 0);
 const nonBlockingFindings = new Set([
@@ -152,6 +160,7 @@ const report = {
   totals: {
     discovered: courses.length,
     ownerReviewEligible: ownerReviewCourses.length,
+    expectedOwnerReviewEligible: Number.isInteger(expectedOwnerReviewCourses) && expectedOwnerReviewCourses > 0 ? expectedOwnerReviewCourses : null,
     publicationApproved: publicationApprovedCourses.length,
     findings: findings.length,
     blockingFindings: blockingFindings.length,
