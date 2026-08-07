@@ -6,10 +6,11 @@
   "releaseStatus": "not-ready",
   "publicRepresentationAllowed": false,
   "sourceOfTruth": "courses/pmp-exam-prep-business-application/course-manifest.json",
-  "updatedAt": "2026-08-07T06:10:00Z",
+  "updatedAt": "2026-08-07T06:45:00Z",
   "completedAssets": [
     "course-manifest.json",
     "authoritative-sources.json",
+    "authoritative-sources-stakeholder-change.json",
     "exam-domain-crosswalk.json",
     "lesson-traceability.json",
     "pmi-pmbok-knowledge-spine.json",
@@ -35,9 +36,15 @@
     "video/module-02/lesson-03/production-script.md",
     "video/module-02/lesson-04/production-script.md",
     "video/module-02/lesson-05/production-script.md",
+    "video/module-03/lesson-01/production-script.md",
+    "video/module-03/lesson-02/production-script.md",
+    "video/module-03/lesson-03/production-script.md",
+    "video/module-03/lesson-04/production-script.md",
     "docs/AI-NATIVE-EVIDENCE-GROUNDED-COURSE-STANDARD.md",
     "Owner-only exact final learner package review gate",
     "Governed owner final-review tutor proxy",
+    "Release-aware course audit",
+    "Canonical AI-native course validator",
     "AI-native packaging and validation support"
   ],
   "progress": {
@@ -51,7 +58,7 @@
     "ecoTasksRequired": 26,
     "practiceQuestionsDrafted": 30,
     "practiceQuestionsRequired": 180,
-    "videoScriptsDrafted": 9,
+    "videoScriptsDrafted": 13,
     "videoScriptsRequired": 35,
     "renderedVideosCompleted": 0,
     "renderedVideosRequired": 35,
@@ -67,7 +74,8 @@
   "milestones": {
     "examOrientationModuleScripts": "complete-draft",
     "peopleVisionLeadershipModuleScripts": "complete-draft",
-    "peopleStakeholderConflictModuleScripts": "not-started",
+    "peopleStakeholderConflictModuleScripts": "complete-draft",
+    "peopleDomainScripts": "complete-draft",
     "processDomainScripts": "not-started",
     "businessEnvironmentScripts": "not-started",
     "finalAssessment": "partial-draft",
@@ -76,13 +84,13 @@
   "nextProductionWork": [
     {
       "priority": 1,
-      "work": "Expand the original assessment bank from 30 to 180 questions while preserving the July 2026 domain weights, predictive versus adaptive or hybrid mix, and enhanced question-format coverage.",
+      "work": "Expand the original assessment bank from 30 to 180 questions while preserving July 2026 domain weights, predictive versus adaptive or hybrid coverage, and enhanced question formats.",
       "owner": "Assessment Production",
       "gate": "Credentialed PMP SME, technical, editorial, psychometric, accessibility, source, and originality review"
     },
     {
       "priority": 2,
-      "work": "Draft production scripts, source cards, visual treatments, interactions, knowledge checks, and tutor handoffs for the remaining 26 lessons, beginning with stakeholder engagement, expectation alignment, conflict, communication, and knowledge transfer.",
+      "work": "Draft production scripts, source cards, visual treatments, interactions, knowledge checks, and tutor handoffs for the remaining 22 lessons, beginning with Process-domain tailoring, integration, scope, value, resources, procurement, finance, quality, schedule, reporting, and closure.",
       "owner": "Instructional and Video Production",
       "gate": "Every factual claim mapped to an approved source or labeled instructor interpretation"
     },
@@ -131,12 +139,12 @@
   },
   "releaseBlockers": [
     "Only 30 of 180 original protected-exam questions are drafted.",
-    "Only nine of 35 lesson production scripts are drafted.",
+    "Only 13 of 35 lesson production scripts are drafted.",
     "No mastered lesson videos, captions, transcripts, storyboards, or completed per-video rights records exist yet.",
     "PMP SME, legal, brand, accessibility, assessment, AI, media, commerce, and owner reviews are pending.",
     "The public Obserra Academy catalog does not yet contain an owner-approved PMP course record controlling the public title, price, checkout, and release claims.",
-    "The final learner package cannot enter the admin review queue until the database-backed media, accessibility, AI, entitlement, staged-release, and pre-owner review gates all pass.",
-    "GitHub-hosted validation is still required against the latest branch head."
+    "The final learner package cannot enter the admin review queue until database-backed media, accessibility, AI, entitlement, staged-release, and pre-owner review gates all pass.",
+    "GitHub-hosted validation must pass against the latest branch head."
   ],
   "truthfulness": {
     "courseMayBeCalledComplete": false,
@@ -145,6 +153,6 @@
     "courseMayGuaranteeEligibility": false,
     "courseMayGuaranteeExamSuccess": false,
     "videoMayBeCalledRendered": false,
-    "currentAccurateDescription": "A governed 35-hour PMP course production foundation with full ECO mapping, source-grounded instructional materials, an entitlement-scoped AI tutor profile, cinematic production standards, nine detailed lesson scripts, the first 30 original assessment items, and a fail-closed owner final-review gate that renders only the exact staged paid learner package."
+    "currentAccurateDescription": "A governed 35-hour PMP course production foundation with complete People-domain scripts, full ECO mapping, source-grounded instructional materials, an entitlement-scoped AI tutor profile, cinematic production standards, 13 detailed lesson scripts, the first 30 original assessment items, and a fail-closed owner final-review gate that renders only the exact staged paid learner package."
   }
 }
