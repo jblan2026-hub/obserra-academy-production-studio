@@ -3,6 +3,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  ProviderAuthoringError,
+  providerAuthoringErrorFromHttp,
+} from "./authoring-provider-errors.mjs";
+
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const AUTHORING_POLICY_VERSION = "2026.08.07.2";
 const arg = (name) => {
@@ -149,6 +154,15 @@ async function boundedErrorText(response) {
   return text.length > 4000 ? `${text.slice(0, 4000)}...[truncated]` : text;
 }
 
+async function providerHttpError(providerName, response) {
+  const body = await boundedErrorText(response);
+  return providerAuthoringErrorFromHttp({
+    provider: providerName,
+    status: response.status,
+    body,
+  });
+}
+
 async function callOpenAI(prompt) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY is required");
@@ -166,7 +180,7 @@ async function callOpenAI(prompt) {
       }),
     },
   );
-  if (!response.ok) throw new Error(`OpenAI authoring request failed: ${response.status} ${await boundedErrorText(response)}`);
+  if (!response.ok) throw await providerHttpError("openai", response);
   const payload = await response.json();
   const text = payload.output_text || payload.output?.flatMap((item) => item.content || []).find((item) => item.type === "output_text")?.text;
   if (!text) throw new Error("OpenAI response did not contain output text");
@@ -194,7 +208,7 @@ async function callAnthropic(prompt) {
       }),
     },
   );
-  if (!response.ok) throw new Error(`Anthropic authoring request failed: ${response.status} ${await boundedErrorText(response)}`);
+  if (!response.ok) throw await providerHttpError("anthropic", response);
   const payload = await response.json();
   const text = payload.content?.find((item) => item.type === "text")?.text;
   if (!text) throw new Error("Anthropic response did not contain text");
@@ -206,31 +220,47 @@ function parseJson(text) {
   return JSON.parse(trimmed);
 }
 
-const outputDir = path.join(courseDir, "generated", "authoring");
-const outputPath = path.join(outputDir, "course-package.json");
-if (fs.existsSync(outputPath) && !force) {
-  console.log(`[Academy Studio] Preserved existing AI authored package for ${courseId}. Use --force to regenerate.`);
-  process.exit(0);
+async function main() {
+  const outputDir = path.join(courseDir, "generated", "authoring");
+  const outputPath = path.join(outputDir, "course-package.json");
+  if (fs.existsSync(outputPath) && !force) {
+    console.log(`[Academy Studio] Preserved existing AI authored package for ${courseId}. Use --force to regenerate.`);
+    return;
+  }
+
+  fs.mkdirSync(outputDir, { recursive: true });
+  const prompt = authoringPrompt();
+  fs.writeFileSync(path.join(outputDir, "authoring-prompt.txt"), `${proprietaryNotice}\n\n${prompt}\n`);
+
+  const raw = provider === "anthropic" ? await callAnthropic(prompt) : await callOpenAI(prompt);
+  const authored = parseJson(raw);
+  const envelope = {
+    schemaVersion: "1.2",
+    courseId,
+    provider,
+    model: provider === "anthropic" ? process.env.ANTHROPIC_AUTHORING_MODEL || "claude-sonnet-4-5" : process.env.OPENAI_AUTHORING_MODEL || "gpt-5",
+    authoringPolicyVersion: AUTHORING_POLICY_VERSION,
+    generatedAt: new Date().toISOString(),
+    sourceManifestHash: sourceManifestHash(),
+    reviewStatus: "draft-ai-generated",
+    legalName,
+    proprietaryNotice,
+    content: authored,
+  };
+  fs.writeFileSync(outputPath, `${JSON.stringify(envelope, null, 2)}\n`);
+  console.log(`[Academy Studio] Generated governed AI course package for ${courseId} through ${provider} under policy ${AUTHORING_POLICY_VERSION}`);
 }
 
-fs.mkdirSync(outputDir, { recursive: true });
-const prompt = authoringPrompt();
-fs.writeFileSync(path.join(outputDir, "authoring-prompt.txt"), `${proprietaryNotice}\n\n${prompt}\n`);
-
-const raw = provider === "anthropic" ? await callAnthropic(prompt) : await callOpenAI(prompt);
-const authored = parseJson(raw);
-const envelope = {
-  schemaVersion: "1.2",
-  courseId,
-  provider,
-  model: provider === "anthropic" ? process.env.ANTHROPIC_AUTHORING_MODEL || "claude-sonnet-4-5" : process.env.OPENAI_AUTHORING_MODEL || "gpt-5",
-  authoringPolicyVersion: AUTHORING_POLICY_VERSION,
-  generatedAt: new Date().toISOString(),
-  sourceManifestHash: sourceManifestHash(),
-  reviewStatus: "draft-ai-generated",
-  legalName,
-  proprietaryNotice,
-  content: authored,
-};
-fs.writeFileSync(outputPath, `${JSON.stringify(envelope, null, 2)}\n`);
-console.log(`[Academy Studio] Generated governed AI course package for ${courseId} through ${provider} under policy ${AUTHORING_POLICY_VERSION}`);
+try {
+  await main();
+} catch (error) {
+  if (error instanceof ProviderAuthoringError) {
+    const safeMessage = String(error.message || error.category).replace(/\s+/g, " ").slice(0, 1600);
+    console.error(
+      `[Academy Studio] AUTHORING_PROVIDER_FAILURE provider=${error.provider} category=${error.category} retryable=${error.retryable} status=${error.status ?? "unknown"} providerCode=${error.providerCode ?? "unknown"}: ${safeMessage}`,
+    );
+    process.exitCode = error.exitCode;
+  } else {
+    throw error;
+  }
+}
