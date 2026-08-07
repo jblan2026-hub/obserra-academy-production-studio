@@ -62,7 +62,9 @@ jobs:
           node --check src/app.js
           node --check src/security-dashboard.js
           node --check src/remediation-dashboard.js
-          node --check src/refresh-15s.js
+      - name: Verify 15-second visible refresh contract
+        working-directory: owner-command-center
+        run: node -e "const fs=require('fs');const source=fs.readFileSync('src/app.js','utf8');if(!/REFRESH_INTERVAL_MS\s*=\s*15000\s*;/.test(source))throw new Error('Command Center refresh interval must be exactly 15 seconds');console.log('15-second refresh contract verified');"
       - name: Run Command Center governance and packaging verification
         working-directory: owner-command-center
         run: npm run verify
