@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "courseId": "pmp-exam-prep-business-application",
-  "verifiedAt": "2026-08-06T00:00:00Z",
+  "verifiedAt": "2026-08-07T00:00:00Z",
   "governance": {
     "primarySourceRequired": true,
     "copyrightedStandardsMustBeParaphrased": true,
@@ -276,6 +276,93 @@
         "The announcement identifies AI business cases, tool selection, risk management, ethics oversight, and compliance as project leadership concerns."
       ],
       "usageLimitations": "Use announcement-level facts only unless Obserra obtains the standard under an appropriate license."
+    },
+    {
+      "id": "EDMONDSON-PSYCHOLOGICAL-SAFETY-1999",
+      "owner": "Administrative Science Quarterly",
+      "title": "Psychological Safety and Learning Behavior in Work Teams",
+      "publicationDate": "1999-06",
+      "retrievedAt": "2026-08-07",
+      "sourceType": "peer-reviewed-research",
+      "url": "https://doi.org/10.2307/2666999",
+      "authoritativeFor": [
+        "psychological safety construct",
+        "team learning behavior",
+        "leader coaching and context support",
+        "relationship between learning behavior and team performance"
+      ],
+      "keyFacts": [
+        "The study examined 51 work teams in a manufacturing company using a multimethod field design.",
+        "Psychological safety was associated with team learning behavior in the study.",
+        "The tested model found that learning behavior mediated the relationship between psychological safety and team performance.",
+        "The paper identified context support and team leader coaching as relevant team structures in the model."
+      ],
+      "usageLimitations": "Copyrighted peer-reviewed article. Paraphrase the abstract and findings. Do not reproduce the article or measurement instrument without permission. The study is observational and context specific and does not establish that psychological safety alone causes performance."
+    },
+    {
+      "id": "ODONOVAN-MCAULIFFE-PSYCHOLOGICAL-SAFETY-2020",
+      "owner": "International Journal for Quality in Health Care",
+      "title": "A Systematic Review of Factors That Enable Psychological Safety in Healthcare Teams",
+      "publicationDate": "2020-06-04",
+      "retrievedAt": "2026-08-07",
+      "sourceType": "peer-reviewed-systematic-review",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/32232323/",
+      "authoritativeFor": [
+        "psychological safety enablers",
+        "organizational team and individual factors",
+        "leadership support",
+        "hierarchy familiarity and inclusiveness"
+      ],
+      "keyFacts": [
+        "The review included 36 relevant studies published between 1999 and 2019.",
+        "It identified 13 enablers grouped into five broader themes.",
+        "The themes included patient-safety priority, learning orientation, support, familiarity with colleagues, status and hierarchy, inclusiveness, and individual differences."
+      ],
+      "usageLimitations": "Copyrighted review and healthcare-specific evidence. Paraphrase and cite. Do not assume every finding generalizes directly to all industries or project teams."
+    },
+    {
+      "id": "NASA-ROGERS-COMMISSION-1986",
+      "owner": "Presidential Commission on the Space Shuttle Challenger Accident",
+      "title": "Report of the Presidential Commission on the Space Shuttle Challenger Accident, Volume 1",
+      "publicationDate": "1986-06-06",
+      "retrievedAt": "2026-08-07",
+      "sourceType": "official-government-accident-investigation",
+      "url": "https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19860015255.pdf",
+      "authoritativeFor": [
+        "documented communication and decision-making failure",
+        "engineering and management conflict",
+        "safety governance",
+        "organizational escalation and warning signals"
+      ],
+      "keyFacts": [
+        "The Commission concluded that the launch decision process was flawed in several ways.",
+        "The report identified communication failures that produced a decision based on incomplete and misleading information.",
+        "The report identified conflict between engineering data and management judgments.",
+        "The report identified a management structure that allowed flight-safety problems to bypass key Shuttle managers."
+      ],
+      "usageLimitations": "U.S. government investigation and historical high-consequence case. Treat the loss of life respectfully. Use only documented findings, avoid dramatization of victims, and do not claim psychological safety was the sole or formal causal finding."
+    },
+    {
+      "id": "MONTGOMERY-PSYCHOLOGICAL-PATIENT-SAFETY-2025",
+      "owner": "PLOS ONE",
+      "title": "Psychological Safety and Patient Safety: A Systematic and Narrative Review",
+      "publicationDate": "2025-04-24",
+      "retrievedAt": "2026-08-07",
+      "sourceType": "peer-reviewed-systematic-review",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/40273220/",
+      "authoritativeFor": [
+        "limitations of psychological safety evidence",
+        "patient safety outcomes",
+        "measurement ambiguity",
+        "responsible interpretation of team-culture research"
+      ],
+      "keyFacts": [
+        "The review included nine papers reporting heterogeneous objective patient-safety outcomes.",
+        "Five studies reported a significant relationship between psychological safety and selected patient-safety outcomes.",
+        "The authors concluded that no clear overall causal conclusion could be extracted from the evidence reviewed.",
+        "The review noted that increased reporting can be interpreted differently and requires contextual analysis."
+      ],
+      "usageLimitations": "Open-access peer-reviewed review focused on healthcare. Use it to teach evidence limitations and avoid presenting psychological safety as a guaranteed performance or safety intervention."
     }
   ]
 }
