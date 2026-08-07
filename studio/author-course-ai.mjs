@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const AUTHORING_POLICY_VERSION = "2026.08.07.2";
 const arg = (name) => {
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : null;
@@ -45,12 +46,17 @@ function stableHash(value) {
   return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
+function sourceManifestHash() {
+  return stableHash({ authoringPolicyVersion: AUTHORING_POLICY_VERSION, manifest });
+}
+
 function authoringPrompt() {
   const course = manifest.course;
   return `You are the senior instructional design and subject matter authoring engine for ${legalName}.
 
-Create an original, commercially credible, high quality professional course package for the course below. Do not imitate third party courseware. Do not claim accreditation, certification, legal advice, regulatory approval, or guaranteed outcomes. Use mature professional language, substantive paragraphs, varied scenarios, practical judgment, clear evidence boundaries, and realistic executive and operational examples.
+Create an original, commercially credible, high quality professional course package for the course below. Do not imitate third party courseware. Do not claim accreditation, certification, legal advice, regulatory approval, compliance, or guaranteed outcomes. Use mature professional language, substantive paragraphs, varied scenarios, practical judgment, clear evidence boundaries, realistic executive and operational examples, and source aware instruction. Treat every externally verifiable fact, framework statement, legal requirement, statistic, incident detail, technical specification, and regulatory assertion as requiring later verification unless the supplied manifest itself establishes it.
 
+Authoring policy version: ${AUTHORING_POLICY_VERSION}
 Course title: ${course.title}
 Department: ${course.department}
 Track: ${course.track}
@@ -64,10 +70,14 @@ Passing score: ${manifest.completion.passingScore}
 Access model: one time purchase, named learner, access until completion
 Certificate issuer: ${legalName}
 Handling notice: ${proprietaryNotice}
+Manifest framework tags: ${JSON.stringify(manifest.tags?.frameworks ?? [])}
 
 Return one valid JSON object only. Use this exact top level structure:
 {
   "courseSummary": {"executiveValue": "", "instructionalStrategy": "", "sourceAndReviewNotes": []},
+  "sourceRegister": [{"id": "SRC-001", "sourceType": "authoritative-source-needed", "claimOrTopic": "", "moduleIds": [], "verificationInstruction": "", "usageBoundary": ""}],
+  "frameworkAlignment": [{"framework": "", "applicability": "informational-mapping-only", "moduleIds": [], "alignmentNote": "", "verificationRequired": true}],
+  "assessmentBlueprint": {"coverageByModule": [{"moduleId": "", "minimumQuestions": 0}], "cognitiveMix": [{"level": "application", "targetPercent": 0}], "integrityNotes": []},
   "modules": [
     {
       "id": "",
@@ -89,7 +99,7 @@ Return one valid JSON object only. Use this exact top level structure:
       "sourcePlaceholders": []
     }
   ],
-  "finalAssessment": [{"question": "", "options": [], "correctIndex": 0, "rationale": "", "moduleId": ""}],
+  "finalAssessment": [{"question": "", "options": [], "correctIndex": 0, "rationale": "", "moduleId": "", "cognitiveLevel": "application", "sourceIds": []}],
   "learnerWorkbook": [{"moduleId": "", "reflectionPrompts": [], "decisionWorksheet": []}],
   "instructorGuide": {"facilitationNotes": [], "commonMisconceptions": [], "reviewWarnings": []},
   "marketing": {"shortDescription": "", "longDescription": "", "buyerOutcomes": [], "seoKeywords": []},
@@ -100,13 +110,23 @@ Quality requirements:
 1. Every listed module must appear exactly once and preserve its title, duration, and format.
 2. Each lessonNarrative must be substantive, specific to the course, and at least 700 words.
 3. Each module must include at least 4 key concepts, 1 executive example, 1 operational example, 1 realistic scenario, 1 applied exercise, 4 knowledge checks, 8 slide narratives, and a complete video script.
-4. The final assessment must contain at least 25 questions distributed across all modules.
-5. Questions must test application and judgment, not trivia.
-6. Avoid repeating the same scenario, explanation, or phrasing between modules.
-7. Include source placeholders for facts that require later verification by a subject matter expert.
-8. Keep all generated material marked proprietary and review required.
-9. Do not use unsupported statistics or invented citations.
-10. Preserve secure by design, ethical leadership, human oversight, and defensible decision making where relevant.`;
+4. The final assessment must contain at least 25 original questions distributed across all modules and mapped to the assessment blueprint.
+5. Questions must primarily test application, analysis, prioritization, evidence evaluation, escalation, and defensible judgment rather than trivia or memorization.
+6. Avoid repeating the same scenario, explanation, distractor pattern, or phrasing between modules.
+7. Build a sourceRegister that identifies every topic needing authoritative verification before publication. Do not invent citations, URLs, standards language, statistics, case facts, or source identifiers.
+8. frameworkAlignment is informational mapping only. Include only frameworks that are relevant to the manifest or course subject and make applicability conditional. Never state that course completion establishes compliance, certification, attestation, authorization, or legal sufficiency.
+9. Every externally verifiable claim that is not common knowledge must have a source placeholder or sourceRegister reference suitable for later SME verification.
+10. Include an assessment blueprint with coverage across every module and a cognitive mix dominated by application and analysis.
+11. Each scenario must provide enough evidence for a reasoned decision, include ambiguity appropriate to the learner level, and explain why the recommended approach is proportionate.
+12. Exercises must produce a concrete learner artifact, decision record, risk statement, control selection, communication, or other reviewable work product where appropriate.
+13. Video scripts must be designed for audible professional narration, captions, transcripts, readable on screen text, reduced motion alternatives, and visuals that do not depend on color alone.
+14. Accessibility notes must address captions or transcript equivalence, keyboard or nonpointer alternatives for interactions, readable visual hierarchy, and alternate descriptions where visuals carry instructional meaning.
+15. Keep all generated material marked proprietary and review required.
+16. Do not use unsupported statistics, invented legal requirements, fabricated incidents, fictional quotes presented as real, or invented citations.
+17. Preserve secure by design, privacy by design, ethical leadership, human oversight, least privilege, evidence preservation, resilience, and defensible decision making where relevant.
+18. Distinguish binding requirements, voluntary guidance, organizational policy, recommended practice, original Obserra instruction, and synthetic scenarios whenever the distinction matters.
+19. Marketing language must accurately describe learning outcomes without promising employment, certification, examination success, compliance, risk elimination, or other guaranteed results.
+20. The package remains draft AI generated content until governed subject matter, technical, legal where applicable, brand, accessibility, and owner review gates are satisfied.`;
 }
 
 async function fetchWithAuthoringTimeout(providerName, url, init) {
@@ -200,16 +220,17 @@ fs.writeFileSync(path.join(outputDir, "authoring-prompt.txt"), `${proprietaryNot
 const raw = provider === "anthropic" ? await callAnthropic(prompt) : await callOpenAI(prompt);
 const authored = parseJson(raw);
 const envelope = {
-  schemaVersion: "1.1",
+  schemaVersion: "1.2",
   courseId,
   provider,
   model: provider === "anthropic" ? process.env.ANTHROPIC_AUTHORING_MODEL || "claude-sonnet-4-5" : process.env.OPENAI_AUTHORING_MODEL || "gpt-5",
+  authoringPolicyVersion: AUTHORING_POLICY_VERSION,
   generatedAt: new Date().toISOString(),
-  sourceManifestHash: stableHash(manifest),
+  sourceManifestHash: sourceManifestHash(),
   reviewStatus: "draft-ai-generated",
   legalName,
   proprietaryNotice,
   content: authored,
 };
 fs.writeFileSync(outputPath, `${JSON.stringify(envelope, null, 2)}\n`);
-console.log(`[Academy Studio] Generated governed AI course package for ${courseId} through ${provider}`);
+console.log(`[Academy Studio] Generated governed AI course package for ${courseId} through ${provider} under policy ${AUTHORING_POLICY_VERSION}`);
