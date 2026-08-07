@@ -1,4 +1,5 @@
 name: Continuous Academy Course AI Audit
+run-name: Academy protected audit • ${{ github.ref_name }} • ${{ github.sha }}
 
 on:
   workflow_dispatch:
