@@ -211,15 +211,32 @@ jobs:
             gh issue edit 17 --body "$BODY" || true
             exit 1
           fi
-          gh issue close 17 --comment "Protected Academy credentials are configured. Resolved by workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}." || true
+          echo "Protected credential values are present. Database authentication must still pass before the blocker can close."
 
       - name: Bootstrap protected Academy PostgreSQL schema
+        id: protected_db_bootstrap
         if: steps.audit.outputs.authoring_required == 'true' && env.ACADEMY_DATABASE_BOOTSTRAP_ALLOWED == 'true'
+        continue-on-error: true
         run: npm run db:bootstrap:protected
+
+      - name: Stop invalid protected database authentication
+        if: steps.audit.outputs.authoring_required == 'true' && env.ACADEMY_DATABASE_BOOTSTRAP_ALLOWED == 'true' && steps.protected_db_bootstrap.outcome != 'success'
+        shell: bash
+        run: |
+          BODY="Protected Academy credentials are present, but the protected LCMS database authentication or bootstrap failed. Protected learner content was not loaded. Review workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Issue #17 must remain open until protected database bootstrap and Prisma validation succeed."
+          gh issue edit 17 --body "$BODY" || true
+          exit 1
 
       - name: Validate protected database schema
         if: steps.audit.outputs.authoring_required == 'true'
         run: npm run db:validate
+
+      - name: Close resolved protected database blocker
+        if: steps.audit.outputs.authoring_required == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          gh issue close 17 --comment "Protected Academy database authentication, bootstrap verification, and Prisma schema validation succeeded in workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}." || true
 
       - name: AI author owner-review courses with controlled parallel workers
         if: steps.audit.outputs.authoring_required == 'true'
