@@ -3,9 +3,9 @@
   "courseId": "pmp-exam-prep-business-application",
   "courseVersion": "0.1.0",
   "status": "not-release-ready",
-  "recordedAt": "2026-08-07T00:00:00Z",
+  "recordedAt": "2026-08-07T05:40:00Z",
   "automatedRepositoryValidationExecutedInCurrentSession": false,
-  "automatedValidationLimitation": "The current execution environment does not include an authenticated GitHub CLI, so complete GitHub Actions log analysis and the full local test suite were not executed in this session. GitHub-hosted validation remains required.",
+  "automatedValidationLimitation": "GitHub-hosted validation is running against the evolving branch. A complete current-head success result has not yet been recorded, so repository, package, catalog, LCMS, security, and rollback validation remain open release gates.",
   "structuralObservations": {
     "declaredDuration": "35 hours",
     "instructionalHours": 35,
@@ -13,11 +13,13 @@
     "ecoDomainsMapped": 3,
     "ecoTasksMapped": 26,
     "authoritativeSourceArtifacts": 1,
-    "videoScriptsDrafted": 4,
+    "videoScriptsDrafted": 5,
     "assessmentQuestionsDrafted": 30,
     "assessmentTarget": 180,
     "duplicateCourseManifestRemoved": true,
-    "ownerFinalReviewGateImplemented": true
+    "ownerFinalReviewGateImplemented": true,
+    "ownerFinalReviewRendersDatabasePackageDirectly": true,
+    "ownerFinalReviewTutorProxyImplemented": true
   },
   "checks": [
     {
@@ -48,13 +50,13 @@
       "id": "QA-005",
       "check": "Cinematic video production system exists",
       "status": "pass-structural",
-      "evidence": "Video production bible, visual brief, and the first four detailed lesson scripts exist."
+      "evidence": "Video production bible, visual brief, and the first five detailed lesson scripts exist."
     },
     {
       "id": "QA-006",
       "check": "All 35 lesson scripts are complete",
       "status": "fail-incomplete",
-      "evidence": "Four of 35 production scripts are drafted."
+      "evidence": "Five of 35 production scripts are drafted."
     },
     {
       "id": "QA-007",
@@ -89,14 +91,26 @@
     {
       "id": "QA-012",
       "check": "Full repository tests, Studio validation, FINAL package, catalog, and LCMS dry run pass",
-      "status": "not-executed",
-      "evidence": "GitHub-hosted workflows have reported failures, but detailed log inspection is blocked because the current environment does not provide an authenticated GitHub CLI."
+      "status": "in-progress",
+      "evidence": "GitHub-hosted workflows are running as the branch advances. A successful complete current-head gate is still required."
     },
     {
       "id": "QA-013",
-      "check": "Owner final review displays only the exact staged paid learner experience",
+      "check": "Owner final review displays only the exact final paid learner package",
       "status": "pass-structural",
-      "evidence": "The admin gate excludes scripts and prototypes, requires all reviews and media/runtime quality gates, loads the configured staged learner route, and records approval without triggering publication."
+      "evidence": "The admin gate excludes scripts and prototypes, requires all reviews and quality gates, and directly renders the database-backed final lesson package with mastered video, verified audio, captions, transcript, sources, learner materials, practice, and AI tutor controls."
+    },
+    {
+      "id": "QA-014",
+      "check": "Owner final-review AI tutor is governed and fail closed",
+      "status": "pass-structural",
+      "evidence": "The owner-only proxy requires final-review readiness, validates the staged lesson, uses an HTTPS allowlisted runtime, sanitizes returned sources, and fails closed when the governed learner tutor is unavailable."
+    },
+    {
+      "id": "QA-015",
+      "check": "Owner approval cannot publish automatically",
+      "status": "pass-structural",
+      "evidence": "Approval records an immutable owner decision and moves the staged release to approved and course to ready while audit metadata explicitly records publicationTriggered false."
     }
   ],
   "releaseDecision": {
