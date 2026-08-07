@@ -79,7 +79,7 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          BODY="Protected Academy owner-review build execution started. Credential verification is pending. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.head_ref || github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring target: 6 workers across 60 owner-review courses."
+          BODY="Protected Academy owner-review build execution started. Authoring validation runs independently from protected LCMS database validation. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.head_ref || github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring target: 6 workers across 60 owner-review courses."
           gh issue edit 17 --body "$BODY"
 
       - name: Configure Node.js
@@ -107,7 +107,7 @@ jobs:
 
           function normalizeDatabaseUrl(raw) {
             let value = stripDatabaseAssignment(trimOuterQuotes(raw.trim()));
-            if (!value) throw new Error('DATABASE_URL is empty after normalization.');
+            if (!value) return '';
             if (/\r|\n/.test(value)) throw new Error('DATABASE_URL contains an unexpected newline.');
 
             if (!/^postgres(?:ql)?:\/\//i.test(value)) {
@@ -150,14 +150,13 @@ jobs:
             }
           }
 
-          let apiKey = trimOuterQuotes(String(process.env.OPENAI_API_KEY ?? '').trim());
-          if (!apiKey) throw new Error('OPENAI_API_KEY is empty after normalization.');
-          if (/\r|\n/.test(apiKey)) throw new Error('OPENAI_API_KEY contains an unexpected newline.');
-
+          const apiKey = trimOuterQuotes(String(process.env.OPENAI_API_KEY ?? '').trim());
+          if (apiKey && /\r|\n/.test(apiKey)) throw new Error('OPENAI_API_KEY contains an unexpected newline.');
           const databaseUrl = normalizeDatabaseUrl(String(process.env.DATABASE_URL ?? ''));
-          fs.appendFileSync(output, `OPENAI_API_KEY=${apiKey}\n`);
-          fs.appendFileSync(output, `DATABASE_URL=${databaseUrl}\n`);
-          console.log('[Academy Studio] Protected credentials normalized without exposing secret values.');
+
+          if (apiKey) fs.appendFileSync(output, `OPENAI_API_KEY=${apiKey}\n`);
+          if (databaseUrl) fs.appendFileSync(output, `DATABASE_URL=${databaseUrl}\n`);
+          console.log(`[Academy Studio] Protected secret formatting normalized. authoringCredential=${Boolean(apiKey)} databaseCredential=${Boolean(databaseUrl)}`);
           NODE
 
       - name: Install dependencies
@@ -199,44 +198,16 @@ jobs:
             gh issue close "$ISSUE_NUMBER" --comment "Resolved by workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
           fi
 
-      - name: Require protected authoring and LCMS credentials
+      - name: Require protected authoring credential
         if: steps.audit.outputs.authoring_required == 'true'
         shell: bash
         run: |
-          MISSING=""
-          test -n "$OPENAI_API_KEY" || MISSING="OPENAI_API_KEY"
-          test -n "$DATABASE_URL" || MISSING="${MISSING:+$MISSING, }ACADEMY_DATABASE_URL"
-          if [ -n "$MISSING" ]; then
-            BODY="The 60-course owner-review learner build requires protected credentials that are not configured: $MISSING. Protected learner content will not be generated or written to the public repository. Latest workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          if [ -z "$OPENAI_API_KEY" ]; then
+            BODY="The 60-course owner-review learner build requires OPENAI_API_KEY for protected authoring. Course authoring was not attempted. Protected learner content remains untracked. Latest workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
             gh issue edit 17 --body "$BODY" || true
             exit 1
           fi
-          echo "Protected credential values are present. Database authentication must still pass before the blocker can close."
-
-      - name: Bootstrap protected Academy PostgreSQL schema
-        id: protected_db_bootstrap
-        if: steps.audit.outputs.authoring_required == 'true' && env.ACADEMY_DATABASE_BOOTSTRAP_ALLOWED == 'true'
-        continue-on-error: true
-        run: npm run db:bootstrap:protected
-
-      - name: Stop invalid protected database authentication
-        if: steps.audit.outputs.authoring_required == 'true' && env.ACADEMY_DATABASE_BOOTSTRAP_ALLOWED == 'true' && steps.protected_db_bootstrap.outcome != 'success'
-        shell: bash
-        run: |
-          BODY="Protected Academy credentials are present, but the protected LCMS database authentication or bootstrap failed. Protected learner content was not loaded. Review workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Issue #17 must remain open until protected database bootstrap and Prisma validation succeed."
-          gh issue edit 17 --body "$BODY" || true
-          exit 1
-
-      - name: Validate protected database schema
-        if: steps.audit.outputs.authoring_required == 'true'
-        run: npm run db:validate
-
-      - name: Close resolved protected database blocker
-        if: steps.audit.outputs.authoring_required == 'true'
-        continue-on-error: true
-        shell: bash
-        run: |
-          gh issue close 17 --comment "Protected Academy database authentication, bootstrap verification, and Prisma schema validation succeeded in workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}." || true
+          echo "Protected authoring credential is present. Course generation can proceed independently from LCMS availability."
 
       - name: AI author owner-review courses with controlled parallel workers
         if: steps.audit.outputs.authoring_required == 'true'
@@ -276,6 +247,42 @@ jobs:
           npm run validate
           npm run load:courses:check
           npm test
+
+      - name: Require protected LCMS database credential
+        if: steps.audit.outputs.authoring_required == 'true'
+        shell: bash
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            BODY="Course authoring and protected learner catalog validation completed, but ACADEMY_DATABASE_URL is not configured. Protected learner content was not loaded to LCMS. Latest workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            gh issue edit 17 --body "$BODY" || true
+            exit 1
+          fi
+          echo "Protected LCMS database credential is present. Database authentication must pass before loading learner content."
+
+      - name: Bootstrap protected Academy PostgreSQL schema
+        id: protected_db_bootstrap
+        if: steps.audit.outputs.authoring_required == 'true' && env.ACADEMY_DATABASE_BOOTSTRAP_ALLOWED == 'true'
+        continue-on-error: true
+        run: npm run db:bootstrap:protected
+
+      - name: Stop invalid protected database authentication
+        if: steps.audit.outputs.authoring_required == 'true' && env.ACADEMY_DATABASE_BOOTSTRAP_ALLOWED == 'true' && steps.protected_db_bootstrap.outcome != 'success'
+        shell: bash
+        run: |
+          BODY="Course authoring and protected learner catalog validation completed, but protected LCMS database authentication or bootstrap failed. Protected learner content was not loaded. Review workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Issue #17 must remain open until protected database bootstrap and Prisma validation succeed."
+          gh issue edit 17 --body "$BODY" || true
+          exit 1
+
+      - name: Validate protected database schema
+        if: steps.audit.outputs.authoring_required == 'true'
+        run: npm run db:validate
+
+      - name: Close resolved protected database blocker
+        if: steps.audit.outputs.authoring_required == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          gh issue close 17 --comment "Protected Academy database authentication, bootstrap verification, and Prisma schema validation succeeded after course authoring and learner catalog validation in workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}." || true
 
       - name: Load protected learner content into LCMS
         if: steps.audit.outputs.authoring_required == 'true'
@@ -332,7 +339,7 @@ jobs:
             --base main \
             --head "${{ steps.branch.outputs.name }}" \
             --title "Academy governed course metadata alignment" \
-            --body "Automated governed build validated the full 60-course owner-review learner catalog in a protected ephemeral workspace and loaded protected learner content to the configured protected LCMS. This PR contains only safe public manifests, metadata, and evidence. Production publication remains separately approval-controlled. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            --body "Automated governed build authored and validated the full owner-review learner catalog in a protected ephemeral workspace, then authenticated to the protected LCMS and loaded learner content. This PR contains only safe public manifests, metadata, and evidence. Production publication remains separately approval-controlled. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
 
       - name: Publish non-sensitive audit evidence
         uses: actions/upload-artifact@v4
