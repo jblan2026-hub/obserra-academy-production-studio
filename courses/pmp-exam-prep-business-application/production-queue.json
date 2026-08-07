@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "courseVersion": "0.1.0",
+  "status": "active-production",
+  "releaseStatus": "not-ready",
+  "publicRepresentationAllowed": false,
+  "sourceOfTruth": "courses/pmp-exam-prep-business-application/course-manifest.json",
+  "updatedAt": "2026-08-07T06:45:00Z",
+  "completedAssets": [
+    "course-manifest.json",
+    "authoritative-sources.json",
+    "authoritative-sources-stakeholder-change.json",
+    "exam-domain-crosswalk.json",
+    "lesson-traceability.json",
+    "pmi-pmbok-knowledge-spine.json",
+    "ai-tutor-profile.json",
+    "video-production-bible.md",
+    "instructor-manuscript.md",
+    "learner-guide.md",
+    "workbook.md",
+    "assessment-bank.json - initial 30 original questions",
+    "answer-key.json - initial 30-question key and rationales",
+    "assessment-delivery-policy.json",
+    "rights-ledger.json",
+    "trademark-and-independence-notice.md",
+    "visual-brief.md",
+    "course-qa.json",
+    "release-notes.md",
+    "video/module-01/lesson-01/production-script.md",
+    "video/module-01/lesson-02/production-script.md",
+    "video/module-01/lesson-03/production-script.md",
+    "video/module-01/lesson-04/production-script.md",
+    "video/module-02/lesson-01/production-script.md",
+    "video/module-02/lesson-02/production-script.md",
+    "video/module-02/lesson-03/production-script.md",
+    "video/module-02/lesson-04/production-script.md",
+    "video/module-02/lesson-05/production-script.md",
+    "video/module-03/lesson-01/production-script.md",
+    "video/module-03/lesson-02/production-script.md",
+    "video/module-03/lesson-03/production-script.md",
+    "video/module-03/lesson-04/production-script.md",
+    "docs/AI-NATIVE-EVIDENCE-GROUNDED-COURSE-STANDARD.md",
+    "Owner-only exact final learner package review gate",
+    "Governed owner final-review tutor proxy",
+    "Release-aware course audit",
+    "Canonical AI-native course validator",
+    "AI-native packaging and validation support"
+  ],
+  "progress": {
+    "instructionalHoursArchitected": 35,
+    "instructionalHoursRequired": 35,
+    "lessonCountArchitected": 35,
+    "lessonCountRequired": 35,
+    "ecoDomainsMapped": 3,
+    "ecoDomainsRequired": 3,
+    "ecoTasksMapped": 26,
+    "ecoTasksRequired": 26,
+    "practiceQuestionsDrafted": 30,
+    "practiceQuestionsRequired": 180,
+    "videoScriptsDrafted": 13,
+    "videoScriptsRequired": 35,
+    "renderedVideosCompleted": 0,
+    "renderedVideosRequired": 35,
+    "captionFilesCompleted": 0,
+    "captionFilesRequired": 35,
+    "transcriptsCompleted": 0,
+    "transcriptsRequired": 35,
+    "storyboardsCompleted": 0,
+    "storyboardsRequired": 35,
+    "perVideoRightsRecordsCompleted": 0,
+    "perVideoRightsRecordsRequired": 35
+  },
+  "milestones": {
+    "examOrientationModuleScripts": "complete-draft",
+    "peopleVisionLeadershipModuleScripts": "complete-draft",
+    "peopleStakeholderConflictModuleScripts": "complete-draft",
+    "peopleDomainScripts": "complete-draft",
+    "processDomainScripts": "not-started",
+    "businessEnvironmentScripts": "not-started",
+    "finalAssessment": "partial-draft",
+    "finalMedia": "not-started"
+  },
+  "nextProductionWork": [
+    {
+      "priority": 1,
+      "work": "Expand the original assessment bank from 30 to 180 questions while preserving July 2026 domain weights, predictive versus adaptive or hybrid coverage, and enhanced question formats.",
+      "owner": "Assessment Production",
+      "gate": "Credentialed PMP SME, technical, editorial, psychometric, accessibility, source, and originality review"
+    },
+    {
+      "priority": 2,
+      "work": "Draft production scripts, source cards, visual treatments, interactions, knowledge checks, and tutor handoffs for the remaining 22 lessons, beginning with Process-domain tailoring, integration, scope, value, resources, procurement, finance, quality, schedule, reporting, and closure.",
+      "owner": "Instructional and Video Production",
+      "gate": "Every factual claim mapped to an approved source or labeled instructor interpretation"
+    },
+    {
+      "priority": 3,
+      "work": "Create storyboards, shot lists, motion-graphics specifications, captions, transcripts, audio-description plans, reduced-motion alternatives, and per-video rights records.",
+      "owner": "Video Production and Accessibility",
+      "gate": "No unlicensed, misleading, inaccessible, or unsupported asset"
+    },
+    {
+      "priority": 4,
+      "work": "Render, edit, mix, caption, transcribe, and quality-control all cinematic lesson videos using the official Obserra visual system.",
+      "owner": "Media Production",
+      "gate": "4K master or approved equivalent, 48 kHz audio, accessible delivery, rights evidence, and owner approval"
+    },
+    {
+      "priority": 5,
+      "work": "Implement and verify entitlement-scoped Obserrian PMP Coach activation, source-grounded answers, protected-assessment lockout, learner isolation, feedback memory, explainable remediation, and owner final-review parity.",
+      "owner": "Academy Engineering and AI Governance",
+      "gate": "Security, privacy, assessment integrity, audit, rollback, and human-oversight verification"
+    },
+    {
+      "priority": 6,
+      "work": "Approve the exact public title, price, description, prerequisites, checkout disclosures, and release date before adding the course to the Obserra website catalog.",
+      "owner": "Product Owner, Commerce, Legal, and Website",
+      "gate": "No invented or unapproved public commercial claim"
+    },
+    {
+      "priority": 7,
+      "work": "Run full Studio tests, AI-native validation, FINAL packaging, catalog generation, LCMS dry run, evidence export, and rollback verification.",
+      "owner": "Release Engineering",
+      "gate": "All automated and manual release gates green"
+    }
+  ],
+  "requiredReviews": {
+    "credentialedPmpSubjectMatterExpert": "pending",
+    "technicalAndCalculation": "pending",
+    "legalTrademarkAndCopyright": "pending",
+    "brand": "pending",
+    "accessibility": "pending",
+    "assessmentQuality": "pending",
+    "aiTutorSafetyAndGrounding": "pending",
+    "videoRightsAndProductionQuality": "pending",
+    "commerceAndEntitlement": "pending",
+    "ownerApproval": "pending"
+  },
+  "releaseBlockers": [
+    "Only 30 of 180 original protected-exam questions are drafted.",
+    "Only 13 of 35 lesson production scripts are drafted.",
+    "No mastered lesson videos, captions, transcripts, storyboards, or completed per-video rights records exist yet.",
+    "PMP SME, legal, brand, accessibility, assessment, AI, media, commerce, and owner reviews are pending.",
+    "The public Obserra Academy catalog does not yet contain an owner-approved PMP course record controlling the public title, price, checkout, and release claims.",
+    "The final learner package cannot enter the admin review queue until database-backed media, accessibility, AI, entitlement, staged-release, and pre-owner review gates all pass.",
+    "GitHub-hosted validation must pass against the latest branch head."
+  ],
+  "truthfulness": {
+    "courseMayBeCalledComplete": false,
+    "courseMayBeSold": false,
+    "courseMayClaimPmiAuthorization": false,
+    "courseMayGuaranteeEligibility": false,
+    "courseMayGuaranteeExamSuccess": false,
+    "videoMayBeCalledRendered": false,
+    "currentAccurateDescription": "A governed 35-hour PMP course production foundation with complete People-domain scripts, full ECO mapping, source-grounded instructional materials, an entitlement-scoped AI tutor profile, cinematic production standards, 13 detailed lesson scripts, the first 30 original assessment items, and a fail-closed owner final-review gate that renders only the exact staged paid learner package."
+  }
+}
