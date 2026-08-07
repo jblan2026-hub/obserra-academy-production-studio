@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { officialBrand } from "./brand-policy.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
@@ -72,16 +73,18 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
     else lessonMinutes += minutes;
   }
 
+  const assessmentMinutes = parseDurationMinutes(manifest.completion?.assessmentDuration);
+  const accountedMinutes = lessonMinutes + (Number.isFinite(assessmentMinutes) && assessmentMinutes > 0 ? assessmentMinutes : 0);
   const advertisedMinutes = parseDurationMinutes(course.duration);
   if (!Number.isFinite(advertisedMinutes) || advertisedMinutes <= 0) courseFindings.push("invalid-course-duration");
-  else if (lessonMinutes !== advertisedMinutes) courseFindings.push(`duration-mismatch-${lessonMinutes}-vs-${advertisedMinutes}`);
+  else if (accountedMinutes !== advertisedMinutes) courseFindings.push(`duration-mismatch-${accountedMinutes}-vs-${advertisedMinutes}`);
 
   if (!manifest.commerce || !Number.isFinite(Number(manifest.commerce.price)) || Number(manifest.commerce.price) <= 0) courseFindings.push("invalid-commerce-price");
   if (!manifest.completion?.allLessonsRequired) courseFindings.push("all-lessons-not-required");
   if (!manifest.completion?.assessmentRequired) courseFindings.push("assessment-not-required");
   if (!Number.isFinite(Number(manifest.completion?.passingScore)) || Number(manifest.completion.passingScore) < 1) courseFindings.push("invalid-passing-score");
   if (manifest.completion?.certificateIssued !== true) courseFindings.push("certificate-not-enabled");
-  if (manifest.branding?.logoAsset !== "/brand/obserra-logo.png") courseFindings.push("official-logo-mismatch");
+  if (manifest.branding?.logoAsset !== officialBrand.officialLogo.assetPath) courseFindings.push("official-logo-mismatch");
 
   const missingGenerated = requiredGeneratedFiles.filter((name) => !fs.existsSync(path.join(courseDir, name)));
   if (missingGenerated.length) courseFindings.push(...missingGenerated.map((name) => `missing-generated-${name}`));
@@ -98,13 +101,17 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
     if (packageManifestHash && packageManifestHash !== manifestHash) courseFindings.push("stale-ai-course-package");
   }
 
-  const approved = manifest.release?.publishToAcademy === true && ["approved", "published"].includes(manifest.release?.status);
+  const publicationApproved = manifest.release?.publishToAcademy === true && ["approved", "published"].includes(manifest.release?.status);
+  const ownerReviewEligible = !["archived"].includes(String(manifest.release?.status ?? "draft"));
   courses.push({
     courseId,
     title: course.title,
-    approved,
+    publicationApproved,
+    ownerReviewEligible,
     lessonCount: modules.length,
     lessonMinutes,
+    assessmentMinutes: Number.isFinite(assessmentMinutes) ? assessmentMinutes : 0,
+    accountedMinutes,
     advertisedMinutes,
     manifestHash,
     packageManifestHash,
@@ -114,25 +121,28 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
   for (const finding of courseFindings) findings.push({ courseId, finding });
 }
 
-const approvedCourses = courses.filter((course) => course.approved);
-const authoringRequired = approvedCourses.some((course) => course.authoringMissing || course.findings.includes("stale-ai-course-package"));
-const buildRequired = approvedCourses.some((course) => course.findings.length > 0);
+const publicationApprovedCourses = courses.filter((course) => course.publicationApproved);
+const ownerReviewCourses = courses.filter((course) => course.ownerReviewEligible);
+const authoringRequired = ownerReviewCourses.some((course) => course.authoringMissing || course.findings.includes("stale-ai-course-package"));
+const buildRequired = ownerReviewCourses.some((course) => course.findings.length > 0);
 const blockingFindings = findings.filter(({ finding }) => !["missing-ai-course-package", "stale-ai-course-package", ...requiredGeneratedFiles.map((name) => `missing-generated-${name}`)].includes(finding));
 
 fs.mkdirSync(catalogRoot, { recursive: true });
 const report = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
   policy: {
     lessonCount: "manifest-defined-per-course",
-    duration: "sum-of-manifest-module-durations-must-equal-advertised-course-duration",
-    authoring: "approved-missing-or-stale-packages-trigger-ai-authoring",
-    build: "approved-missing-or-stale-assets-trigger-governed-build",
+    duration: "module-durations-plus-final-assessment-duration-must-equal-advertised-course-duration",
+    authoring: "owner-review-eligible-missing-or-stale-packages-trigger-ai-authoring",
+    build: "owner-review-eligible-missing-or-stale-assets-trigger-governed-build",
+    publication: "production publication remains separately approval-controlled",
     directProductionPublish: false,
   },
   totals: {
     discovered: courses.length,
-    approved: approvedCourses.length,
+    ownerReviewEligible: ownerReviewCourses.length,
+    publicationApproved: publicationApprovedCourses.length,
     findings: findings.length,
     blockingFindings: blockingFindings.length,
   },
@@ -144,9 +154,10 @@ fs.writeFileSync(path.join(catalogRoot, "continuous-course-audit.json"), `${JSON
 writeOutput("authoring_required", String(authoringRequired));
 writeOutput("build_required", String(buildRequired));
 writeOutput("blocking_findings", String(blockingFindings.length));
-writeOutput("approved_courses", String(approvedCourses.length));
+writeOutput("owner_review_courses", String(ownerReviewCourses.length));
+writeOutput("publication_approved_courses", String(publicationApprovedCourses.length));
 
-console.log(`[Academy Studio] Audited ${courses.length} course manifests, including ${approvedCourses.length} approved course(s).`);
+console.log(`[Academy Studio] Audited ${courses.length} course manifests, including ${ownerReviewCourses.length} owner-review-eligible and ${publicationApprovedCourses.length} publication-approved course(s).`);
 console.log(`[Academy Studio] AI authoring required: ${authoringRequired}. Governed build required: ${buildRequired}. Blocking findings: ${blockingFindings.length}.`);
 if (blockingFindings.length > 0) {
   for (const item of blockingFindings.slice(0, 100)) console.error(`[Academy Studio] ${item.courseId}: ${item.finding}`);
