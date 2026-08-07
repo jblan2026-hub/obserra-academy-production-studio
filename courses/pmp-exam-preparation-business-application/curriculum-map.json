@@ -1,0 +1,305 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-preparation-business-application",
+  "alignmentVersion": "July 2026 PMP Examination Content Outline",
+  "verifiedOn": "2026-08-07",
+  "trainingHours": 35,
+  "instructionalUnits": 34,
+  "domainWeights": {
+    "People": 33,
+    "Process": 41,
+    "Business Environment": 26
+  },
+  "deliveryApproachCoverage": {
+    "predictiveApproximatePercent": 40,
+    "adaptiveAgileAndHybridApproximatePercent": 60,
+    "policy": "Predictive, adaptive, agile, and hybrid reasoning is integrated across the domains rather than isolated in one lesson."
+  },
+  "taskCoverage": [
+    {
+      "taskId": "PEOPLE-1",
+      "domain": "People",
+      "taskTitle": "Develop a common vision",
+      "primaryUnitId": "people-common-vision",
+      "reinforcementUnitIds": ["people-stakeholder-engagement", "people-align-expectations", "integration-business-capstone-readiness"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8"],
+      "assessmentObjectives": ["shared vision", "vision alignment", "root cause of misunderstanding", "vision maintenance"]
+    },
+    {
+      "taskId": "PEOPLE-2",
+      "domain": "People",
+      "taskTitle": "Manage conflicts",
+      "primaryUnitId": "people-conflict",
+      "reinforcementUnitIds": ["people-team-leadership", "people-communication-reporting", "integration-business-capstone-readiness"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-ETHICS-2025"],
+      "assessmentObjectives": ["conflict source", "context analysis", "resolution strategy", "ground rules"]
+    },
+    {
+      "taskId": "PEOPLE-3",
+      "domain": "People",
+      "taskTitle": "Lead the project team",
+      "primaryUnitId": "people-team-leadership",
+      "reinforcementUnitIds": ["people-conflict", "process-resources", "integration-business-capstone-readiness"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-AGILE-2"],
+      "assessmentObjectives": ["leadership style", "empowerment", "roles", "problem solving", "team voice", "diverse perspectives"]
+    },
+    {
+      "taskId": "PEOPLE-4",
+      "domain": "People",
+      "taskTitle": "Engage stakeholders",
+      "primaryUnitId": "people-stakeholder-engagement",
+      "reinforcementUnitIds": ["people-common-vision", "people-align-expectations", "people-communication-reporting"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8"],
+      "assessmentObjectives": ["stakeholder identification", "stakeholder analysis", "tailored communication", "trust", "influence"]
+    },
+    {
+      "taskId": "PEOPLE-5",
+      "domain": "People",
+      "taskTitle": "Align stakeholder expectations",
+      "primaryUnitId": "people-align-expectations",
+      "reinforcementUnitIds": ["people-manage-expectations", "people-stakeholder-engagement", "process-value-delivery"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8"],
+      "assessmentObjectives": ["stakeholder categories", "expectation discovery", "facilitated alignment", "mentoring"]
+    },
+    {
+      "taskId": "PEOPLE-6",
+      "domain": "People",
+      "taskTitle": "Manage stakeholder expectations",
+      "primaryUnitId": "people-manage-expectations",
+      "reinforcementUnitIds": ["process-scope", "process-value-delivery", "people-communication-reporting"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8"],
+      "assessmentObjectives": ["internal customer expectations", "external customer expectations", "outcome alignment", "satisfaction monitoring"]
+    },
+    {
+      "taskId": "PEOPLE-7",
+      "domain": "People",
+      "taskTitle": "Help ensure knowledge transfer",
+      "primaryUnitId": "people-knowledge-transfer",
+      "reinforcementUnitIds": ["process-closure-transition", "business-continuous-improvement", "integration-business-capstone-readiness"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8"],
+      "assessmentObjectives": ["critical knowledge", "knowledge capture", "transfer environment", "operational continuity"]
+    },
+    {
+      "taskId": "PEOPLE-8",
+      "domain": "People",
+      "taskTitle": "Plan and manage communication",
+      "primaryUnitId": "people-communication-reporting",
+      "reinforcementUnitIds": ["process-status-metrics-artifacts", "business-governance", "people-stakeholder-engagement"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8"],
+      "assessmentObjectives": ["communication strategy", "transparency", "feedback loop", "reporting requirements", "governance support"]
+    },
+    {
+      "taskId": "PROCESS-1",
+      "domain": "Process",
+      "taskTitle": "Develop an integrated project management plan and plan delivery",
+      "primaryUnitId": "process-integrated-plan",
+      "reinforcementUnitIds": ["integration-ways-of-working", "process-status-metrics-artifacts", "integration-business-capstone-readiness"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-AGILE-2", "PMI-PROCESS-GROUPS", "ISO-21502"],
+      "assessmentObjectives": ["complexity", "approach selection", "execution strategy", "integrated plan", "estimation", "dependencies", "data", "business value"]
+    },
+    {
+      "taskId": "PROCESS-2",
+      "domain": "Process",
+      "taskTitle": "Develop and manage project scope",
+      "primaryUnitId": "process-scope",
+      "reinforcementUnitIds": ["business-change-control", "process-value-delivery", "integration-ways-of-working"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-PROCESS-GROUPS"],
+      "assessmentObjectives": ["scope definition", "stakeholder agreement", "decomposition", "backlog boundary"]
+    },
+    {
+      "taskId": "PROCESS-3",
+      "domain": "Process",
+      "taskTitle": "Help ensure value-based delivery",
+      "primaryUnitId": "process-value-delivery",
+      "reinforcementUnitIds": ["process-integrated-plan", "people-manage-expectations", "integration-ai-sustainability-value"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-AGILE-2"],
+      "assessmentObjectives": ["value components", "priority", "incremental value", "benefit measures", "delivery options"]
+    },
+    {
+      "taskId": "PROCESS-4",
+      "domain": "Process",
+      "taskTitle": "Plan and manage resources",
+      "primaryUnitId": "process-resources",
+      "reinforcementUnitIds": ["people-team-leadership", "process-schedule", "process-finance"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8"],
+      "assessmentObjectives": ["resource definition", "capacity", "availability", "optimization", "competing demand"]
+    },
+    {
+      "taskId": "PROCESS-5",
+      "domain": "Process",
+      "taskTitle": "Plan and manage procurement",
+      "primaryUnitId": "process-procurement",
+      "reinforcementUnitIds": ["process-finance", "business-compliance", "business-governance"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-PROCESS-GROUPS"],
+      "assessmentObjectives": ["procurement plan", "contract type", "negotiation", "supplier performance", "agreement objectives"]
+    },
+    {
+      "taskId": "PROCESS-6",
+      "domain": "Process",
+      "taskTitle": "Plan and manage finance",
+      "primaryUnitId": "process-finance",
+      "reinforcementUnitIds": ["process-status-metrics-artifacts", "business-risk", "process-procurement"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-EVM", "GAO-COST-GUIDE"],
+      "assessmentObjectives": ["financial need", "contingency", "spend tracking", "reporting", "variation", "reserve"]
+    },
+    {
+      "taskId": "PROCESS-7",
+      "domain": "Process",
+      "taskTitle": "Plan and optimize quality of products and deliverables",
+      "primaryUnitId": "process-quality-compliance",
+      "reinforcementUnitIds": ["business-compliance", "business-continuous-improvement", "integration-ai-sustainability-value"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-P5-SUSTAINABILITY", "HEALTHCARE-GOV-GAO"],
+      "assessmentObjectives": ["quality requirements", "quality plan", "testing", "regulatory compliance", "cost of quality", "sustainability", "continuous improvement"]
+    },
+    {
+      "taskId": "PROCESS-8",
+      "domain": "Process",
+      "taskTitle": "Plan and manage schedule",
+      "primaryUnitId": "process-schedule",
+      "reinforcementUnitIds": ["process-integrated-plan", "process-status-metrics-artifacts", "business-risk"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "GAO-SCHEDULE-GUIDE", "JWST-GAO-2021", "CROSSRAIL-NAO"],
+      "assessmentObjectives": ["approach-specific schedule", "dependencies", "estimation", "historical data", "critical path", "baseline", "variance", "schedule risk"]
+    },
+    {
+      "taskId": "PROCESS-9",
+      "domain": "Process",
+      "taskTitle": "Evaluate project status",
+      "primaryUnitId": "process-status-metrics-artifacts",
+      "reinforcementUnitIds": ["process-finance", "process-schedule", "people-communication-reporting"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-EVM", "GAO-COST-GUIDE", "GAO-SCHEDULE-GUIDE"],
+      "assessmentObjectives": ["metrics", "analysis", "artifact tailoring", "accessibility", "forecast", "communication", "data limitations"]
+    },
+    {
+      "taskId": "PROCESS-10",
+      "domain": "Process",
+      "taskTitle": "Manage project closure",
+      "primaryUnitId": "process-closure-transition",
+      "reinforcementUnitIds": ["people-knowledge-transfer", "business-continuous-improvement", "integration-business-capstone-readiness"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-PROCESS-GROUPS"],
+      "assessmentObjectives": ["completion approval", "closure criteria", "transition readiness", "procurement closure", "financial closure", "resource release", "retrospective"]
+    },
+    {
+      "taskId": "BUSINESS-1",
+      "domain": "Business Environment",
+      "taskTitle": "Define and establish project governance",
+      "primaryUnitId": "business-governance",
+      "reinforcementUnitIds": ["people-communication-reporting", "business-compliance", "integration-business-capstone-readiness"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-ETHICS-2025", "SENTINEL-DOJ-OIG"],
+      "assessmentObjectives": ["structure", "rules", "procedures", "reporting", "ethics", "policies", "success metrics", "escalation"]
+    },
+    {
+      "taskId": "BUSINESS-2",
+      "domain": "Business Environment",
+      "taskTitle": "Plan and manage project compliance",
+      "primaryUnitId": "business-compliance",
+      "reinforcementUnitIds": ["process-quality-compliance", "business-governance", "integration-ai-sustainability-value"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "ISO-21502", "HEALTHCARE-GOV-GAO"],
+      "assessmentObjectives": ["requirement identification", "classification", "threat", "method", "consequence", "action", "measurement"]
+    },
+    {
+      "taskId": "BUSINESS-3",
+      "domain": "Business Environment",
+      "taskTitle": "Manage and control changes",
+      "primaryUnitId": "business-change-control",
+      "reinforcementUnitIds": ["process-scope", "process-integrated-plan", "integration-ways-of-working"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-AGILE-2"],
+      "assessmentObjectives": ["change process", "status communication", "authorization", "implementation", "documentation", "baseline integrity"]
+    },
+    {
+      "taskId": "BUSINESS-4",
+      "domain": "Business Environment",
+      "taskTitle": "Remove impediments and manage issues",
+      "primaryUnitId": "business-impediments-issues",
+      "reinforcementUnitIds": ["people-team-leadership", "business-risk", "integration-business-capstone-readiness"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-AGILE-2", "HEALTHCARE-GOV-GAO"],
+      "assessmentObjectives": ["impact", "priority", "intervention", "reassessment", "risk-to-issue transition", "collaboration"]
+    },
+    {
+      "taskId": "BUSINESS-5",
+      "domain": "Business Environment",
+      "taskTitle": "Plan and manage risk",
+      "primaryUnitId": "business-risk",
+      "reinforcementUnitIds": ["process-finance", "process-schedule", "integration-ai-sustainability-value"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-RISK", "JWST-GAO-2021", "GAO-SCHEDULE-GUIDE"],
+      "assessmentObjectives": ["identification", "analysis", "response", "monitoring", "register", "cybersecurity risk", "sustainability risk", "communication"]
+    },
+    {
+      "taskId": "BUSINESS-6",
+      "domain": "Business Environment",
+      "taskTitle": "Continuous improvement",
+      "primaryUnitId": "business-continuous-improvement",
+      "reinforcementUnitIds": ["people-knowledge-transfer", "process-quality-compliance", "process-closure-transition"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "GAO-AGILE-GUIDE"],
+      "assessmentObjectives": ["lessons learned", "improvement update", "organizational process assets", "verification"]
+    },
+    {
+      "taskId": "BUSINESS-7",
+      "domain": "Business Environment",
+      "taskTitle": "Support organizational change",
+      "primaryUnitId": "business-organizational-change",
+      "reinforcementUnitIds": ["people-common-vision", "people-stakeholder-engagement", "process-value-delivery"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8"],
+      "assessmentObjectives": ["culture", "readiness", "impact", "adoption", "resistance", "sponsorship", "reinforcement"]
+    },
+    {
+      "taskId": "BUSINESS-8",
+      "domain": "Business Environment",
+      "taskTitle": "Evaluate external business environment changes",
+      "primaryUnitId": "business-external-environment",
+      "reinforcementUnitIds": ["integration-ai-sustainability-value", "business-risk", "business-change-control"],
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-P5-SUSTAINABILITY", "NIST-AI-RMF"],
+      "assessmentObjectives": ["regulation", "technology", "AI", "geopolitical change", "market change", "supply chain", "scope impact", "backlog impact"]
+    }
+  ],
+  "integratedUnits": [
+    {
+      "unitId": "orientation-eligibility-ethics",
+      "purpose": "Eligibility, application integrity, independent-provider disclosure, professional ethics, and AI tutor boundaries.",
+      "sourceIds": ["PMI-PMP-CERT", "PMI-ECO-2026", "PMI-NEW-EXAM-2026", "PMI-EXAM-SECURITY", "PMI-ETHICS-2025"]
+    },
+    {
+      "unitId": "exam-architecture-scenario-reasoning",
+      "purpose": "Exam structure, time, breaks, question formats, domain weights, approach distribution, and scenario reasoning.",
+      "sourceIds": ["PMI-ECO-2026", "PMI-NEW-EXAM-2026"]
+    },
+    {
+      "unitId": "integration-ways-of-working",
+      "purpose": "Cross-domain predictive, adaptive, agile, and hybrid tailoring.",
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-AGILE-2", "PMI-PROCESS-GROUPS", "GAO-AGILE-GUIDE"]
+    },
+    {
+      "unitId": "integration-ai-sustainability-value",
+      "purpose": "Cross-domain AI, sustainability, stakeholder value, business impact, evidence, and human accountability.",
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMBOK-8", "PMI-P5-SUSTAINABILITY", "NIST-AI-RMF"]
+    },
+    {
+      "unitId": "integration-business-capstone-readiness",
+      "purpose": "Integrated enterprise application, artifact production, executive briefing, and readiness planning.",
+      "sourceIds": ["PMI-ECO-2026", "HEALTHCARE-GOV-GAO", "JWST-GAO-2021", "CROSSRAIL-NAO", "SENTINEL-DOJ-OIG"]
+    },
+    {
+      "unitId": "practice-exam-section-one",
+      "purpose": "First 60 questions of the protected original simulation.",
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "unitId": "practice-exam-section-two",
+      "purpose": "Second 60 questions of the protected original simulation.",
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "unitId": "practice-exam-section-three",
+      "purpose": "Final 60 questions and readiness review.",
+      "sourceIds": ["PMI-ECO-2026"]
+    }
+  ],
+  "validationRules": [
+    "Every one of the 26 July 2026 ECO tasks has one primary instructional unit.",
+    "Every task has at least one reinforcement unit.",
+    "Every substantive unit has authoritative source mappings.",
+    "The full course provides 2,100 minutes of instruction and protected assessment activity.",
+    "The practice examination contains only original Obserra items and preserves examination security.",
+    "AI tutor assistance is unavailable during protected graded assessments.",
+    "Release requires currently credentialed PMP subject matter review and psychometric review."
+  ]
+}
