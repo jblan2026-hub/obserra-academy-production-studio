@@ -72,6 +72,8 @@ check("timed out authoring processes terminate gracefully before force kill", pa
 check("parallel authoring preserves bounded retry behavior", parallelAuthorSource.includes("ACADEMY_AUTHORING_MAX_ATTEMPTS") && parallelAuthorSource.includes("retrying in"));
 check("parallel authoring emits progress heartbeat evidence", parallelAuthorSource.includes("Parallel authoring heartbeat"));
 check("parallel authoring summary records timeout and elapsed evidence", parallelAuthorSource.includes("processTimeoutMs") && parallelAuthorSource.includes("elapsedMs"));
+check("parallel authoring keeps protected output in the ephemeral generated path", authorCourseSource.includes('path.join(courseDir, "generated", "authoring")'));
+check("parallel authoring remains capped at twelve workers", /ACADEMY_AUTHORING_CONCURRENCY,\s*6,\s*1,\s*12/.test(parallelAuthorSource));
 
 console.log(`Studio 70x extension evaluated ${checks.length} non-duplicative assertions.`);
 for (const item of checks) console.log(`${item.passed ? "PASS" : "FAIL"} ${item.name}`);
