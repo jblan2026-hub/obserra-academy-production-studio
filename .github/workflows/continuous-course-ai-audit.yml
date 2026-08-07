@@ -12,6 +12,7 @@ on:
       - "studio/author-course-ai.mjs"
       - "studio/build-all-courses.mjs"
       - "studio/generate-catalog.mjs"
+      - "studio/validate-learner-catalog.mjs"
       - ".github/workflows/continuous-course-ai-audit.yml"
 
 permissions:
@@ -29,6 +30,7 @@ jobs:
     timeout-minutes: 120
     env:
       ACADEMY_AUTHORING_PROVIDER: openai
+      ACADEMY_EXPECTED_PUBLISHED_COURSES: 60
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -87,11 +89,13 @@ jobs:
           }
           NODE
 
-      - name: Regenerate governed course assets and catalog
-        if: steps.audit.outputs.build_required == 'true' || steps.audit.outputs.authoring_required == 'true'
+      - name: Regenerate governed course assets and catalogs
         run: |
           npm run build:all
           npm run catalog
+
+      - name: Validate learner catalog completeness
+        run: npm run validate:learner-catalog
 
       - name: Validate every manifest-defined course independently
         run: |
@@ -130,7 +134,7 @@ jobs:
             --base main \
             --head "${{ steps.branch.outputs.name }}" \
             --title "Academy AI course build and catalog alignment" \
-            --body "Automated governed course build generated from each course's own manifest. The workflow independently checked lesson count, lesson durations, advertised hours, descriptions, outcomes, pricing, completion rules, certificate eligibility, official logo, and full legal branding. Owner review is required before merge and website publication. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            --body "Automated governed course build generated from each course's own manifest. The workflow independently checked the full 60-course learner catalog, learner lesson completeness, assessments, completion rules, certificate eligibility, owner-review bypass metadata, official logo, and full legal branding. Owner review is required before merge and website publication. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
 
       - name: Publish audit evidence
         uses: actions/upload-artifact@v4
@@ -138,6 +142,8 @@ jobs:
           name: continuous-academy-course-audit-${{ github.run_id }}
           path: |
             catalog/continuous-course-audit.json
+            catalog/learner-catalog-readiness.json
             catalog/bulk-build-report.json
             catalog/academy-course-catalog.json
+            catalog/academy-learner-course-catalog.json
           retention-days: 180
