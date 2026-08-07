@@ -12,6 +12,10 @@ function read(relativePath: string): string {
   return fs.readFileSync(path.join(root, relativePath), "utf8");
 }
 
+function setEnvironment(name: string, value: string): void {
+  process.env[name] = value;
+}
+
 function restoreEnvironment(name: string, value: string | undefined): void {
   if (value === undefined) delete process.env[name];
   else process.env[name] = value;
@@ -36,7 +40,7 @@ test("final review student URL fails closed and requires an approved secure orig
   const previousNodeEnv = process.env.NODE_ENV;
 
   try {
-    process.env.NODE_ENV = "production";
+    setEnvironment("NODE_ENV", "production");
     delete process.env.FINAL_REVIEW_STUDENT_EXPERIENCE_BASE_URL;
     delete process.env.FINAL_REVIEW_ALLOWED_STUDENT_ORIGINS;
     assert.equal(finalReviewStudentExperienceUrl("pmp-course"), null);
@@ -65,7 +69,7 @@ test("final review tutor URL also fails closed and requires an approved secure o
   const previousNodeEnv = process.env.NODE_ENV;
 
   try {
-    process.env.NODE_ENV = "production";
+    setEnvironment("NODE_ENV", "production");
     delete process.env.FINAL_REVIEW_TUTOR_RUNTIME_BASE_URL;
     delete process.env.FINAL_REVIEW_ALLOWED_TUTOR_ORIGINS;
     assert.equal(finalReviewTutorRuntimeUrl("pmp-course"), null);
