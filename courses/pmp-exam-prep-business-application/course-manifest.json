@@ -1,0 +1,509 @@
+{
+  "schemaVersion": "1.0",
+  "course": {
+    "id": "pmp-exam-prep-business-application",
+    "title": "PMP® Exam Preparation and Business Application",
+    "department": "Intelligence",
+    "level": "Professional",
+    "track": "Professional Leadership Academy",
+    "audience": "PMP candidates, project managers, program and PMO professionals, product and transformation leaders, military and government project leaders, and business professionals responsible for delivering measurable project outcomes",
+    "description": "A 35-hour independent, AI-native Obserra Academy course aligned to the July 2026 Project Management Professional (PMP) Examination Content Outline. The course combines original exam preparation, predictive, adaptive and hybrid project practices, documented public project cases, business application exercises, original practice questions, a full readiness plan, and a governed course-specific AI tutor. It does not reproduce PMI official courseware, copyrighted examination questions, exam dumps, or proprietary test banks and does not imply PMI sponsorship or endorsement.",
+    "duration": "35 hours",
+    "instructionalHours": 35,
+    "lessonCount": 35,
+    "aiNative": true,
+    "sourceOfTruth": "Project Management Professional (PMP) Examination Content Outline - July 2026, verified 2026-08-06",
+    "prerequisites": [
+      "No PMP certification is required to begin the course.",
+      "Learners seeking PMP certification remain responsible for satisfying PMI education, experience, application, audit, examination, and conduct requirements.",
+      "Access to the current PMBOK® Guide and other PMI-recommended references is strongly recommended and may require separate purchase or membership access.",
+      "Learners must acknowledge the Obserra informational-use disclaimer, intellectual-property restrictions, and assessment-integrity rules before accessing paid course content."
+    ],
+    "outcomes": [
+      "Explain the July 2026 PMP exam structure, eligibility pathways, domain weights, delivery-approach distribution, and assessment expectations using current PMI sources.",
+      "Apply the People domain tasks through leadership, conflict, stakeholder, communication, knowledge-transfer, and team scenarios.",
+      "Apply the Process domain tasks through integrated planning, tailoring, scope, value, resources, procurement, finance, quality, schedule, status, and closure decisions.",
+      "Apply the Business Environment domain tasks through governance, compliance, change, impediment, risk, continuous-improvement, organizational-change, and external-environment scenarios.",
+      "Select and tailor predictive, adaptive or agile, and hybrid approaches based on value, uncertainty, complexity, risk, governance, and stakeholder needs.",
+      "Interpret project facts, metrics, assumptions, confidence, limitations, and trade-offs without relying on memorized terminology alone.",
+      "Use original exam-style scenarios to identify the strongest next action, the accountable role, the relevant evidence, and the governing principle.",
+      "Translate project management practices into practical artifacts and decisions for technology, cybersecurity, healthcare, government, operations, product, and enterprise transformation environments.",
+      "Build a personalized study plan using domain performance, practice-question rationale, retrieval practice, spaced review, and targeted remediation.",
+      "Demonstrate professional responsibility, respect, fairness, honesty, and assessment integrity throughout the course."
+    ],
+    "examAlignment": {
+      "outlineVersion": "July 2026",
+      "examProvider": "Project Management Institute, Inc.",
+      "domainWeights": {
+        "people": 33,
+        "process": 41,
+        "businessEnvironment": 26
+      },
+      "deliveryApproachMix": {
+        "predictiveApproximatePercent": 40,
+        "adaptiveAgileAndHybridApproximatePercent": 60
+      },
+      "examQuestionCount": 180,
+      "examTimeMinutes": 240,
+      "trainingHoursDesigned": 35,
+      "trainingHoursClaim": "Designed as 35 hours of self-paced project-management instruction aligned to the July 2026 PMP Examination Content Outline. PMI alone determines certification eligibility and may audit or reject training.",
+      "independentProvider": true,
+      "pmiAuthorizedTrainingPartner": false,
+      "officialPmiCoursewareUsed": false,
+      "examSuccessGuaranteed": false,
+      "originalPracticeQuestionsRequired": true,
+      "examDumpsProhibited": true,
+      "currentAsOf": "2026-08-06"
+    },
+    "modules": [
+      {
+        "id": "orientation-modern-pmp",
+        "title": "PMP Exam Architecture and Modern Project Leadership",
+        "duration": "3.5 hours",
+        "format": "Video lesson",
+        "description": "Establish the current exam, eligibility, ethics, learning strategy, project-value orientation, and predictive, adaptive and hybrid context before domain-level study.",
+        "lessons": [
+          {
+            "id": "pmp-eligibility-exam-experience",
+            "title": "PMP Eligibility, Application, Audit, and Exam Experience",
+            "durationMinutes": 45,
+            "format": "Cinematic video and interactive guide",
+            "description": "Use current PMI sources to understand education and experience pathways, the 35-hour training requirement, application evidence, audit exposure, the 180-question exam, and the 240-minute testing window.",
+            "objectives": ["Determine which eligibility pathway may apply", "Avoid double counting overlapping project experience", "Build an evidence-ready application file"],
+            "sourceIds": ["PMI-ECO-2026", "PMI-PMP-CERTIFICATION-2026", "PMI-PMP-EXAM-UPDATE-2026"],
+            "videoPackage": "video/module-01/lesson-01"
+          },
+          {
+            "id": "exam-content-outline-domains",
+            "title": "The 2026 Exam Content Outline: Domains, Tasks, and Enablers",
+            "durationMinutes": 55,
+            "format": "Cinematic video and domain-mapping lab",
+            "description": "Map People, Process, and Business Environment tasks to realistic project decisions and distinguish the ECO from the PMBOK Guide.",
+            "objectives": ["Explain the 33-41-26 domain weighting", "Describe how tasks and enablers guide preparation", "Build a personal domain coverage map"],
+            "sourceIds": ["PMI-ECO-2026"]
+          },
+          {
+            "id": "project-success-value-outcomes",
+            "title": "From Scope, Schedule, and Cost to Value and Outcomes",
+            "durationMinutes": 55,
+            "format": "Documentary case lesson",
+            "description": "Examine why modern project success includes stakeholder value, desired outcomes, benefits, ethics, resilience, and business impact in addition to traditional constraints.",
+            "objectives": ["Differentiate outputs outcomes and benefits", "Identify value measures", "Recognize when delivery is on plan but not creating value"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-NASA-MAJOR-PROJECTS-2025"]
+          },
+          {
+            "id": "predictive-adaptive-hybrid-ethics",
+            "title": "Predictive, Adaptive, and Hybrid Thinking with Professional Ethics",
+            "durationMinutes": 55,
+            "format": "Scenario video and decision workshop",
+            "description": "Select a delivery approach based on uncertainty, value cadence, governance, technical risk, and stakeholder needs while applying professional responsibility, respect, fairness, and honesty.",
+            "objectives": ["Tailor a delivery approach", "Recognize ethical pressure points", "Explain why the strongest exam answer protects value and accountability"],
+            "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020", "PMI-ETHICS-2025"]
+          }
+        ]
+      },
+      {
+        "id": "people-vision-team-leadership",
+        "title": "People Domain I: Vision, Leadership, and Team Performance",
+        "duration": "5 hours",
+        "format": "Video lesson",
+        "description": "Build the leadership and team judgment needed to develop a common vision, lead diverse teams, establish roles, empower people, and solve performance problems.",
+        "lessons": [
+          {
+            "id": "common-vision",
+            "title": "Develop and Sustain a Common Vision",
+            "durationMinutes": 60,
+            "format": "Cinematic stakeholder scenario",
+            "description": "Translate business intent into a shared project vision and diagnose misunderstandings before they become delivery failures.",
+            "objectives": ["Create a vision narrative", "Identify root causes of misalignment", "Keep vision current as conditions change"],
+            "sourceIds": ["PMI-ECO-2026", "ISO-21500-2021"]
+          },
+          {
+            "id": "leadership-styles",
+            "title": "Leadership Styles, Authority, and Situational Judgment",
+            "durationMinutes": 60,
+            "format": "Leadership simulation",
+            "description": "Select coaching, facilitating, directing, serving, and delegating behaviors based on competence, urgency, risk, autonomy, and team context.",
+            "objectives": ["Diagnose team needs", "Select an appropriate leadership response", "Avoid command-and-control reflexes in adaptive environments"],
+            "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+          },
+          {
+            "id": "roles-responsibilities-empowerment",
+            "title": "Roles, Responsibilities, Empowerment, and Accountability",
+            "durationMinutes": 60,
+            "format": "Interactive operating-model lab",
+            "description": "Clarify ownership and decision rights without undermining team autonomy or creating unaccountable work.",
+            "objectives": ["Create a responsibility model", "Delegate with boundaries", "Differentiate accountability from task assignment"],
+            "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+          },
+          {
+            "id": "team-diversity-psychological-safety",
+            "title": "Team Diversity, Trust, Psychological Safety, and Performance",
+            "durationMinutes": 60,
+            "format": "Documentary and team workshop",
+            "description": "Use varied skills and perspectives, surface dissent, and create conditions for early risk reporting and constructive challenge.",
+            "objectives": ["Recognize suppressed risk signals", "Invite constructive dissent", "Use team diversity as a decision-quality control"],
+            "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+          },
+          {
+            "id": "performance-coaching-problem-solving",
+            "title": "Performance Coaching and Structured Problem Solving",
+            "durationMinutes": 60,
+            "format": "Case-based coaching lab",
+            "description": "Separate system problems, capability gaps, role ambiguity, behavioral concerns, and unrealistic constraints before choosing an intervention.",
+            "objectives": ["Diagnose performance causes", "Coach toward measurable improvement", "Escalate proportionately when risk exceeds authority"],
+            "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+          }
+        ]
+      },
+      {
+        "id": "people-stakeholders-conflict-communication",
+        "title": "People Domain II: Stakeholders, Conflict, Communication, and Knowledge",
+        "duration": "4 hours",
+        "format": "Video lesson",
+        "description": "Apply stakeholder analysis, conflict resolution, expectation management, communication planning, reporting, feedback, and knowledge transfer.",
+        "lessons": [
+          {
+            "id": "stakeholder-identification-analysis",
+            "title": "Stakeholder Identification, Analysis, and Engagement",
+            "durationMinutes": 60,
+            "format": "Enterprise scenario and mapping lab",
+            "description": "Identify formal and informal stakeholders, analyze influence and impact, and tailor engagement to project objectives and stakeholder needs.",
+            "objectives": ["Build a stakeholder map", "Identify hidden decision makers", "Tailor an engagement strategy"],
+            "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+          },
+          {
+            "id": "expectation-alignment-customer-value",
+            "title": "Align and Manage Stakeholder and Customer Expectations",
+            "durationMinutes": 60,
+            "format": "Customer-value negotiation simulation",
+            "description": "Facilitate expectation alignment, preserve trust, monitor satisfaction, and respond when desired outcomes conflict.",
+            "objectives": ["Surface incompatible expectations", "Negotiate shared success measures", "Respond to changing customer needs without bypassing governance"],
+            "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+          },
+          {
+            "id": "conflict-management",
+            "title": "Conflict Sources, Resolution Strategies, and Ground Rules",
+            "durationMinutes": 60,
+            "format": "Dramatized conflict simulation",
+            "description": "Diagnose conflict context and use collaboration, compromise, accommodation, avoidance, or direction deliberately rather than reflexively.",
+            "objectives": ["Identify the real conflict source", "Select a proportional strategy", "Restore ground rules and working relationships"],
+            "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+          },
+          {
+            "id": "communication-reporting-knowledge-transfer",
+            "title": "Communication, Reporting, Feedback, and Knowledge Transfer",
+            "durationMinutes": 60,
+            "format": "Executive briefing and knowledge-transfer lab",
+            "description": "Create communication strategies, reporting artifacts, feedback loops, and knowledge-transfer mechanisms that support decisions and continuity.",
+            "objectives": ["Tailor communication by audience", "Create a decision-ready status report", "Preserve knowledge during transitions and closure"],
+            "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+          }
+        ]
+      },
+      {
+        "id": "process-integration-scope-value",
+        "title": "Process Domain I: Tailoring, Integration, Scope, and Value",
+        "duration": "5.5 hours",
+        "format": "Video lesson",
+        "description": "Integrate plans and delivery, tailor methods, define scope, prioritize value, estimate work, manage dependencies, and use data for decisions.",
+        "lessons": [
+          {
+            "id": "tailor-development-approach",
+            "title": "Assess Complexity and Tailor the Development Approach",
+            "durationMinutes": 60,
+            "format": "Approach-selection simulation",
+            "description": "Assess uncertainty, complexity, stakeholder access, compliance, technology, value cadence, and organizational constraints to recommend predictive, adaptive, or hybrid delivery.",
+            "objectives": ["Assess project complexity", "Recommend a delivery approach", "Defend tailoring decisions"],
+            "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+          },
+          {
+            "id": "integrated-project-management-plan",
+            "title": "Build and Maintain an Integrated Project Management Plan",
+            "durationMinutes": 70,
+            "format": "Integrated planning lab",
+            "description": "Connect scope, schedule, cost, resources, quality, risk, procurement, communications, governance, compliance, and benefits into a coherent decision system.",
+            "objectives": ["Identify plan dependencies", "Detect gaps and conflicts", "Maintain the plan as conditions change"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015", "GAO-COST-GUIDE-2020"]
+          },
+          {
+            "id": "scope-requirements-work-breakdown",
+            "title": "Scope, Requirements, Backlogs, and Work Decomposition",
+            "durationMinutes": 70,
+            "format": "Predictive and adaptive scope workshop",
+            "description": "Define and obtain agreement on scope, decompose work, manage requirements and backlogs, and recognize gold plating and uncontrolled expansion.",
+            "objectives": ["Define verifiable scope", "Decompose work proportionately", "Manage backlog and scope changes"],
+            "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+          },
+          {
+            "id": "value-based-delivery-benefits",
+            "title": "Value-Based Delivery, Benefits, and Incremental Outcomes",
+            "durationMinutes": 60,
+            "format": "Value-delivery case studio",
+            "description": "Prioritize work using stakeholder value, assess opportunities for incremental delivery, and verify that benefits measurement exists.",
+            "objectives": ["Define value components", "Prioritize by value and feedback", "Connect project outputs to measurable benefits"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-NASA-MAJOR-PROJECTS-2025"]
+          },
+          {
+            "id": "estimation-dependencies-data-decisions",
+            "title": "Estimation, Dependencies, Assumptions, and Data-Informed Decisions",
+            "durationMinutes": 70,
+            "format": "Estimation and uncertainty lab",
+            "description": "Estimate effort and resources, expose assumptions, analyze dependencies, and use data without creating false precision.",
+            "objectives": ["Select an estimation method", "Document uncertainty and assumptions", "Use historical data responsibly"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-COST-GUIDE-2020", "GAO-SCHEDULE-GUIDE-2015"]
+          }
+        ]
+      },
+      {
+        "id": "process-resources-procurement-finance-quality",
+        "title": "Process Domain II: Resources, Procurement, Finance, and Quality",
+        "duration": "4.5 hours",
+        "format": "Video lesson",
+        "description": "Plan and optimize resources, procurement, suppliers, contracts, project finance, reserves, quality, regulatory needs, and continuous improvement.",
+        "lessons": [
+          {
+            "id": "resources-capacity-optimization",
+            "title": "Resource Planning, Capacity, Availability, and Optimization",
+            "durationMinutes": 65,
+            "format": "Resource-capacity simulation",
+            "description": "Plan people, equipment, facilities, services, and specialized capability while resolving shortages and competing priorities.",
+            "objectives": ["Build a resource plan", "Identify capacity constraints", "Optimize without masking risk"],
+            "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+          },
+          {
+            "id": "procurement-contracts-suppliers",
+            "title": "Procurement Strategy, Contract Types, Negotiation, and Supplier Performance",
+            "durationMinutes": 70,
+            "format": "Commercial negotiation case",
+            "description": "Select procurement strategies and contract structures based on scope clarity, risk allocation, market conditions, incentives, performance, and governance.",
+            "objectives": ["Select a contract approach", "Prepare a negotiation strategy", "Manage supplier outcomes and evidence"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-PROPULSION-MODULE-2001"]
+          },
+          {
+            "id": "finance-reserves-cost-control",
+            "title": "Project Finance, Contingency, Reserves, Forecasting, and Cost Control",
+            "durationMinutes": 65,
+            "format": "Financial-control lab",
+            "description": "Analyze financial needs, quantify contingency, plan spend tracking and reporting, monitor variance, and manage reserves through governance.",
+            "objectives": ["Differentiate contingency and management reserves", "Forecast cost outcomes", "Communicate financial variance with context"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-COST-GUIDE-2020"]
+          },
+          {
+            "id": "quality-regulatory-continuous-improvement",
+            "title": "Quality Planning, Regulatory Compliance, Cost of Quality, and Improvement",
+            "durationMinutes": 70,
+            "format": "Quality and compliance case lab",
+            "description": "Translate quality requirements into processes and acceptance evidence, account for regulatory obligations, manage cost of quality, and improve continuously.",
+            "objectives": ["Define quality criteria", "Plan assurance and control activities", "Evaluate prevention appraisal and failure costs"],
+            "sourceIds": ["PMI-ECO-2026", "ISO-10006-2017"]
+          }
+        ]
+      },
+      {
+        "id": "process-schedule-status-closure",
+        "title": "Process Domain III: Schedule, Status, Artifacts, and Closure",
+        "duration": "4 hours",
+        "format": "Video lesson",
+        "description": "Build and control schedules, evaluate status, manage artifacts, communicate performance, transition deliverables, and close projects or phases responsibly.",
+        "lessons": [
+          {
+            "id": "schedule-network-critical-path",
+            "title": "Schedule Networks, Dependencies, Critical Path, and Baselines",
+            "durationMinutes": 60,
+            "format": "Animated schedule lab",
+            "description": "Create an integrated schedule, understand logic and dependencies, identify critical path, baseline the plan, and distinguish dates from evidence-based forecasts.",
+            "objectives": ["Build schedule logic", "Identify the critical path", "Recognize unreliable scheduling practices"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015"]
+          },
+          {
+            "id": "schedule-risk-variation-recovery",
+            "title": "Schedule Risk, Variance, Forecasting, and Recovery Options",
+            "durationMinutes": 60,
+            "format": "Schedule-recovery scenario",
+            "description": "Analyze variance, model uncertainty, assess compression options, and communicate recovery trade-offs without hiding risk.",
+            "objectives": ["Analyze schedule variation", "Compare crashing and fast tracking risks", "Present a defensible recovery recommendation"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015", "GAO-NASA-MAJOR-PROJECTS-2025"]
+          },
+          {
+            "id": "metrics-status-artifacts",
+            "title": "Project Metrics, Status, Forecasts, and Artifact Management",
+            "durationMinutes": 60,
+            "format": "Executive dashboard workshop",
+            "description": "Choose decision-useful metrics, reconcile conflicting data, tailor artifacts, preserve accessibility, and communicate facts, forecasts, confidence, and limitations.",
+            "objectives": ["Create decision-ready metrics", "Distinguish lagging and leading indicators", "Report uncertainty honestly"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-COST-GUIDE-2020"]
+          },
+          {
+            "id": "transition-closure-lessons-learned",
+            "title": "Transition, Acceptance, Closure, Retrospectives, and Knowledge Retention",
+            "durationMinutes": 60,
+            "format": "Closure and transition simulation",
+            "description": "Verify acceptance and operational readiness, conclude contractual and financial work, release resources, preserve knowledge, and close without abandoning unresolved risk.",
+            "objectives": ["Define closure criteria", "Validate transition readiness", "Convert lessons into organizational improvement"],
+            "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+          }
+        ]
+      },
+      {
+        "id": "business-governance-compliance-change",
+        "title": "Business Environment I: Governance, Compliance, and Change",
+        "duration": "4 hours",
+        "format": "Video lesson",
+        "description": "Establish governance and success metrics, plan compliance, execute change control, support organizational change, and respond to external business conditions.",
+        "lessons": [
+          {
+            "id": "project-governance-success-metrics",
+            "title": "Project Governance, Ethics, Escalation, and Success Metrics",
+            "durationMinutes": 60,
+            "format": "Board-governance simulation",
+            "description": "Define decision rights, rules, policies, reporting, ethics, success measures, and escalation thresholds appropriate to the project and enterprise.",
+            "objectives": ["Design a governance structure", "Define escalation thresholds", "Connect governance to value and accountability"],
+            "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025", "ISO-21500-2021"]
+          },
+          {
+            "id": "compliance-requirements-consequences",
+            "title": "Compliance Categories, Requirements, Evidence, and Consequences",
+            "durationMinutes": 60,
+            "format": "Regulated-project case lab",
+            "description": "Identify security, privacy, health and safety, sustainability, contractual, industry, and regulatory requirements and plan proportionate evidence and response.",
+            "objectives": ["Classify compliance obligations", "Assess noncompliance consequences", "Measure compliance without unsupported certification claims"],
+            "sourceIds": ["PMI-ECO-2026", "ISO-10006-2017"]
+          },
+          {
+            "id": "integrated-change-control",
+            "title": "Integrated Change Control and Configuration Integrity",
+            "durationMinutes": 60,
+            "format": "Change-control simulation",
+            "description": "Evaluate change requests, analyze impact, obtain authority, update baselines and artifacts, and communicate decisions across predictive and adaptive environments.",
+            "objectives": ["Analyze a change request", "Identify the authorized decision path", "Update plans and communicate status"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015", "GAO-COST-GUIDE-2020"]
+          },
+          {
+            "id": "organizational-external-change",
+            "title": "Organizational Change and the External Business Environment",
+            "durationMinutes": 60,
+            "format": "Market and regulatory disruption scenario",
+            "description": "Assess culture and adoption needs while monitoring regulatory, technological, geopolitical, market, and sustainability changes that affect scope, backlog, value, or risk.",
+            "objectives": ["Assess change impact", "Prioritize external changes", "Adapt project direction without losing governance"],
+            "sourceIds": ["PMI-ECO-2026", "PMI-AI-PROJECT-WORK-2026"]
+          }
+        ]
+      },
+      {
+        "id": "business-risk-improvement-exam-readiness",
+        "title": "Business Environment II: Risk, Impediments, Improvement, and Exam Readiness",
+        "duration": "4.5 hours",
+        "format": "Video lesson",
+        "description": "Manage risk and issues, remove impediments, improve continuously, govern AI and sustainability concerns, and convert knowledge into a disciplined exam and workplace action plan.",
+        "lessons": [
+          {
+            "id": "risk-identification-analysis-response",
+            "title": "Risk Identification, Analysis, Response, Monitoring, and Communication",
+            "durationMinutes": 50,
+            "format": "Risk simulation",
+            "description": "Build and maintain risk information, distinguish threats and opportunities, select responses, monitor exposure, and communicate residual risk.",
+            "objectives": ["Identify and analyze risk", "Select a response strategy", "Communicate risk status and residual exposure"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-COST-GUIDE-2020", "GAO-SCHEDULE-GUIDE-2015"]
+          },
+          {
+            "id": "issues-impediments-intervention",
+            "title": "Issues, Impediments, Root Causes, and Intervention Strategies",
+            "durationMinutes": 50,
+            "format": "Operational impediment workshop",
+            "description": "Recognize when risk becomes an issue, evaluate impact, prioritize blockers, collaborate with stakeholders, and reassess interventions.",
+            "objectives": ["Differentiate risk issue and impediment", "Prioritize intervention", "Escalate when authority or impact requires it"],
+            "sourceIds": ["PMI-ECO-2026"]
+          },
+          {
+            "id": "continuous-improvement-organizational-learning",
+            "title": "Continuous Improvement, Lessons Learned, and Organizational Process Assets",
+            "durationMinutes": 50,
+            "format": "Learning-system case studio",
+            "description": "Turn retrospectives, data, defects, outcomes, and lessons learned into updated practices rather than archived documents.",
+            "objectives": ["Design a learning loop", "Update organizational assets", "Measure whether improvement changed outcomes"],
+            "sourceIds": ["PMI-ECO-2026", "GAO-PROPULSION-MODULE-2001"]
+          },
+          {
+            "id": "ai-sustainability-modern-projects",
+            "title": "AI, Sustainability, Security, and Modern Project Risk",
+            "durationMinutes": 60,
+            "format": "Future-project documentary",
+            "description": "Evaluate AI-supported project decisions, sustainability information, cybersecurity exposure, model limitations, human oversight, and compliance in modern projects.",
+            "objectives": ["Identify AI-specific project risks", "Preserve human accountability", "Integrate sustainability and security into planning and governance"],
+            "sourceIds": ["PMI-ECO-2026", "PMI-PMP-EXAM-UPDATE-2026", "PMI-AI-PROJECT-WORK-2026", "ISO-21502-2020"]
+          },
+          {
+            "id": "exam-strategy-final-readiness",
+            "title": "Exam Strategy, Original Simulation, Remediation, and Business Application Capstone",
+            "durationMinutes": 60,
+            "format": "Protected assessment and coaching lab",
+            "description": "Apply a repeatable decision method to original exam-style scenarios, analyze distractors, manage time, complete the final assessment, and produce a 30-day readiness and workplace application plan.",
+            "objectives": ["Use a disciplined scenario-answering method", "Identify domain-specific knowledge gaps", "Build a targeted exam and business-application plan"],
+            "sourceIds": ["PMI-ECO-2026", "PMI-PMP-CERTIFICATION-2026", "PMI-PERMISSIONS-AND-MARKS"]
+          }
+        ]
+      }
+    ]
+  },
+  "commerce": {
+    "model": "one-time-payment",
+    "currency": "USD",
+    "price": 0,
+    "stripePriceId": null,
+    "paymentLink": null,
+    "accessPolicy": "until-completion"
+  },
+  "completion": {
+    "allLessonsRequired": true,
+    "assessmentRequired": true,
+    "passingScore": 80,
+    "certificateIssued": true
+  },
+  "release": {
+    "version": "0.1.0",
+    "status": "draft",
+    "publishToAcademy": false,
+    "effectiveDate": null
+  },
+  "reviews": {
+    "subjectMatter": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": null },
+    "technical": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": null },
+    "legal": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": "Review PMI trademark, copyright, independent-provider, training-hour, and no-endorsement language before release." },
+    "brand": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": null },
+    "accessibility": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": null },
+    "assessmentIntegrity": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": "Verify all questions are original and no exam dump or protected test content is used." },
+    "videoProduction": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": null },
+    "aiTutor": { "required": true, "status": "not-started", "reviewedBy": null, "reviewedAt": null, "notes": null }
+  },
+  "branding": {
+    "legalName": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+    "brandName": "Obserra",
+    "academyName": "Obserra Academy",
+    "logoAsset": "brand/assets/obserra-official-logo.png",
+    "logoSha256": "a8f2a51a6a96364262b736978d9c2ff4ff48060ed5b80a0291bba064b39be8a8",
+    "classification": "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.",
+    "visualSystem": "official-obserra-executive",
+    "brandReviewRequired": true
+  },
+  "disclaimer": {
+    "type": "informational-use-only",
+    "shortText": "For educational and informational purposes only. Not certification, compliance validation, or professional advice.",
+    "fullText": "This course and all related materials are provided by OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC solely for educational and informational purposes. They are not a certification program, certification examination, accreditation, compliance assessment, compliance determination, regulatory approval, attestation, audit opinion, legal opinion, or evidence that any person, product, system, organization, or activity satisfies a law, regulation, contract, framework, standard, control, or certification requirement. Completion does not confer professional certification, licensure, regulated status, or authorization to represent compliance. The materials do not constitute legal, regulatory, compliance, financial, medical, cybersecurity, engineering, or other professional advice; do not create a client, fiduciary, advisory, audit, assessor, or professional-services relationship; and must not be relied upon as a substitute for qualified professional judgment, authoritative requirements, independent assessment, or organization-specific policies and procedures. Learners and organizations remain solely responsible for determining applicability, obtaining appropriate professional advice, validating requirements, assessing risk, implementing controls, and making decisions based on their specific facts, obligations, and operating environment.",
+    "releaseAndLimitationOfLiability": "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EACH LEARNER, PURCHASER, USER, AND ORGANIZATION ASSUMES ALL RESPONSIBILITY AND RISK ARISING FROM THE USE, INTERPRETATION, APPLICATION, OR RELIANCE ON THIS COURSE OR ANY RELATED MATERIAL. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC, ITS OWNERS, OFFICERS, EMPLOYEES, CONTRACTORS, AFFILIATES, LICENSORS, CONTENT CONTRIBUTORS, AND AGENTS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF ACCURACY, COMPLETENESS, CURRENCY, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, COMPLIANCE, CERTIFICATION, OR RESULTS. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, SUCH PARTIES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, CONSEQUENTIAL, OR RELIANCE DAMAGES; LOSS OF REVENUE, PROFITS, DATA, BUSINESS, OPPORTUNITY, REPUTATION, OR GOODWILL; BUSINESS INTERRUPTION; SECURITY INCIDENT; REGULATORY ACTION; AUDIT FINDING; CERTIFICATION FAILURE; OR OTHER LOSS ARISING OUT OF OR RELATING TO THE COURSE OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. BY ACCESSING, PURCHASING, OR USING THE COURSE, THE USER ACKNOWLEDGES AND AGREES TO THESE TERMS AND RELEASES AND HOLDS HARMLESS THE FOREGOING PARTIES FROM CLAIMS TO THE EXTENT SUCH CLAIMS MAY LAWFULLY BE RELEASED. NOTHING IN THIS PROVISION EXCLUDES OR LIMITS LIABILITY THAT CANNOT LAWFULLY BE EXCLUDED OR LIMITED, INCLUDING LIABILITY FOR FRAUD, WILLFUL MISCONDUCT, GROSS NEGLIGENCE WHERE NON-WAIVABLE, OR OTHER LIABILITY PROTECTED BY APPLICABLE LAW.",
+    "acknowledgementRequired": true,
+    "acknowledgementText": "I understand that this course is solely informational, is not certification or compliance validation, and is subject to the stated disclaimer, assumption of risk, release, warranty disclaimer, and limitation of liability."
+  },
+  "tags": {
+    "industry": ["cross-industry"],
+    "domain": ["project-management", "pmp-exam-preparation", "business-application"],
+    "audience": ["pmp-candidates", "project-managers", "pmo-leaders", "transformation-leaders"],
+    "level": ["professional"],
+    "frameworks": ["pmi-pmp-eco-2026", "iso-21502", "iso-21500", "gao-cost-guide", "gao-schedule-guide"],
+    "deliveryFormat": ["ai-native-course", "cinematic-video", "interactive-scenarios", "protected-assessment"],
+    "commercialModel": ["one-time-payment", "until-completion"],
+    "brand": ["obserra", "obserra-academy", "official-obserra-brand"],
+    "classification": ["proprietary", "internal-review"]
+  },
+  "trademarkNotice": "PMP®, PMI®, and PMBOK® are marks of Project Management Institute, Inc. OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC is an independent training provider and is not affiliated with, sponsored by, endorsed by, or authorized by Project Management Institute, Inc. No PMI logo or official PMI courseware is used."
+}

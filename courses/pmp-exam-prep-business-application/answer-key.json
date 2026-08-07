@@ -1,0 +1,346 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "classification": "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.",
+  "status": "internal-review",
+  "assessmentIntegrity": {
+    "learnerVisibleBeforeSubmission": false,
+    "aiTutorVisibleDuringActiveAttempt": false,
+    "postSubmissionRationaleAllowed": true,
+    "originalContent": true,
+    "examDumpContent": false,
+    "officialPmiQuestionContent": false
+  },
+  "answers": [
+    {
+      "questionId": "PMP-PEO-001",
+      "correctOptionId": "B",
+      "rationale": "The team cannot plan coherently until it shares a common vision and measurable definition of success. Facilitating alignment addresses the root cause and creates a basis for later scope, schedule, value, and governance decisions.",
+      "distractorRationales": {
+        "A": "A sponsor may have authority, but imposing one definition before reconciling stakeholder outcomes can preserve misunderstanding and reduce commitment.",
+        "C": "Completing the technical plan first embeds conflicting assumptions into the plan.",
+        "D": "Recording risk without resolving the underlying vision gap does not create alignment."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-21500-2021"]
+    },
+    {
+      "questionId": "PMP-PEO-002",
+      "correctOptionId": "C",
+      "rationale": "The decision is not urgent, both leads have valid concerns, and the conflict has become personal. The project manager should identify the real source and facilitate a fact-based resolution using agreed criteria.",
+      "distractorRationales": {
+        "A": "Immediate escalation bypasses the project manager's opportunity to analyze and facilitate resolution.",
+        "B": "Replacement is premature and punitive before the cause and merits are understood.",
+        "D": "Avoidance allows relationship damage and decision delay to continue."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "questionId": "PMP-PEO-003",
+      "correctOptionId": "B",
+      "rationale": "The unresolved issue is decision authority. The project manager should clarify or expedite the governance decision rather than assume authority or halt all productive work unnecessarily.",
+      "distractorRationales": {
+        "A": "Experience and low perceived risk do not create authorization.",
+        "C": "Stopping all work may be disproportionate when preparatory work can continue safely.",
+        "D": "Transferring accountability informally does not resolve the governance boundary."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "questionId": "PMP-PEO-004",
+      "correctOptionId": "B",
+      "rationale": "The newly identified groups are affected stakeholders. They should be analyzed and engaged before requirements and adoption assumptions are finalized.",
+      "distractorRationales": {
+        "A": "Waiting until training is too late to incorporate operational knowledge and impact concerns.",
+        "C": "Human resources may support change, but stakeholder engagement remains a project responsibility.",
+        "D": "Treating predictable exclusion as only an issue does not correct the engagement gap."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+    },
+    {
+      "questionId": "PMP-PEO-005",
+      "correctOptionId": "B",
+      "rationale": "The expectations are mutually constraining. The project manager should facilitate evidence-based alignment on constraints, outcomes, and trade-offs before making a commitment.",
+      "distractorRationales": {
+        "A": "Compression before impact and feasibility analysis creates unsupported commitment.",
+        "C": "Regulatory needs are significant, but rejecting the sponsor's target without alignment and options analysis is premature.",
+        "D": "Reducing readiness testing without evidence or authority may transfer unacceptable operational risk."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-10006-2017"]
+    },
+    {
+      "questionId": "PMP-PEO-006",
+      "correctOptionId": "B",
+      "rationale": "Meeting scope and schedule does not prove stakeholder value. The project manager should understand the customer's expected outcomes, compare them with project objectives, and use the appropriate governance or change process to address gaps.",
+      "distractorRationales": {
+        "A": "Customer satisfaction and outcomes can be central to project value even when baselines are met.",
+        "C": "Adding features immediately bypasses analysis, prioritization, and authorization.",
+        "D": "Escalation without understanding the issue provides weak decision support."
+      },
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "questionId": "PMP-PEO-007",
+      "correctOptionId": "B",
+      "rationale": "Knowledge transfer should begin early and include identification, documentation, shadowing, practice, and verification rather than a single late handoff.",
+      "distractorRationales": {
+        "A": "A final-week meeting creates a single point of failure and insufficient verification.",
+        "C": "Personal notes may be incomplete, inaccessible, or difficult to interpret without guided transfer.",
+        "D": "Accepting the risk without a proportional transfer plan fails to protect continuity."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+    },
+    {
+      "questionId": "PMP-PEO-008",
+      "correctOptionId": "B",
+      "rationale": "Communication should be tailored to decision needs. Executives need concise identification of the decision, impact, evidence, owner, deadline, and consequence of delay.",
+      "distractorRationales": {
+        "A": "More frequent delivery of an ineffective report does not improve decision quality.",
+        "C": "Daily meetings create burden and do not necessarily improve information design.",
+        "D": "Blaming executives does not correct the communication strategy."
+      },
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "questionId": "PMP-PEO-009",
+      "correctOptionId": "B",
+      "rationale": "The evidence points to possible system causes, including changing criteria and competing assignments. The project manager should diagnose the problem with the team member before selecting an intervention.",
+      "distractorRationales": {
+        "A": "Formal action is premature before role, workload, and process causes are evaluated.",
+        "C": "Reassignment may mask the underlying problem and overload others.",
+        "D": "Requesting replacement before diagnosis bypasses coaching and system correction."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "questionId": "PMP-PEO-010",
+      "correctOptionId": "B",
+      "rationale": "The project manager should protect truthful reporting, establish a psychologically safer escalation mechanism, address counterproductive behavior, and verify status with evidence.",
+      "distractorRationales": {
+        "A": "Private documentation alone does not repair the team reporting environment.",
+        "C": "Changing colors without evidence creates another unsupported status practice.",
+        "D": "Human-resources escalation may eventually be appropriate, but immediate project-reporting protection and fact gathering are required first."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "questionId": "PMP-PRO-011",
+      "correctOptionId": "C",
+      "rationale": "The project contains both controlled regulatory work and uncertain features requiring feedback. A deliberately tailored hybrid approach can preserve formal evidence and gates while supporting iterative learning.",
+      "distractorRationales": {
+        "A": "A fixed date does not require every component to use a fully predictive approach.",
+        "B": "Regulated evidence and formal gates may not be adequately governed by an entirely adaptive approach.",
+        "D": "Waiting for complete stability may be unrealistic and delay learning."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+    },
+    {
+      "questionId": "PMP-PRO-012",
+      "correctOptionId": "B",
+      "rationale": "A scope change can affect procurement, benefits, quality, operations, cost, risk, and other plans. The new forecast should not be confirmed until integrated impacts are assessed and controlled updates are made.",
+      "distractorRationales": {
+        "A": "The schedule is not an isolated controlling document.",
+        "C": "Deferring adaptation to execution hides known integration work.",
+        "D": "Restoring scope merely to avoid planning effort does not protect value."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015", "GAO-COST-GUIDE-2020"]
+    },
+    {
+      "questionId": "PMP-PRO-013",
+      "correctOptionId": "B",
+      "rationale": "The feature is unauthorized work. Its value and impacts should be evaluated through the applicable scope or backlog process before the team commits effort.",
+      "distractorRationales": {
+        "A": "Perceived value does not replace authorization and prioritization.",
+        "C": "Immediate discipline is disproportionate and does not teach the governing process.",
+        "D": "Informal approval does not necessarily satisfy change, budget, quality, or schedule governance."
+      },
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "questionId": "PMP-PRO-014",
+      "correctOptionId": "B",
+      "rationale": "The delivered output has not produced the intended outcomes. The project manager should work with stakeholders and benefits owners to evaluate the value gap and use governance to decide the response.",
+      "distractorRationales": {
+        "A": "Formal deliverable completion does not prove value realization or transition success.",
+        "C": "More features may increase cost without addressing adoption or process problems.",
+        "D": "Transferring the issue without analysis abandons benefits and stakeholder responsibility."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-NASA-MAJOR-PROJECTS-2025"]
+    },
+    {
+      "questionId": "PMP-PRO-015",
+      "correctOptionId": "B",
+      "rationale": "The assignments exceed real capacity. Relevant project and resource owners should reconcile priority, timing, scope, and staffing and then update plans and risks.",
+      "distractorRationales": {
+        "A": "Overtime is not a sustainable substitute for capacity planning and may create quality and health risks.",
+        "C": "Arbitrary equal allocation ignores priorities, timing, and skill needs.",
+        "D": "Resource-manager ownership does not remove project impacts and coordination responsibility."
+      },
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "questionId": "PMP-PRO-016",
+      "correctOptionId": "B",
+      "rationale": "High uncertainty makes early risk allocation and scope definition critical. The project manager should assess procurement options that support discovery and controlled commitment rather than assume a contract form transfers all risk.",
+      "distractorRationales": {
+        "A": "A fixed price does not eliminate buyer risk and can increase pricing, claims, or performance risk when scope is unclear.",
+        "C": "Unlimited time and materials exposes the buyer without adequate controls.",
+        "D": "Complete certainty may be impossible; phased discovery can be governed."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-PROPULSION-MODULE-2001"]
+    },
+    {
+      "questionId": "PMP-PRO-017",
+      "correctOptionId": "B",
+      "rationale": "Known uncertainty should be quantified and governed transparently. Contingency should be tied to identified risk and managed through approved financial authority.",
+      "distractorRationales": {
+        "A": "Hidden funds undermine transparency and ethics.",
+        "C": "Management reserve has defined authority and should not be used informally.",
+        "D": "Ignoring a known risk until cost occurs prevents responsible forecasting."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-COST-GUIDE-2020", "PMI-ETHICS-2025"]
+    },
+    {
+      "questionId": "PMP-PRO-018",
+      "correctOptionId": "B",
+      "rationale": "Quality should be defined and built into the work. Acceptance evidence, prevention, assurance, control, and improvement are stronger than relying only on final inspection.",
+      "distractorRationales": {
+        "A": "More inspection detects problems late and does not establish requirements or prevent defects.",
+        "C": "Deferring quality definition creates rework and disagreement.",
+        "D": "Rapid delivery does not justify uncontrolled defect acceptance."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-10006-2017"]
+    },
+    {
+      "questionId": "PMP-PRO-019",
+      "correctOptionId": "B",
+      "rationale": "Critical-path analysis depends on complete and valid schedule logic. Missing predecessors and successors make the model unreliable, so logic must be corrected and validated first.",
+      "distractorRationales": {
+        "A": "The longest activity is not necessarily on the critical path.",
+        "C": "A milestone date does not identify the controlling sequence.",
+        "D": "Declaring every activity critical is not a valid substitute for schedule analysis."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015"]
+    },
+    {
+      "questionId": "PMP-PRO-020",
+      "correctOptionId": "B",
+      "rationale": "Recovery decisions require integrated analysis of dependencies, resources, cost, quality, risk, and authority. Fast tracking or crashing should be selected only after comparing consequences.",
+      "distractorRationales": {
+        "A": "Criticality alone does not make fast tracking safe or effective.",
+        "C": "Changing the baseline is not the first response to variance and requires authorization.",
+        "D": "Crashing every activity can waste resources and create new risks."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015"]
+    },
+    {
+      "questionId": "PMP-PRO-021",
+      "correctOptionId": "B",
+      "rationale": "Task-count completion is misleading when the remaining work carries disproportionate dependency, acceptance, and regulatory risk. Reporting should be redesigned or qualified with decision-useful context.",
+      "distractorRationales": {
+        "A": "Mathematical correctness does not make a metric decision-useful.",
+        "C": "Changing the number arbitrarily replaces one unsupported measure with another.",
+        "D": "Task completion may still be useful when properly defined and contextualized."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015"]
+    },
+    {
+      "questionId": "PMP-PRO-022",
+      "correctOptionId": "B",
+      "rationale": "Customer acceptance is important but not the only closure condition. Transition, support, financial, procurement, risk, knowledge, and evidence obligations should be completed or formally transferred before closure.",
+      "distractorRationales": {
+        "A": "Acceptance alone does not close operational and contractual obligations.",
+        "C": "Uncontrolled transfer hides risk and weakens accountability.",
+        "D": "Benefits may be realized after closure; the project needs ownership and measurement rather than indefinite operation."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+    },
+    {
+      "questionId": "PMP-BUS-023",
+      "correctOptionId": "B",
+      "rationale": "The problem is not meeting frequency but missing governance design. Decision rights, evidence, thresholds, escalation paths, and success metrics are needed to enable accountable decisions.",
+      "distractorRationales": {
+        "A": "More meetings do not resolve unclear authority.",
+        "C": "Giving one person all authority may conflict with enterprise governance and risk ownership.",
+        "D": "Informal decisions reduce traceability and can bypass approved controls."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-21500-2021"]
+    },
+    {
+      "questionId": "PMP-BUS-024",
+      "correctOptionId": "B",
+      "rationale": "A checklist does not establish applicability or compliance. The project manager should confirm requirements and accountable owners, then map controls and evidence before making a representation.",
+      "distractorRationales": {
+        "A": "Security ownership does not automatically establish legal or regulatory applicability.",
+        "C": "A sponsor signature cannot replace evidence or competent review.",
+        "D": "The project must coordinate compliance even when specialists interpret requirements."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-10006-2017"]
+    },
+    {
+      "questionId": "PMP-BUS-025",
+      "correctOptionId": "B",
+      "rationale": "Sponsor authority does not eliminate the need for impact analysis and the authorized change path. An approved emergency process may change the sequence, but it should still preserve accountability and evidence.",
+      "distractorRationales": {
+        "A": "Immediate implementation can create uncontrolled cost, schedule, quality, compliance, and benefit impacts.",
+        "C": "Baselines can change through authorized control.",
+        "D": "Starting supposedly low-risk work before approval can create sunk cost and unauthorized commitment."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015", "GAO-COST-GUIDE-2020"]
+    },
+    {
+      "questionId": "PMP-BUS-026",
+      "correctOptionId": "B",
+      "rationale": "The uncertain event has occurred and is blocking work. It should be managed as an issue with ownership, impact analysis, intervention, and escalation as needed.",
+      "distractorRationales": {
+        "A": "The condition is no longer only a risk; waiting delays response.",
+        "C": "Closing the risk record without issue management abandons the active impact.",
+        "D": "Reserve changes require evidence and authority and do not by themselves remove the blocker."
+      },
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "questionId": "PMP-BUS-027",
+      "correctOptionId": "B",
+      "rationale": "Low probability does not automatically justify acceptance when consequence is high. The team should evaluate exposure, timing, alternatives, cost, appetite, authority, and residual risk before choosing a response.",
+      "distractorRationales": {
+        "A": "Probability alone is an incomplete basis for risk response.",
+        "C": "Immediate termination may create greater cost and schedule risk without alternatives analysis.",
+        "D": "Procurement can support the response, but risk ownership and project impact remain broader responsibilities."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-COST-GUIDE-2020"]
+    },
+    {
+      "questionId": "PMP-BUS-028",
+      "correctOptionId": "B",
+      "rationale": "A repeated observation is not a learned lesson. The process should change, ownership and triggers should be defined, and the result should be measured.",
+      "distractorRationales": {
+        "A": "Recording without action does not improve performance.",
+        "C": "Universal meeting attendance may be inefficient and does not define the correct engagement point.",
+        "D": "Known but unresolved recurrence is evidence that the lesson has not been institutionalized."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-PROPULSION-MODULE-2001"]
+    },
+    {
+      "questionId": "PMP-BUS-029",
+      "correctOptionId": "B",
+      "rationale": "Technical readiness does not equal organizational readiness. The project should assess impacted roles, incentives, processes, communications, training, leadership actions, and measures.",
+      "distractorRationales": {
+        "A": "Launching without adoption preparation can transfer risk and reduce value.",
+        "C": "Human resources may contribute but cannot own every operational and project change.",
+        "D": "Universal support may be unrealistic; the goal is adequate readiness and governed response."
+      },
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "questionId": "PMP-BUS-030",
+      "correctOptionId": "B",
+      "rationale": "A vendor demonstration does not establish safe or valuable use. The project should evaluate the business case, data, model and vendor risk, compliance, human oversight, monitoring, security, and rollback before commitment.",
+      "distractorRationales": {
+        "A": "A pilot can still create material data, legal, security, and decision risk.",
+        "C": "Unknown risk calls for assessment, not automatic rejection.",
+        "D": "The organization retains accountability for its use of a vendor model."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-AI-PROJECT-WORK-2026", "PMI-PMP-EXAM-UPDATE-2026"]
+    }
+  ]
+}
