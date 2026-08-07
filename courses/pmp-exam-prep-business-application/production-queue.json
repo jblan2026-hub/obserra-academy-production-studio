@@ -10,7 +10,6 @@
   "completedAssets": [
     "course-manifest.json",
     "authoritative-sources.json",
-    "sources/authoritative-source-register.json",
     "exam-domain-crosswalk.json",
     "lesson-traceability.json",
     "pmi-pmbok-knowledge-spine.json",
@@ -21,6 +20,12 @@
     "workbook.md",
     "assessment-bank.json - initial 30 original questions",
     "answer-key.json - initial 30-question key and rationales",
+    "assessment-delivery-policy.json",
+    "rights-ledger.json",
+    "trademark-and-independence-notice.md",
+    "visual-brief.md",
+    "course-qa.json",
+    "release-notes.md",
     "video/module-01/lesson-01/production-script.md",
     "video/module-01/lesson-02/production-script.md",
     "docs/AI-NATIVE-EVIDENCE-GROUNDED-COURSE-STANDARD.md",
@@ -47,8 +52,8 @@
     "transcriptsRequired": 35,
     "storyboardsCompleted": 0,
     "storyboardsRequired": 35,
-    "rightsRecordsCompleted": 0,
-    "rightsRecordsRequired": 35
+    "perVideoRightsRecordsCompleted": 0,
+    "perVideoRightsRecordsRequired": 35
   },
   "nextProductionWork": [
     {
@@ -65,7 +70,7 @@
     },
     {
       "priority": 3,
-      "work": "Create storyboards, shot lists, motion-graphics specifications, captions, transcripts, audio-description plans, reduced-motion alternatives, and per-asset rights records.",
+      "work": "Create storyboards, shot lists, motion-graphics specifications, captions, transcripts, audio-description plans, reduced-motion alternatives, and per-video rights records.",
       "owner": "Video Production and Accessibility",
       "gate": "No unlicensed, misleading, inaccessible, or unsupported asset"
     },
