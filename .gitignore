@@ -5,6 +5,9 @@ node_modules/
 courses/*/generated/
 catalog/academy-learner-course-catalog.json
 catalog/learner-catalog-readiness.json
+catalog/parallel-authoring-summary.json
+catalog/authoring-provider-preflight.json
+catalog/authoring-checkpoint-restore.json
 releases/*/FINAL/*.mp4
 releases/*/FINAL/*.mov
 releases/*/FINAL/*.wav
