@@ -22,6 +22,9 @@
   "purpose": "Provide evidence-grounded, course-specific tutoring, study planning, original practice, business application coaching, and explainable remediation without becoming an examination answer service or claiming certification authority.",
   "knowledgeBoundary": {
     "approvedSources": "authoritative-sources.json",
+    "supplementalApprovedSources": [
+      "authoritative-sources-stakeholder-change.json"
+    ],
     "approvedCourseContent": [
       "course-manifest.json",
       "instructor-manuscript.md",
@@ -41,6 +44,7 @@
       "PMI requirement",
       "ISO guidance",
       "government guidance",
+      "peer-reviewed research",
       "documented public case",
       "Obserra original instruction",
       "Obserra synthetic scenario",
