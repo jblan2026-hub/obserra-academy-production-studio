@@ -86,6 +86,23 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Normalize protected secret formatting
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const output = process.env.GITHUB_ENV;
+          if (!output) throw new Error('GITHUB_ENV is unavailable.');
+          for (const name of ['OPENAI_API_KEY', 'DATABASE_URL']) {
+            let value = String(process.env[name] ?? '').trim();
+            const quoted = (value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"));
+            if (quoted) value = value.slice(1, -1).trim();
+            if (!value) throw new Error(`${name} is empty after normalization.`);
+            if (/\r|\n/.test(value)) throw new Error(`${name} contains an unexpected newline.`);
+            fs.appendFileSync(output, `${name}=${value}\n`);
+          }
+          NODE
+
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
 
@@ -241,7 +258,7 @@ jobs:
             --base main \
             --head "${{ steps.branch.outputs.name }}" \
             --title "Academy governed course metadata alignment" \
-            --body "Automated governed build validated the full 60-course owner-review learner catalog in a protected ephemeral workspace and loaded protected learner content to the configured LCMS. This PR contains only safe public manifests, metadata, and evidence. Production publication remains separately approval-controlled. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            --body "Automated governed build validated the full 60-course owner-review learner catalog in a protected ephemeral workspace and loaded protected learner content to the configured protected LCMS. This PR contains only safe public manifests, metadata, and evidence. Production publication remains separately approval-controlled. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
 
       - name: Publish non-sensitive audit evidence
         uses: actions/upload-artifact@v4
