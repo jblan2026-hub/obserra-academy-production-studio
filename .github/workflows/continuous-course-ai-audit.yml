@@ -13,6 +13,7 @@ on:
       - "studio/apply-course-policy.mjs"
       - "studio/audit-course-build-readiness.mjs"
       - "studio/author-course-ai.mjs"
+      - "studio/author-courses-parallel.mjs"
       - "studio/build-all-courses.mjs"
       - "studio/generate-catalog.mjs"
       - "studio/validate-learner-catalog.mjs"
@@ -34,6 +35,9 @@ jobs:
     timeout-minutes: 120
     env:
       ACADEMY_AUTHORING_PROVIDER: openai
+      ACADEMY_AUTHORING_CONCURRENCY: 6
+      ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
+      ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
       ACADEMY_EXPECTED_REVIEW_COURSES: 60
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
@@ -83,21 +87,27 @@ jobs:
             exit 1
           fi
 
-      - name: AI author missing or stale owner review courses in ephemeral workspace
+      - name: AI author owner-review courses with controlled parallel workers
+        if: steps.audit.outputs.authoring_required == 'true'
+        run: npm run author:parallel
+
+      - name: Re-audit authored packages before downstream build
         if: steps.audit.outputs.authoring_required == 'true'
         run: |
+          npm run audit:courses
           node <<'NODE'
           const fs = require('node:fs');
-          const { spawnSync } = require('node:child_process');
           const report = JSON.parse(fs.readFileSync('catalog/continuous-course-audit.json', 'utf8'));
-          const targets = report.courses.filter((course) => course.ownerReviewEligible && (course.authoringMissing || course.findings.includes('stale-ai-course-package')));
-          for (const [index, course] of targets.entries()) {
-            console.log(`[Academy Studio] AI authoring ${index + 1}/${targets.length}: ${course.courseId}`);
-            const result = spawnSync(process.execPath, ['studio/author-course-ai.mjs', '--course', course.courseId, '--provider', process.env.ACADEMY_AUTHORING_PROVIDER, '--force'], {
-              stdio: 'inherit',
-              env: process.env,
-            });
-            if (result.status !== 0) process.exit(result.status ?? 1);
+          const unresolved = report.courses.filter((course) =>
+            course.ownerReviewEligible && (
+              course.authoringMissing ||
+              course.findings.includes('stale-ai-course-package') ||
+              course.findings.includes('untraceable-ai-course-package')
+            )
+          );
+          if (unresolved.length > 0) {
+            console.error(`[Academy Studio] ${unresolved.length} owner-review course package(s) remain unresolved after parallel authoring: ${unresolved.map((course) => course.courseId).join(', ')}`);
+            process.exit(2);
           }
           NODE
 
@@ -135,7 +145,7 @@ jobs:
         id: changes
         run: |
           git add -A courses catalog .gitignore
-          git reset -- catalog/academy-learner-course-catalog.json catalog/learner-catalog-readiness.json 2>/dev/null || true
+          git reset -- catalog/academy-learner-course-catalog.json catalog/learner-catalog-readiness.json catalog/parallel-authoring-summary.json 2>/dev/null || true
           git reset -- 'courses/*/generated/*' 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
