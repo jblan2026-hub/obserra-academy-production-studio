@@ -14,10 +14,12 @@ on:
       - "studio/audit-course-build-readiness.mjs"
       - "studio/author-course-ai.mjs"
       - "studio/author-courses-parallel.mjs"
+      - "studio/bootstrap-protected-database.mjs"
       - "studio/build-all-courses.mjs"
       - "studio/generate-catalog.mjs"
       - "studio/validate-learner-catalog.mjs"
       - "package.json"
+      - "prisma/schema.prisma"
       - ".github/workflows/continuous-course-ai-audit.yml"
       - ".gitignore"
 
@@ -40,6 +42,9 @@ jobs:
       ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
       ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
       ACADEMY_EXPECTED_REVIEW_COURSES: 60
+      ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: ${{ github.ref == 'refs/heads/agent/continue-course-buildout' && 'true' || 'false' }}
+      STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
+      STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
       GH_TOKEN: ${{ github.token }}
@@ -56,6 +61,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
 
       - name: Normalize governed course policy before audit
         run: npm run apply:course-policy
@@ -115,6 +123,14 @@ jobs:
               gh issue close "$ISSUE_NUMBER" --comment "Protected Academy credentials are configured. Resolved by workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
             done <<< "$ISSUE_NUMBERS"
           fi
+
+      - name: Bootstrap protected Academy PostgreSQL schema
+        if: steps.audit.outputs.authoring_required == 'true' && github.ref == 'refs/heads/agent/continue-course-buildout'
+        run: npm run db:bootstrap:protected
+
+      - name: Validate protected database schema
+        if: steps.audit.outputs.authoring_required == 'true'
+        run: npm run db:validate
 
       - name: AI author owner-review courses with controlled parallel workers
         if: steps.audit.outputs.authoring_required == 'true'
