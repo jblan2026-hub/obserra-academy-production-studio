@@ -3,6 +3,8 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import { classificationFromAuthoringExit } from "./authoring-provider-errors.mjs";
+
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const reportPath = path.join(root, "catalog", "continuous-course-audit.json");
 
@@ -79,11 +81,23 @@ function runAuthoring(courseId, attempt) {
     }, processTimeoutMs);
 
     child.on("error", (error) => {
-      finalize({ ok: false, error: String(error), code: null, signal: null, timedOut, attempt });
+      finalize({
+        ok: false,
+        error: String(error),
+        code: null,
+        signal: null,
+        timedOut,
+        attempt,
+        failureCategory: "authoring_process_spawn_failure",
+        retryable: false,
+      });
     });
 
     child.on("exit", (code, signal) => {
       const ok = code === 0 && !timedOut;
+      const classification = ok
+        ? { category: null, retryable: false, exitCode: 0 }
+        : classificationFromAuthoringExit({ exitCode: code, timedOut, signal });
       finalize({
         ok,
         code,
@@ -95,6 +109,8 @@ function runAuthoring(courseId, attempt) {
             ? `authoring process timed out after ${Math.round(processTimeoutMs / 1000)} seconds`
             : `authoring process exited with code ${code ?? "unknown"}${signal ? ` signal ${signal}` : ""}`,
         attempt,
+        failureCategory: classification.category,
+        retryable: classification.retryable,
       });
     });
   });
@@ -105,19 +121,41 @@ async function authorWithRetry(courseId) {
     console.log(`[Academy Studio] Authoring ${courseId}, attempt ${attempt}/${maxAttempts}`);
     const result = await runAuthoring(courseId, attempt);
     if (result.ok) return { courseId, ...result };
+    if (result.retryable === false) {
+      console.error(`[Academy Studio] ${courseId} encountered non-retryable authoring failure ${result.failureCategory}; retry loop stopped.`);
+      return { courseId, ...result };
+    }
     if (attempt < maxAttempts) {
       const waitMs = baseDelayMs * (2 ** (attempt - 1));
-      console.warn(`[Academy Studio] ${courseId} failed attempt ${attempt}; retrying in ${waitMs} ms.`);
+      console.warn(`[Academy Studio] ${courseId} failed attempt ${attempt} with ${result.failureCategory}; retrying in ${waitMs} ms.`);
       await delay(waitMs);
     } else {
       return { courseId, ...result };
     }
   }
-  return { courseId, ok: false, error: "unreachable retry state" };
+  return {
+    courseId,
+    ok: false,
+    error: "unreachable retry state",
+    failureCategory: "unreachable_retry_state",
+    retryable: false,
+  };
+}
+
+function haltQueue(results, queue, result) {
+  if (results.halted) return;
+  results.halted = true;
+  results.haltReason = result.failureCategory || "non_retryable_authoring_failure";
+  results.haltExitCode = result.code || 2;
+  results.queuedCoursesSkipped = queue.length;
+  queue.splice(0, queue.length);
+  console.error(
+    `[Academy Studio] Governed parallel authoring halted: reason=${results.haltReason}; ${results.queuedCoursesSkipped} queued course(s) were not started.`,
+  );
 }
 
 async function worker(workerId, queue, results) {
-  while (queue.length > 0) {
+  while (queue.length > 0 && !results.halted) {
     const course = queue.shift();
     if (!course) return;
     const position = results.started + 1;
@@ -129,6 +167,9 @@ async function worker(workerId, queue, results) {
       console.log(`[Academy Studio] Worker ${workerId} completed ${course.courseId}`);
     } else {
       console.error(`[Academy Studio] Worker ${workerId} failed ${course.courseId}: ${result.error}`);
+      if (result.retryable === false) {
+        haltQueue(results, queue, result);
+      }
     }
   }
 }
@@ -140,12 +181,19 @@ if (targets.length === 0) {
 
 console.log(`[Academy Studio] Starting governed parallel authoring for ${targets.length} course(s) with concurrency ${concurrency}, request timeout ${Math.round(boundedNumber(process.env.ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS, 15 * 60 * 1000, 60 * 1000, 30 * 60 * 1000) / 1000)} seconds, and process timeout ${Math.round(processTimeoutMs / 1000)} seconds.`);
 const queue = [...targets];
-const results = { started: 0, completed: [] };
+const results = {
+  started: 0,
+  completed: [],
+  halted: false,
+  haltReason: null,
+  haltExitCode: null,
+  queuedCoursesSkipped: 0,
+};
 const startedAt = Date.now();
 const heartbeat = setInterval(() => {
   const active = Math.max(0, results.started - results.completed.length);
   const elapsedMinutes = Math.max(1, Math.round((Date.now() - startedAt) / 60000));
-  console.log(`[Academy Studio] Parallel authoring heartbeat: ${results.completed.length}/${targets.length} complete, ${active} active, ${queue.length} queued, ${elapsedMinutes} minute(s) elapsed.`);
+  console.log(`[Academy Studio] Parallel authoring heartbeat: ${results.completed.length}/${targets.length} complete, ${active} active, ${queue.length} queued, ${elapsedMinutes} minute(s) elapsed, halted=${results.halted}.`);
 }, heartbeatIntervalMs);
 heartbeat.unref?.();
 
@@ -159,23 +207,30 @@ try {
 const failures = results.completed.filter((result) => !result.ok);
 const summaryPath = path.join(root, "catalog", "parallel-authoring-summary.json");
 fs.writeFileSync(summaryPath, `${JSON.stringify({
-  schemaVersion: "1.1",
+  schemaVersion: "1.2",
   generatedAt: new Date().toISOString(),
   provider,
   concurrency,
   maxAttempts,
   processTimeoutMs,
   requestedCourses: targets.length,
+  startedCourses: results.started,
   completedCourses: results.completed.length,
   successfulCourses: results.completed.length - failures.length,
   failedCourses: failures.length,
+  halted: results.halted,
+  haltReason: results.haltReason,
+  queuedCoursesSkipped: results.queuedCoursesSkipped,
   elapsedMs: Date.now() - startedAt,
   results: results.completed,
 }, null, 2)}\n`);
 
 if (failures.length > 0) {
   console.error(`[Academy Studio] Parallel authoring failed for ${failures.length} course(s): ${failures.map((item) => item.courseId).join(", ")}`);
-  process.exit(2);
+  if (results.halted) {
+    console.error(`[Academy Studio] Failure is non-retryable at the current provider boundary: ${results.haltReason}. Restore the provider prerequisite before rerunning the protected authoring workflow.`);
+  }
+  process.exit(results.haltExitCode || 2);
 }
 
 console.log(`[Academy Studio] Parallel authoring completed successfully for all ${targets.length} course(s).`);
