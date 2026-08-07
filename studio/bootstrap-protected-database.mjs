@@ -54,31 +54,74 @@ function run(command, args) {
   }
 }
 
+async function createPrismaClient() {
+  const prismaModule = await import("@prisma/client");
+  const PrismaClient = prismaModule.PrismaClient ?? prismaModule.default?.PrismaClient;
+  if (!PrismaClient) throw new Error("PrismaClient is unavailable after generation.");
+  return new PrismaClient();
+}
+
+async function organizationSchemaExists() {
+  const prisma = await createPrismaClient();
+  try {
+    const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass('public.\"Organization\"')::text AS organization_table`);
+    return Boolean(rows?.[0]?.organization_table);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+async function ensureAuthoringCheckpointTable() {
+  const prisma = await createPrismaClient();
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "AuthoringCheckpoint" (
+        "id" TEXT PRIMARY KEY,
+        "organizationKey" TEXT NOT NULL,
+        "courseSlug" TEXT NOT NULL,
+        "sourceManifestHash" TEXT NOT NULL,
+        "authoringPolicyVersion" TEXT NOT NULL,
+        "provider" TEXT NOT NULL,
+        "model" TEXT NOT NULL,
+        "packageHash" TEXT NOT NULL,
+        "package" JSONB NOT NULL,
+        "reviewStatus" TEXT NOT NULL,
+        "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "uq_authoring_checkpoint_identity"
+      ON "AuthoringCheckpoint" (
+        "organizationKey", "courseSlug", "sourceManifestHash", "authoringPolicyVersion"
+      )
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "ix_authoring_checkpoint_course"
+      ON "AuthoringCheckpoint" ("organizationKey", "courseSlug", "updatedAt")
+    `);
+    const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass('public.\"AuthoringCheckpoint\"')::text AS checkpoint_table`);
+    if (!rows?.[0]?.checkpoint_table) {
+      throw new Error("Protected authoring checkpoint table verification failed.");
+    }
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 validateProtectedDatabaseUrl();
 
 console.log("[Academy Studio] Generating Prisma Client for protected database verification.");
 run("npx", ["prisma", "generate"]);
 
-const prismaModule = await import("@prisma/client");
-const PrismaClient = prismaModule.PrismaClient ?? prismaModule.default?.PrismaClient;
-if (!PrismaClient) throw new Error("PrismaClient is unavailable after generation.");
-
-const prisma = new PrismaClient();
-let schemaExists = false;
-try {
-  const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass('public.\"Organization\"')::text AS organization_table`);
-  schemaExists = Boolean(rows?.[0]?.organization_table);
-} finally {
-  await prisma.$disconnect();
-}
-
-if (schemaExists) {
-  console.log("[Academy Studio] Protected Academy schema already exists. Skipping Prisma db push to preserve managed database controls.");
-  run("npx", ["prisma", "validate"]);
+if (await organizationSchemaExists()) {
+  console.log("[Academy Studio] Protected Academy base schema already exists. Preserving managed application tables.");
 } else {
   console.log("[Academy Studio] Protected Academy schema is absent. Applying current Prisma schema without development seed data.");
   run("npx", ["prisma", "db", "push", "--skip-generate"]);
-  run("npx", ["prisma", "validate"]);
 }
 
+run("npx", ["prisma", "validate"]);
+await ensureAuthoringCheckpointTable();
+console.log("[Academy Studio] Protected authoring checkpoint table is present and index-verified.");
 console.log("[Academy Studio] Protected Academy database bootstrap verification completed.");
