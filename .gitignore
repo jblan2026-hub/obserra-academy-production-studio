@@ -14,3 +14,5 @@ releases/*/FINAL/*.wav
 releases/*/FINAL/*.mp3
 .DS_Store
 Thumbs.db
+
+# Provider funding evidence refreshed 2026 08 07. Runtime preflight remains authoritative.
