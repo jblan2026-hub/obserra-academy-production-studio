@@ -75,16 +75,11 @@ jobs:
           fetch-depth: 0
 
       - name: Mark protected build execution started
+        continue-on-error: true
         shell: bash
         run: |
-          TITLE="Academy protected learner build credentials required"
           BODY="Protected Academy owner-review build execution started. Credential verification is pending. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.head_ref || github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring target: 6 workers across 60 owner-review courses."
-          ISSUE_NUMBER="$(gh issue list --state open --search \"$TITLE in:title\" --json number --jq '.[0].number // empty')"
-          if [ -n "$ISSUE_NUMBER" ]; then
-            gh issue edit "$ISSUE_NUMBER" --body "$BODY"
-          else
-            gh issue create --title "$TITLE" --body "$BODY"
-          fi
+          gh issue edit 17 --body "$BODY"
 
       - name: Configure Node.js
         uses: actions/setup-node@v4
@@ -111,20 +106,21 @@ jobs:
         run: |
           TITLE="Academy course manifest alignment failure"
           BODY="The continuous Academy audit found ${{ steps.audit.outputs.blocking_findings }} blocking manifest alignment finding(s). Automatic authoring and build were stopped. Review catalog/continuous-course-audit.json from workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
-          ISSUE_NUMBER="$(gh issue list --state open --search \"$TITLE in:title\" --json number --jq '.[0].number // empty')"
+          ISSUE_NUMBER="$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty' || true)"
           if [ -n "$ISSUE_NUMBER" ]; then
-            gh issue edit "$ISSUE_NUMBER" --body "$BODY"
+            gh issue edit "$ISSUE_NUMBER" --body "$BODY" || true
           else
-            gh issue create --title "$TITLE" --body "$BODY"
+            gh issue create --title "$TITLE" --body "$BODY" || true
           fi
           exit 1
 
       - name: Close resolved manifest blocker issue
         if: steps.audit.outputs.blocking_findings == '0'
+        continue-on-error: true
         shell: bash
         run: |
           TITLE="Academy course manifest alignment failure"
-          ISSUE_NUMBER="$(gh issue list --state open --search \"$TITLE in:title\" --json number --jq '.[0].number // empty')"
+          ISSUE_NUMBER="$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty' || true)"
           if [ -n "$ISSUE_NUMBER" ]; then
             gh issue close "$ISSUE_NUMBER" --comment "Resolved by workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
           fi
@@ -136,25 +132,12 @@ jobs:
           MISSING=""
           test -n "$OPENAI_API_KEY" || MISSING="OPENAI_API_KEY"
           test -n "$DATABASE_URL" || MISSING="${MISSING:+$MISSING, }ACADEMY_DATABASE_URL"
-          TITLE="Academy protected learner build credentials required"
           if [ -n "$MISSING" ]; then
             BODY="The 60-course owner-review learner build requires protected credentials that are not configured: $MISSING. Protected learner content will not be generated or written to the public repository. Latest workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
-            ISSUE_NUMBER="$(gh issue list --state open --search \"$TITLE in:title\" --json number --jq '.[0].number // empty')"
-            if [ -n "$ISSUE_NUMBER" ]; then
-              gh issue edit "$ISSUE_NUMBER" --body "$BODY"
-            else
-              gh issue create --title "$TITLE" --body "$BODY"
-            fi
+            gh issue edit 17 --body "$BODY" || true
             exit 1
           fi
-
-          ISSUE_NUMBERS="$(gh issue list --state open --search \"$TITLE in:title\" --json number --jq '.[].number')"
-          if [ -n "$ISSUE_NUMBERS" ]; then
-            while read -r ISSUE_NUMBER; do
-              [ -n "$ISSUE_NUMBER" ] || continue
-              gh issue close "$ISSUE_NUMBER" --comment "Protected Academy credentials are configured. Resolved by workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
-            done <<< "$ISSUE_NUMBERS"
-          fi
+          gh issue close 17 --comment "Protected Academy credentials are configured. Resolved by workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}." || true
 
       - name: Bootstrap protected Academy PostgreSQL schema
         if: steps.audit.outputs.authoring_required == 'true' && env.ACADEMY_DATABASE_BOOTSTRAP_ALLOWED == 'true'
