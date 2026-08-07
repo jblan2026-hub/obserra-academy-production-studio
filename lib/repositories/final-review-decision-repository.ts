@@ -34,6 +34,7 @@ export async function recordFinalReviewDecision(
   if (!readiness?.ready || !readiness.preview) {
     throw new Error("course-not-ready-for-final-review");
   }
+  const preview = readiness.preview;
 
   const studentExperienceUrl = finalReviewStudentExperienceUrl(input.courseSlug);
   if (!studentExperienceUrl) {
@@ -49,7 +50,7 @@ export async function recordFinalReviewDecision(
   return prisma.$transaction(async (transaction) => {
     const course = await transaction.course.findFirst({
       where: {
-        id: readiness.preview?.databaseId,
+        id: preview.databaseId,
         slug: input.courseSlug,
         organization: { clerkOrganizationId: input.clerkOrganizationId },
       },
@@ -76,20 +77,18 @@ export async function recordFinalReviewDecision(
     });
 
     if (input.decision === "approve") {
-      await Promise.all([
-        transaction.course.update({
-          where: { id: course.id },
-          data: { status: "READY" },
-        }),
-        transaction.release.update({
-          where: { id: stagedRelease.id },
-          data: {
-            status: "APPROVED",
-            approvedBy: input.reviewerId,
-            approvedAt: now,
-          },
-        }),
-      ]);
+      await transaction.course.update({
+        where: { id: course.id },
+        data: { status: "READY" },
+      });
+      await transaction.release.update({
+        where: { id: stagedRelease.id },
+        data: {
+          status: "APPROVED",
+          approvedBy: input.reviewerId,
+          approvedAt: now,
+        },
+      });
     } else {
       await transaction.course.update({
         where: { id: course.id },
