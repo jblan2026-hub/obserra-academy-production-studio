@@ -5,7 +5,9 @@ on:
   schedule:
     - cron: "17 * * * *"
   push:
-    branches: [main]
+    branches:
+      - main
+      - agent/continue-course-buildout
     paths:
       - "courses/**/course-manifest.json"
       - "studio/apply-course-policy.mjs"
@@ -22,7 +24,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: continuous-academy-course-ai-audit
+  group: continuous-academy-course-ai-audit-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -118,8 +120,17 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Commit governed learner build to controlled branch
+        if: steps.changes.outputs.changed == 'true' && github.ref == 'refs/heads/agent/continue-course-buildout'
+        run: |
+          git config user.name "Obserra Academy AI Builder"
+          git config user.email "academy-ai-builder@users.noreply.github.com"
+          git add courses catalog
+          git commit -m "Generate governed learner course packages"
+          git push origin HEAD:agent/continue-course-buildout
+
       - name: Create governed course build branch
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.changes.outputs.changed == 'true' && github.ref == 'refs/heads/main'
         id: branch
         run: |
           BRANCH="automation/academy-course-build-${GITHUB_RUN_ID}"
@@ -132,7 +143,7 @@ jobs:
           git push origin "$BRANCH"
 
       - name: Open draft owner review pull request
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.changes.outputs.changed == 'true' && github.ref == 'refs/heads/main'
         run: |
           gh pr create \
             --draft \
