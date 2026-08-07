@@ -22,14 +22,22 @@ type TutorRuntimeResponse = {
 
 function sanitizeSources(value: unknown): TutorSource[] {
   if (!Array.isArray(value)) return [];
-  return value.slice(0, 20).flatMap((item) => {
-    if (typeof item === "string") return item.trim() ? [item.trim().slice(0, 500)] : [];
-    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+
+  const sanitized: TutorSource[] = [];
+  for (const item of value.slice(0, 20)) {
+    if (typeof item === "string") {
+      const source = item.trim();
+      if (source) sanitized.push(source.slice(0, 500));
+      continue;
+    }
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+
     const record = item as Record<string, unknown>;
     const id = typeof record.id === "string" ? record.id.slice(0, 200) : undefined;
     const title = typeof record.title === "string" ? record.title.slice(0, 500) : undefined;
-    return id || title ? [{ id, title }] : [];
-  });
+    if (id || title) sanitized.push({ id, title });
+  }
+  return sanitized;
 }
 
 function sanitizeLimitations(value: unknown): string[] {
