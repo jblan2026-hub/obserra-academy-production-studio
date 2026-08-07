@@ -8,6 +8,7 @@ on:
       - "owner-command-center/**"
       - "studio/**"
       - "package.json"
+      - "package-lock.json"
       - ".github/workflows/owner-command-center-2000x-windows.yml"
   push:
     branches: [main]
@@ -15,6 +16,7 @@ on:
       - "owner-command-center/**"
       - "studio/**"
       - "package.json"
+      - "package-lock.json"
       - ".github/workflows/owner-command-center-2000x-windows.yml"
 
 permissions:
@@ -33,11 +35,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
       - name: Install Studio dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Install Command Center dependencies
         working-directory: owner-command-center
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
       - name: Verify Command Center governance and remediation runtime
         working-directory: owner-command-center
         run: npm run verify
