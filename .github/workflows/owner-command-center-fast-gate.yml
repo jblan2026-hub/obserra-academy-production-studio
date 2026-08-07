@@ -38,14 +38,12 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            owner-command-center/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install Studio dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Install Command Center dependencies
         working-directory: owner-command-center
-        run: npm ci --ignore-scripts --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
       - name: Validate complete Command Center syntax
         working-directory: owner-command-center
         run: |
