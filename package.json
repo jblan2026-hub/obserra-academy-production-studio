@@ -12,6 +12,7 @@
     "apply:course-policy": "node studio/apply-course-policy.mjs",
     "audit:courses": "node studio/audit-course-build-readiness.mjs",
     "validate": "npm run apply:course-policy && node studio/validate.mjs",
+    "validate:ai-native-course": "node studio/validate-ai-native-course.mjs",
     "author:course": "node studio/author-course-ai.mjs",
     "author:all": "node studio/author-all-courses.mjs",
     "build:course": "npm run apply:course-policy && node studio/build-course.mjs && node studio/enforce-course-legal-assets.mjs",
