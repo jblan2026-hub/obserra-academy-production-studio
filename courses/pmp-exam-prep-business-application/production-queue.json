@@ -6,7 +6,7 @@
   "releaseStatus": "not-ready",
   "publicRepresentationAllowed": false,
   "sourceOfTruth": "courses/pmp-exam-prep-business-application/course-manifest.json",
-  "updatedAt": "2026-08-07T05:40:00Z",
+  "updatedAt": "2026-08-07T06:10:00Z",
   "completedAssets": [
     "course-manifest.json",
     "authoritative-sources.json",
@@ -31,6 +31,10 @@
     "video/module-01/lesson-03/production-script.md",
     "video/module-01/lesson-04/production-script.md",
     "video/module-02/lesson-01/production-script.md",
+    "video/module-02/lesson-02/production-script.md",
+    "video/module-02/lesson-03/production-script.md",
+    "video/module-02/lesson-04/production-script.md",
+    "video/module-02/lesson-05/production-script.md",
     "docs/AI-NATIVE-EVIDENCE-GROUNDED-COURSE-STANDARD.md",
     "Owner-only exact final learner package review gate",
     "Governed owner final-review tutor proxy",
@@ -47,7 +51,7 @@
     "ecoTasksRequired": 26,
     "practiceQuestionsDrafted": 30,
     "practiceQuestionsRequired": 180,
-    "videoScriptsDrafted": 5,
+    "videoScriptsDrafted": 9,
     "videoScriptsRequired": 35,
     "renderedVideosCompleted": 0,
     "renderedVideosRequired": 35,
@@ -60,6 +64,15 @@
     "perVideoRightsRecordsCompleted": 0,
     "perVideoRightsRecordsRequired": 35
   },
+  "milestones": {
+    "examOrientationModuleScripts": "complete-draft",
+    "peopleVisionLeadershipModuleScripts": "complete-draft",
+    "peopleStakeholderConflictModuleScripts": "not-started",
+    "processDomainScripts": "not-started",
+    "businessEnvironmentScripts": "not-started",
+    "finalAssessment": "partial-draft",
+    "finalMedia": "not-started"
+  },
   "nextProductionWork": [
     {
       "priority": 1,
@@ -69,7 +82,7 @@
     },
     {
       "priority": 2,
-      "work": "Draft production scripts, source cards, visual treatments, interactions, knowledge checks, and tutor handoffs for the remaining 30 lessons.",
+      "work": "Draft production scripts, source cards, visual treatments, interactions, knowledge checks, and tutor handoffs for the remaining 26 lessons, beginning with stakeholder engagement, expectation alignment, conflict, communication, and knowledge transfer.",
       "owner": "Instructional and Video Production",
       "gate": "Every factual claim mapped to an approved source or labeled instructor interpretation"
     },
@@ -118,7 +131,7 @@
   },
   "releaseBlockers": [
     "Only 30 of 180 original protected-exam questions are drafted.",
-    "Only five of 35 lesson production scripts are drafted.",
+    "Only nine of 35 lesson production scripts are drafted.",
     "No mastered lesson videos, captions, transcripts, storyboards, or completed per-video rights records exist yet.",
     "PMP SME, legal, brand, accessibility, assessment, AI, media, commerce, and owner reviews are pending.",
     "The public Obserra Academy catalog does not yet contain an owner-approved PMP course record controlling the public title, price, checkout, and release claims.",
@@ -132,6 +145,6 @@
     "courseMayGuaranteeEligibility": false,
     "courseMayGuaranteeExamSuccess": false,
     "videoMayBeCalledRendered": false,
-    "currentAccurateDescription": "A governed 35-hour PMP course production foundation with full ECO mapping, source-grounded instructional materials, an entitlement-scoped AI tutor profile, cinematic production standards, five detailed lesson scripts, the first 30 original assessment items, and a fail-closed owner final-review gate that renders only the exact staged paid learner package."
+    "currentAccurateDescription": "A governed 35-hour PMP course production foundation with full ECO mapping, source-grounded instructional materials, an entitlement-scoped AI tutor profile, cinematic production standards, nine detailed lesson scripts, the first 30 original assessment items, and a fail-closed owner final-review gate that renders only the exact staged paid learner package."
   }
 }
