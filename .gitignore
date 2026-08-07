@@ -3,6 +3,8 @@ node_modules/
 .env.*
 !.env.example
 courses/*/generated/
+catalog/academy-learner-course-catalog.json
+catalog/learner-catalog-readiness.json
 releases/*/FINAL/*.mp4
 releases/*/FINAL/*.mov
 releases/*/FINAL/*.wav
