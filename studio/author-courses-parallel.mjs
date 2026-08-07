@@ -7,6 +7,7 @@ import { classificationFromAuthoringExit } from "./authoring-provider-errors.mjs
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const reportPath = path.join(root, "catalog", "continuous-course-audit.json");
+const failureContractVersion = "1.0";
 
 function boundedNumber(value, fallback, minimum, maximum) {
   const parsed = Number(value);
@@ -179,7 +180,7 @@ if (targets.length === 0) {
   process.exit(0);
 }
 
-console.log(`[Academy Studio] Starting governed parallel authoring for ${targets.length} course(s) with concurrency ${concurrency}, request timeout ${Math.round(boundedNumber(process.env.ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS, 15 * 60 * 1000, 60 * 1000, 30 * 60 * 1000) / 1000)} seconds, and process timeout ${Math.round(processTimeoutMs / 1000)} seconds.`);
+console.log(`[Academy Studio] Starting governed parallel authoring for ${targets.length} course(s) with concurrency ${concurrency}, request timeout ${Math.round(boundedNumber(process.env.ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS, 15 * 60 * 1000, 60 * 1000, 30 * 60 * 1000) / 1000)} seconds, process timeout ${Math.round(processTimeoutMs / 1000)} seconds, and failure contract ${failureContractVersion}.`);
 const queue = [...targets];
 const results = {
   started: 0,
@@ -208,6 +209,7 @@ const failures = results.completed.filter((result) => !result.ok);
 const summaryPath = path.join(root, "catalog", "parallel-authoring-summary.json");
 fs.writeFileSync(summaryPath, `${JSON.stringify({
   schemaVersion: "1.2",
+  failureContractVersion,
   generatedAt: new Date().toISOString(),
   provider,
   concurrency,
