@@ -1,0 +1,214 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-preparation-business-application",
+  "verifiedAt": "2026-08-07T00:00:00Z",
+  "sourcePolicy": {
+    "primarySourcesPreferred": true,
+    "directQuotesMustBeShortAndAttributed": true,
+    "copyrightedStandardsMustBeParaphrasedUnlessLicensed": true,
+    "examDumpsAndConfidentialQuestionsProhibited": true,
+    "timeSensitiveFactsRequireObservationDates": true,
+    "caseStudiesMustSeparateVerifiedFactsFromInstructorInterpretation": true
+  },
+  "sources": [
+    {
+      "id": "PMI-ECO-2026",
+      "owner": "Project Management Institute",
+      "title": "Project Management Professional (PMP) Examination Content Outline - July 2026",
+      "sourceType": "official-certification-exam-outline",
+      "jurisdiction": "global-certification-program",
+      "publicationDate": "2026",
+      "retrievedDate": "2026-08-07",
+      "url": "https://www.pmi.org/-/media/pmi/documents/public/pdf/certifications/new-pmp-examination-content-outline-2026.pdf",
+      "authority": "Controls the examination domains, task coverage, eligibility paths, training-hour requirements, examination format, question types, breaks, retake policy, and continuing-certification summary.",
+      "courseUse": [
+        "all modules",
+        "ECO task mapping",
+        "eligibility and application instruction",
+        "exam architecture",
+        "practice-exam blueprint"
+      ],
+      "limitations": "The outline does not disclose confidential exam questions and is not a complete textbook for every project-management practice tested."
+    },
+    {
+      "id": "PMI-PMP-CERTIFICATION",
+      "owner": "Project Management Institute",
+      "title": "Project Management Professional (PMP) Certification",
+      "sourceType": "official-certification-program-page",
+      "jurisdiction": "global-certification-program",
+      "publicationDate": null,
+      "retrievedDate": "2026-08-07",
+      "url": "https://www.pmi.org/certifications/project-management-pmp",
+      "authority": "Current public summary of education, experience, training, application, and exam-day requirements.",
+      "courseUse": [
+        "orientation-eligibility-ethics",
+        "exam-architecture-scenario-reasoning"
+      ],
+      "limitations": "The webpage may change; learners must verify current requirements directly with PMI before applying."
+    },
+    {
+      "id": "PMI-PMP-NEW-EXAM-2026",
+      "owner": "Project Management Institute",
+      "title": "What's New in the Updated PMP Exam",
+      "sourceType": "official-exam-update-page",
+      "jurisdiction": "global-certification-program",
+      "publicationDate": "2026",
+      "retrievedDate": "2026-08-07",
+      "url": "https://www.pmi.org/certifications/project-management-pmp/new-exam",
+      "authority": "Official public explanation of the July 2026 changes, future-focused content, domain-weight changes, and planned late-Q4 2026 live-training eligibility changes.",
+      "courseUse": [
+        "orientation-eligibility-ethics",
+        "exam-architecture-scenario-reasoning",
+        "integration-ai-sustainability-value"
+      ],
+      "limitations": "PMI has stated that the exact late-Q4 2026 training-change start date will be announced separately."
+    },
+    {
+      "id": "PMI-ETHICS-2025",
+      "owner": "Project Management Institute",
+      "title": "PMI Ethics Guidelines and Code of Ethics and Professional Conduct",
+      "sourceType": "official-professional-code",
+      "jurisdiction": "PMI-members-certification-holders-and-applicants",
+      "publicationDate": "2025-11-17",
+      "retrievedDate": "2026-08-07",
+      "url": "https://www.pmi.org/about/ethics/guidelines",
+      "authority": "Defines the ethical values and conduct expectations applicable to PMI members, certification holders, volunteers, and certification applicants.",
+      "courseUse": [
+        "orientation-eligibility-ethics",
+        "people-conflict",
+        "people-team-leadership",
+        "business-governance",
+        "business-compliance"
+      ],
+      "limitations": "The course provides educational interpretation only; PMI controls the code and ethics-enforcement process."
+    },
+    {
+      "id": "PMI-PMBOK-8",
+      "owner": "Project Management Institute",
+      "title": "A Guide to the Project Management Body of Knowledge (PMBOK Guide) - Eighth Edition",
+      "sourceType": "official-consensus-standard-and-guide",
+      "jurisdiction": "global-project-management-practice",
+      "publicationDate": "2025",
+      "retrievedDate": "2026-08-07",
+      "url": "https://www.pmi.org/standards/pmbok",
+      "authority": "Provides current PMI principles, performance domains, technical content, and ways-of-working guidance used as a principal reference for project practice.",
+      "courseUse": [
+        "people domain modules",
+        "process domain modules",
+        "business environment modules",
+        "integration modules"
+      ],
+      "limitations": "The PMP exam is not written from one book alone. Learners must use legally acquired copies, and the course must paraphrase copyrighted material unless licensed."
+    },
+    {
+      "id": "GAO-SCHEDULE-GUIDE",
+      "owner": "United States Government Accountability Office",
+      "title": "GAO Schedule Assessment Guide: Best Practices for Project Schedules",
+      "sourceType": "government-best-practice-guide",
+      "jurisdiction": "United States federal oversight",
+      "publicationDate": "2015-12-22",
+      "retrievedDate": "2026-08-07",
+      "url": "https://www.gao.gov/products/gao-16-89g",
+      "authority": "Documents ten best practices for developing and maintaining reliable, high-quality schedules and explains the role of integrated schedules in risk and change analysis.",
+      "courseUse": [
+        "process-schedule",
+        "process-integrated-plan",
+        "process-status-metrics-artifacts",
+        "integration-business-capstone-readiness"
+      ],
+      "limitations": "A federal audit guide is not identical to PMI examination content; it is used as an authoritative practical example and comparison source."
+    },
+    {
+      "id": "DOJ-OIG-VCF-SENTINEL",
+      "owner": "United States Department of Justice Office of the Inspector General",
+      "title": "The FBI's Pre-Acquisition Planning for and Controls Over the Sentinel Case Management System",
+      "sourceType": "government-audit-case-study",
+      "jurisdiction": "United States federal information technology acquisition",
+      "publicationDate": "2006-03",
+      "retrievedDate": "2026-08-07",
+      "url": "https://oig.justice.gov/archives/reports/FBI/a0614/exec.htm",
+      "authority": "Documents the terminated Virtual Case File effort and identified weaknesses involving requirements, investment management, management continuity, oversight, integration, and scheduling.",
+      "courseUse": [
+        "process-integrated-plan",
+        "process-scope",
+        "process-procurement",
+        "business-governance",
+        "business-change-control"
+      ],
+      "limitations": "The case is historical and context-specific. It illustrates governance and delivery risks but does not prove that one methodology guarantees success."
+    },
+    {
+      "id": "GAO-NASA-2018",
+      "owner": "United States Government Accountability Office",
+      "title": "NASA Major Projects: Portfolio Is at Risk for Continued Cost Growth and Schedule Delays",
+      "sourceType": "government-portfolio-oversight-case-study",
+      "jurisdiction": "United States federal aerospace programs",
+      "publicationDate": "2018-06-14",
+      "retrievedDate": "2026-08-07",
+      "url": "https://www.gao.gov/products/gao-18-576t",
+      "authority": "Reports cost and schedule deterioration across NASA major projects and discusses technical issues, risky management decisions, aggressive schedules, reserve levels, and integration-and-test risk.",
+      "courseUse": [
+        "process-finance",
+        "process-schedule",
+        "business-risk",
+        "process-quality-compliance",
+        "integration-business-capstone-readiness"
+      ],
+      "limitations": "Portfolio observations are historical and must not be generalized without considering mission complexity, technical uncertainty, and project context."
+    },
+    {
+      "id": "NASA-JWST-JCL",
+      "owner": "National Aeronautics and Space Administration",
+      "title": "Cost Estimate of the James Webb Space Telescope - NASA Lessons Learned Information System",
+      "sourceType": "government-lessons-learned-case-study",
+      "jurisdiction": "United States federal aerospace programs",
+      "publicationDate": "2013-01-19",
+      "retrievedDate": "2026-08-07",
+      "url": "https://llis.nasa.gov/lesson/6936",
+      "authority": "Describes Joint Confidence Level cost-and-schedule analysis, Monte Carlo treatment of risk-register inputs, documentation needs, training needs, and independent review considerations.",
+      "courseUse": [
+        "process-finance",
+        "process-schedule",
+        "business-risk",
+        "process-status-metrics-artifacts"
+      ],
+      "limitations": "The lesson explains one NASA methodology and does not require every organization to use the same quantitative model."
+    },
+    {
+      "id": "GAO-GSA-UNFORESEEN-CONDITIONS",
+      "owner": "United States Government Accountability Office",
+      "title": "Federal Real Property: GSA Could Better Identify Risks of Unforeseen Conditions in Repair and Alteration Projects",
+      "sourceType": "government-risk-case-study",
+      "jurisdiction": "United States federal construction",
+      "publicationDate": "2016-03-17",
+      "retrievedDate": "2026-08-07",
+      "url": "https://www.gao.gov/products/gao-16-273",
+      "authority": "Provides empirical findings from 18 projects, including the frequency and cost or schedule effects of unforeseen conditions and gaps between risk identification and actual project experience.",
+      "courseUse": [
+        "business-risk",
+        "process-scope",
+        "process-finance",
+        "process-schedule"
+      ],
+      "limitations": "The sample is limited to the reviewed GSA repair and alteration projects and is not a universal construction benchmark."
+    },
+    {
+      "id": "NAO-BENEFITS-PAYMENT-CARD",
+      "owner": "United Kingdom National Audit Office",
+      "title": "The Cancellation of the Benefits Payment Card Project",
+      "sourceType": "government-major-project-case-study",
+      "jurisdiction": "United Kingdom public-sector information technology and commercial delivery",
+      "publicationDate": "2000",
+      "retrievedDate": "2026-08-07",
+      "url": "https://www.nao.org.uk/reports/the-cancellation-of-the-benefits-payment-card-project/",
+      "authority": "Documents major financial loss and project-management lessons involving risk, commercial structure, dependencies, delivery assumptions, and governance in a large technology-enabled change program.",
+      "courseUse": [
+        "process-procurement",
+        "business-governance",
+        "business-risk",
+        "business-organizational-change"
+      ],
+      "limitations": "The case is historical, national-context specific, and should be used to teach analysis rather than assign simplistic single-cause blame."
+    }
+  ]
+}
