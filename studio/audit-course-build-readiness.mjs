@@ -7,6 +7,7 @@ import { officialBrand } from "./brand-policy.mjs";
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
 const catalogRoot = path.join(root, "catalog");
+const AUTHORING_POLICY_VERSION = "2026.08.07.2";
 const requiredGeneratedFiles = [
   "instructor-manuscript.md",
   "learner-guide.md",
@@ -19,6 +20,7 @@ const authoringFindings = [
   "missing-ai-course-package",
   "stale-ai-course-package",
   "untraceable-ai-course-package",
+  "outdated-ai-authoring-policy",
 ];
 
 function readJson(filePath) {
@@ -27,6 +29,10 @@ function readJson(filePath) {
 
 function stableHash(value) {
   return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+function authoringSourceHash(manifest) {
+  return stableHash({ authoringPolicyVersion: AUTHORING_POLICY_VERSION, manifest });
 }
 
 function parseDurationMinutes(value) {
@@ -98,13 +104,16 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
   const authoringMissing = !fs.existsSync(authoringPath);
   if (authoringMissing) courseFindings.push("missing-ai-course-package");
 
-  const manifestHash = stableHash(manifest);
+  const manifestHash = authoringSourceHash(manifest);
   let packageManifestHash = null;
+  let packageAuthoringPolicyVersion = null;
   if (!authoringMissing) {
     const authored = readJson(authoringPath);
     packageManifestHash = authored.sourceManifestHash ?? authored.manifestHash ?? null;
+    packageAuthoringPolicyVersion = authored.authoringPolicyVersion ?? null;
     if (!packageManifestHash) courseFindings.push("untraceable-ai-course-package");
     else if (packageManifestHash !== manifestHash) courseFindings.push("stale-ai-course-package");
+    if (packageAuthoringPolicyVersion !== AUTHORING_POLICY_VERSION) courseFindings.push("outdated-ai-authoring-policy");
   }
 
   const publicationApproved = manifest.release?.publishToAcademy === true && ["approved", "published"].includes(manifest.release?.status);
@@ -119,8 +128,10 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
     assessmentMinutes: Number.isFinite(assessmentMinutes) ? assessmentMinutes : 0,
     accountedMinutes,
     advertisedMinutes,
+    authoringPolicyVersion: AUTHORING_POLICY_VERSION,
     manifestHash,
     packageManifestHash,
+    packageAuthoringPolicyVersion,
     authoringMissing,
     findings: courseFindings,
   });
@@ -147,12 +158,13 @@ const blockingFindings = findings.filter(({ finding }) => !nonBlockingFindings.h
 
 fs.mkdirSync(catalogRoot, { recursive: true });
 const report = {
-  schemaVersion: "1.2",
+  schemaVersion: "1.3",
   generatedAt: new Date().toISOString(),
   policy: {
+    authoringPolicyVersion: AUTHORING_POLICY_VERSION,
     lessonCount: "manifest-defined-per-course",
     duration: "module-durations-plus-final-assessment-duration-must-equal-advertised-course-duration",
-    authoring: "all owner-review-eligible missing, stale, or untraceable packages trigger AI authoring",
+    authoring: "all owner-review-eligible missing, stale, untraceable, or older-policy packages trigger AI authoring",
     build: "all owner-review-eligible missing or stale assets trigger governed build",
     publication: "only explicitly approved or published courses can enter the public catalog",
     directProductionPublish: false,
@@ -176,7 +188,7 @@ writeOutput("blocking_findings", String(blockingFindings.length));
 writeOutput("owner_review_courses", String(ownerReviewCourses.length));
 writeOutput("publication_approved_courses", String(publicationApprovedCourses.length));
 
-console.log(`[Academy Studio] Audited ${courses.length} course manifests, including ${ownerReviewCourses.length} owner-review-eligible and ${publicationApprovedCourses.length} publication-approved course(s).`);
+console.log(`[Academy Studio] Audited ${courses.length} course manifests under authoring policy ${AUTHORING_POLICY_VERSION}, including ${ownerReviewCourses.length} owner-review-eligible and ${publicationApprovedCourses.length} publication-approved course(s).`);
 console.log(`[Academy Studio] AI authoring required: ${authoringRequired}. Governed build required: ${buildRequired}. Blocking findings: ${blockingFindings.length}.`);
 if (blockingFindings.length > 0) {
   for (const item of blockingFindings.slice(0, 100)) console.error(`[Academy Studio] ${item.courseId}: ${item.finding}`);
