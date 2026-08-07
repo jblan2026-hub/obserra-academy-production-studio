@@ -8,7 +8,6 @@ const failures = [];
 const check = (name, condition) => { if (!condition) failures.push(name); };
 
 const remediation = read("owner-command-center/electron/ai-remediation.cjs");
-const worker = read("owner-command-center/scripts/run-approved-remediation.mjs");
 const verifier = read("owner-command-center/scripts/verify-ai-remediation.mjs");
 const manifestSchema = JSON.parse(read("owner-command-center/policy/remediation-manifest.schema.json"));
 
@@ -55,6 +54,9 @@ for (const pattern of [
   /APPROVED_REPOSITORIES/,
   /MAX_FILES_PER_PLAN/,
   /expectedSha256/,
+  /function\s+validatePlan/,
+  /async\s+function\s+executeApprovedRemediation/,
+  /approvalDecision\s*!==\s*["']approved["']/,
   /git["'],?\s*\[?"checkout"/,
   /checkout["'],?\s*"-b"/,
   /pull["'],?\s*"--ff-only"/,
@@ -67,8 +69,12 @@ for (const pattern of [
   /forcePushAllowed:\s*false/
 ]) check(`remediation contract ${pattern}`, pattern.test(remediation));
 
-check("worker validates manifest", /validatePlan/.test(worker));
-check("worker executes approved remediation", /executeApprovedRemediation/.test(worker));
+check("runtime validates remediation plans", /validatePlan\(planInput\)/.test(remediation));
+check("runtime executes only approved remediation", /executeApprovedRemediation/.test(remediation) && /Owner approval decision must be approved/.test(remediation));
+check("runtime fails closed on dirty repositories", /Repository contains uncommitted changes; remediation is fail closed/.test(remediation));
+check("runtime validates before commit and push", /runValidations/.test(remediation) && /git["'],?\s*\[?"commit"/.test(remediation));
+check("runtime creates draft pull requests", /gh["'],?\s*\[?"pr"/.test(remediation) && /--draft/.test(remediation));
+check("runtime rolls back failed branches", /reset["'],?\s*"--hard"/.test(remediation) && /branch["'],?\s*"-D"/.test(remediation));
 check("release verifier enforces draft PR", /draft/i.test(verifier));
 check("manifest schema requires approval", JSON.stringify(manifestSchema).includes("ownerApprovalId"));
 check("manifest schema covers three targets", JSON.stringify(manifestSchema).includes("website") && JSON.stringify(manifestSchema).includes("studio") && JSON.stringify(manifestSchema).includes("eios"));
