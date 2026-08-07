@@ -12,11 +12,22 @@ function read(relativePath: string): string {
   return fs.readFileSync(path.join(root, relativePath), "utf8");
 }
 
+function restoreEnvironment(name: string, value: string | undefined): void {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
+
 test("final review authorization is restricted to owner or administrator roles", () => {
-  assert.equal(canPerformFinalCourseReview("user_1", "org:owner"), true);
-  assert.equal(canPerformFinalCourseReview("user_1", "org:admin"), true);
-  assert.equal(canPerformFinalCourseReview("user_1", "org:member"), false);
-  assert.equal(canPerformFinalCourseReview(null, "org:owner"), false);
+  const previousOwnerIds = process.env.OBSERRA_OWNER_USER_IDS;
+  try {
+    delete process.env.OBSERRA_OWNER_USER_IDS;
+    assert.equal(canPerformFinalCourseReview("user_final_review_test", "org:owner"), true);
+    assert.equal(canPerformFinalCourseReview("user_final_review_test", "org:admin"), true);
+    assert.equal(canPerformFinalCourseReview("user_final_review_test", "org:member"), false);
+    assert.equal(canPerformFinalCourseReview(null, "org:owner"), false);
+  } finally {
+    restoreEnvironment("OBSERRA_OWNER_USER_IDS", previousOwnerIds);
+  }
 });
 
 test("final review student URL fails closed and requires an approved secure origin", () => {
@@ -42,9 +53,9 @@ test("final review student URL fails closed and requires an approved secure orig
     assert.equal(parsed.pathname, "/academy/learn/pmp-course");
     assert.equal(parsed.searchParams.get("review"), "owner-final");
   } finally {
-    process.env.FINAL_REVIEW_STUDENT_EXPERIENCE_BASE_URL = previousBase;
-    process.env.FINAL_REVIEW_ALLOWED_STUDENT_ORIGINS = previousAllowed;
-    process.env.NODE_ENV = previousNodeEnv;
+    restoreEnvironment("FINAL_REVIEW_STUDENT_EXPERIENCE_BASE_URL", previousBase);
+    restoreEnvironment("FINAL_REVIEW_ALLOWED_STUDENT_ORIGINS", previousAllowed);
+    restoreEnvironment("NODE_ENV", previousNodeEnv);
   }
 });
 
@@ -65,9 +76,9 @@ test("final review tutor URL also fails closed and requires an approved secure o
     assert.ok(result);
     assert.equal(new URL(result).pathname, "/api/academy/courses/pmp-course/tutor");
   } finally {
-    process.env.FINAL_REVIEW_TUTOR_RUNTIME_BASE_URL = previousBase;
-    process.env.FINAL_REVIEW_ALLOWED_TUTOR_ORIGINS = previousAllowed;
-    process.env.NODE_ENV = previousNodeEnv;
+    restoreEnvironment("FINAL_REVIEW_TUTOR_RUNTIME_BASE_URL", previousBase);
+    restoreEnvironment("FINAL_REVIEW_ALLOWED_TUTOR_ORIGINS", previousAllowed);
+    restoreEnvironment("NODE_ENV", previousNodeEnv);
   }
 });
 
