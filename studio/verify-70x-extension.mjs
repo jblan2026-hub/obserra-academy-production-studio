@@ -9,6 +9,8 @@ const check = (name, condition) => checks.push({ name, passed: Boolean(condition
 
 const packageJson = JSON.parse(read("package.json"));
 const scripts = packageJson.scripts ?? {};
+const authorCourseSource = read("studio/author-course-ai.mjs");
+const parallelAuthorSource = read("studio/author-courses-parallel.mjs");
 
 function resolveScriptChain(scriptName, seen = new Set()) {
   if (seen.has(scriptName)) return "";
@@ -61,6 +63,15 @@ check(
 );
 check("verification includes schema validation", /npm run db:validate(?:\s|$)/.test(verificationChain));
 check("CI includes production build", /npm run build/.test(scripts.ci ?? ""));
+
+check("AI authoring requests have a bounded timeout", authorCourseSource.includes("ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS") && authorCourseSource.includes("AbortController") && authorCourseSource.includes("controller.abort()"));
+check("AI authoring timeout failures are explicit", authorCourseSource.includes("authoring request timed out after"));
+check("AI provider error bodies are bounded before logging", authorCourseSource.includes("...[truncated]") && authorCourseSource.includes("4000"));
+check("parallel authoring processes have a bounded timeout", parallelAuthorSource.includes("ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS") && parallelAuthorSource.includes("processTimeoutMs"));
+check("timed out authoring processes terminate gracefully before force kill", parallelAuthorSource.includes('child.kill("SIGTERM")') && parallelAuthorSource.includes('child.kill("SIGKILL")'));
+check("parallel authoring preserves bounded retry behavior", parallelAuthorSource.includes("ACADEMY_AUTHORING_MAX_ATTEMPTS") && parallelAuthorSource.includes("retrying in"));
+check("parallel authoring emits progress heartbeat evidence", parallelAuthorSource.includes("Parallel authoring heartbeat"));
+check("parallel authoring summary records timeout and elapsed evidence", parallelAuthorSource.includes("processTimeoutMs") && parallelAuthorSource.includes("elapsedMs"));
 
 console.log(`Studio 70x extension evaluated ${checks.length} non-duplicative assertions.`);
 for (const item of checks) console.log(`${item.passed ? "PASS" : "FAIL"} ${item.name}`);
