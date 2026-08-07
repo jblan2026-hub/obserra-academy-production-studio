@@ -9,7 +9,6 @@ const check = (name, condition) => { if (!condition) failures.push(name); };
 
 const remediation = read("owner-command-center/electron/ai-remediation.cjs");
 const verifier = read("owner-command-center/scripts/verify-ai-remediation.mjs");
-const manifestSchema = JSON.parse(read("owner-command-center/policy/remediation-manifest.schema.json"));
 
 const targets = ["website", "studio", "eios"];
 const mappings = ["OWASP-A01-2021", "OWASP-A03-2021", "OWASP-A05-2021", "MITRE-T1190", "MITRE-T1552"];
@@ -52,8 +51,14 @@ check("all patch paths relative", plans.every((plan) => plan.files.every((file) 
 
 for (const pattern of [
   /APPROVED_REPOSITORIES/,
+  /website:\s*\{/,
+  /studio:\s*\{/,
+  /eios:\s*\{/,
   /MAX_FILES_PER_PLAN/,
   /expectedSha256/,
+  /ownerApprovalId/,
+  /MITRE or OWASP mapping is required/,
+  /Patch path must remain inside the approved repository/,
   /function\s+validatePlan/,
   /async\s+function\s+executeApprovedRemediation/,
   /approvalDecision\s*!==\s*["']approved["']/,
@@ -70,14 +75,14 @@ for (const pattern of [
 ]) check(`remediation contract ${pattern}`, pattern.test(remediation));
 
 check("runtime validates remediation plans", /validatePlan\(planInput\)/.test(remediation));
+check("runtime requires owner approval records", /Owner approval record is required/.test(remediation));
+check("runtime restricts remediation to approved repositories", /Remediation target is not approved/.test(remediation));
 check("runtime executes only approved remediation", /executeApprovedRemediation/.test(remediation) && /Owner approval decision must be approved/.test(remediation));
 check("runtime fails closed on dirty repositories", /Repository contains uncommitted changes; remediation is fail closed/.test(remediation));
 check("runtime validates before commit and push", /runValidations/.test(remediation) && /git["'],?\s*\[?"commit"/.test(remediation));
 check("runtime creates draft pull requests", /gh["'],?\s*\[?"pr"/.test(remediation) && /--draft/.test(remediation));
 check("runtime rolls back failed branches", /reset["'],?\s*"--hard"/.test(remediation) && /branch["'],?\s*"-D"/.test(remediation));
 check("release verifier enforces draft PR", /draft/i.test(verifier));
-check("manifest schema requires approval", JSON.stringify(manifestSchema).includes("ownerApprovalId"));
-check("manifest schema covers three targets", JSON.stringify(manifestSchema).includes("website") && JSON.stringify(manifestSchema).includes("studio") && JSON.stringify(manifestSchema).includes("eios"));
 
 const digest = crypto.createHash("sha256").update(JSON.stringify(plans)).digest("hex");
 check("deterministic evidence digest", digest.length === 64);
