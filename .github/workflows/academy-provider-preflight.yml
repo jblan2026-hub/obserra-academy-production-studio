@@ -3,6 +3,15 @@ run-name: Academy provider preflight • ${{ github.ref_name }} • ${{ github.s
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/academy-provider-preflight.yml"
+      - "studio/preflight-authoring-provider.mjs"
+      - "studio/provider-http.mjs"
+      - "studio/authoring-provider-errors.mjs"
+      - "package.json"
   push:
     branches:
       - agent/continue-course-buildout
@@ -22,6 +31,7 @@ concurrency:
 
 jobs:
   provider-preflight:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
