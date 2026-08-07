@@ -70,4 +70,6 @@ jobs:
         working-directory: owner-command-center
         run: npm run verify
       - name: Run complete Studio and Command Center resilience suite
+        env:
+          DATABASE_URL: postgresql://schema_validation:schema_validation@127.0.0.1:5432/schema_validation?schema=public
         run: npm run verify:2000x
