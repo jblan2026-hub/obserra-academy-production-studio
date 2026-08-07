@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - "courses/**/course-manifest.json"
+      - "studio/apply-course-policy.mjs"
       - "studio/audit-course-build-readiness.mjs"
       - "studio/author-course-ai.mjs"
       - "studio/build-all-courses.mjs"
@@ -30,7 +31,7 @@ jobs:
     timeout-minutes: 120
     env:
       ACADEMY_AUTHORING_PROVIDER: openai
-      ACADEMY_EXPECTED_PUBLISHED_COURSES: 60
+      ACADEMY_EXPECTED_REVIEW_COURSES: 60
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -44,9 +45,13 @@ jobs:
         with:
           node-version: "22"
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Normalize governed course policy before audit
+        run: npm run apply:course-policy
 
       - name: Audit every course from its own manifest
         id: audit
@@ -67,18 +72,18 @@ jobs:
           test -n "$OPENAI_API_KEY" || {
             gh issue create \
               --title "Academy AI authoring credential required" \
-              --body "Approved courses require AI authoring, but OPENAI_API_KEY is not configured for the continuous Academy audit workflow. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+              --body "Owner-review-eligible courses require AI authoring, but OPENAI_API_KEY is not configured for the continuous Academy audit workflow. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
             exit 1
           }
 
-      - name: AI author only missing or stale approved courses
+      - name: AI author only missing or stale owner review courses
         if: steps.audit.outputs.authoring_required == 'true'
         run: |
           node <<'NODE'
           const fs = require('node:fs');
           const { spawnSync } = require('node:child_process');
           const report = JSON.parse(fs.readFileSync('catalog/continuous-course-audit.json', 'utf8'));
-          const targets = report.courses.filter((course) => course.approved && (course.authoringMissing || course.findings.includes('stale-ai-course-package')));
+          const targets = report.courses.filter((course) => course.ownerReviewEligible && (course.authoringMissing || course.findings.includes('stale-ai-course-package')));
           for (const [index, course] of targets.entries()) {
             console.log(`[Academy Studio] AI authoring ${index + 1}/${targets.length}: ${course.courseId}`);
             const result = spawnSync(process.execPath, ['studio/author-course-ai.mjs', '--course', course.courseId, '--provider', process.env.ACADEMY_AUTHORING_PROVIDER, '--force'], {
@@ -134,7 +139,7 @@ jobs:
             --base main \
             --head "${{ steps.branch.outputs.name }}" \
             --title "Academy AI course build and catalog alignment" \
-            --body "Automated governed course build generated from each course's own manifest. The workflow independently checked the full 60-course learner catalog, learner lesson completeness, assessments, completion rules, certificate eligibility, owner-review bypass metadata, official logo, and full legal branding. Owner review is required before merge and website publication. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            --body "Automated governed course build generated from each course's own manifest. The workflow independently checked the full 60-course owner-review learner catalog, learner lesson completeness, assessments, completion rules, certificate eligibility, owner-review bypass metadata, official logo, and full legal branding. Production publication remains separately approval-controlled. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
 
       - name: Publish audit evidence
         uses: actions/upload-artifact@v4
