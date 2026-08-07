@@ -5,7 +5,7 @@
   "status": "not-release-ready",
   "recordedAt": "2026-08-07T00:00:00Z",
   "automatedRepositoryValidationExecutedInCurrentSession": false,
-  "automatedValidationLimitation": "The current execution environment could not resolve github.com for a local clone, so repository scripts and the complete test suite were not executed in this session. GitHub-hosted validation remains required.",
+  "automatedValidationLimitation": "The current execution environment does not include an authenticated GitHub CLI, so complete GitHub Actions log analysis and the full local test suite were not executed in this session. GitHub-hosted validation remains required.",
   "structuralObservations": {
     "declaredDuration": "35 hours",
     "instructionalHours": 35,
@@ -13,10 +13,11 @@
     "ecoDomainsMapped": 3,
     "ecoTasksMapped": 26,
     "authoritativeSourceArtifacts": 1,
-    "videoScriptsDrafted": 2,
+    "videoScriptsDrafted": 4,
     "assessmentQuestionsDrafted": 30,
     "assessmentTarget": 180,
-    "duplicateCourseManifestRemoved": true
+    "duplicateCourseManifestRemoved": true,
+    "ownerFinalReviewGateImplemented": true
   },
   "checks": [
     {
@@ -47,13 +48,13 @@
       "id": "QA-005",
       "check": "Cinematic video production system exists",
       "status": "pass-structural",
-      "evidence": "Video production bible, visual brief, and the first two lesson scripts exist."
+      "evidence": "Video production bible, visual brief, and the first four detailed lesson scripts exist."
     },
     {
       "id": "QA-006",
       "check": "All 35 lesson scripts are complete",
       "status": "fail-incomplete",
-      "evidence": "Two of 35 production scripts are drafted."
+      "evidence": "Four of 35 production scripts are drafted."
     },
     {
       "id": "QA-007",
@@ -89,7 +90,13 @@
       "id": "QA-012",
       "check": "Full repository tests, Studio validation, FINAL package, catalog, and LCMS dry run pass",
       "status": "not-executed",
-      "evidence": "Requires GitHub-hosted or supported local execution."
+      "evidence": "GitHub-hosted workflows have reported failures, but detailed log inspection is blocked because the current environment does not provide an authenticated GitHub CLI."
+    },
+    {
+      "id": "QA-013",
+      "check": "Owner final review displays only the exact staged paid learner experience",
+      "status": "pass-structural",
+      "evidence": "The admin gate excludes scripts and prototypes, requires all reviews and media/runtime quality gates, loads the configured staged learner route, and records approval without triggering publication."
     }
   ],
   "releaseDecision": {
