@@ -5,6 +5,23 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 * * * *"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "courses/**/course-manifest.json"
+      - "studio/apply-course-policy.mjs"
+      - "studio/audit-course-build-readiness.mjs"
+      - "studio/author-course-ai.mjs"
+      - "studio/author-courses-parallel.mjs"
+      - "studio/bootstrap-protected-database.mjs"
+      - "studio/build-all-courses.mjs"
+      - "studio/generate-catalog.mjs"
+      - "studio/validate-learner-catalog.mjs"
+      - "package.json"
+      - "prisma/schema.prisma"
+      - ".github/workflows/continuous-course-ai-audit.yml"
+      - ".gitignore"
   push:
     branches:
       - main
@@ -35,6 +52,7 @@ concurrency:
 
 jobs:
   audit-author-build:
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'agent/continue-course-buildout')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -44,7 +62,7 @@ jobs:
       ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
       ACADEMY_EXPECTED_REVIEW_COURSES: 60
       ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
-      ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: ${{ github.ref == 'refs/heads/agent/continue-course-buildout' && 'true' || 'false' }}
+      ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: ${{ (github.ref == 'refs/heads/agent/continue-course-buildout' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'agent/continue-course-buildout')) && 'true' || 'false' }}
       STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
       STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -60,7 +78,7 @@ jobs:
         shell: bash
         run: |
           TITLE="Academy protected learner build credentials required"
-          BODY="Protected Academy owner-review build execution started. Credential verification is pending. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring target: 6 workers across 60 owner-review courses."
+          BODY="Protected Academy owner-review build execution started. Credential verification is pending. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.head_ref || github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring target: 6 workers across 60 owner-review courses."
           ISSUE_NUMBER="$(gh issue list --state open --search \"$TITLE in:title\" --json number --jq '.[0].number // empty')"
           if [ -n "$ISSUE_NUMBER" ]; then
             gh issue edit "$ISSUE_NUMBER" --body "$BODY"
@@ -139,7 +157,7 @@ jobs:
           fi
 
       - name: Bootstrap protected Academy PostgreSQL schema
-        if: steps.audit.outputs.authoring_required == 'true' && github.ref == 'refs/heads/agent/continue-course-buildout'
+        if: steps.audit.outputs.authoring_required == 'true' && env.ACADEMY_DATABASE_BOOTSTRAP_ALLOWED == 'true'
         run: npm run db:bootstrap:protected
 
       - name: Validate protected database schema
