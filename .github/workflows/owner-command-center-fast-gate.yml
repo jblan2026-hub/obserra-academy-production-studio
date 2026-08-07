@@ -37,11 +37,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
       - name: Install Studio dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Install Command Center dependencies
         working-directory: owner-command-center
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
       - name: Validate complete Command Center syntax
         working-directory: owner-command-center
         run: |
@@ -53,6 +55,7 @@ jobs:
           node --check electron/academy-preview.cjs
           node --check electron/owner-ai.cjs
           node --check electron/discovery.cjs
+          node --check electron/site-discovery.cjs
           node --check electron/threat-policy.cjs
           node --check electron/vulnerability-scan.cjs
           node --check electron/security-enforcement.cjs
@@ -62,6 +65,7 @@ jobs:
           node --check src/app.js
           node --check src/security-dashboard.js
           node --check src/remediation-dashboard.js
+          node --check src/refresh-15s.js
       - name: Run Command Center governance and packaging verification
         working-directory: owner-command-center
         run: npm run verify
