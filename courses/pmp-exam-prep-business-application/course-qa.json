@@ -12,10 +12,11 @@
     "lessonCount": 35,
     "ecoDomainsMapped": 3,
     "ecoTasksMapped": 26,
-    "authoritativeSourceArtifacts": 2,
+    "authoritativeSourceArtifacts": 1,
     "videoScriptsDrafted": 2,
     "assessmentQuestionsDrafted": 30,
-    "assessmentTarget": 180
+    "assessmentTarget": 180,
+    "duplicateCourseManifestRemoved": true
   },
   "checks": [
     {
@@ -34,7 +35,7 @@
       "id": "QA-003",
       "check": "Primary-source and PMBOK knowledge records exist",
       "status": "pass-structural",
-      "evidence": "Authoritative source, source-register, crosswalk, traceability, and knowledge-spine records are present."
+      "evidence": "Authoritative source, crosswalk, traceability, and knowledge-spine records are present."
     },
     {
       "id": "QA-004",
