@@ -17,6 +17,7 @@ on:
       - "studio/generate-catalog.mjs"
       - "studio/validate-learner-catalog.mjs"
       - ".github/workflows/continuous-course-ai-audit.yml"
+      - ".gitignore"
 
 permissions:
   contents: write
@@ -35,6 +36,7 @@ jobs:
       ACADEMY_AUTHORING_PROVIDER: openai
       ACADEMY_EXPECTED_REVIEW_COURSES: 60
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout Studio
@@ -68,17 +70,20 @@ jobs:
             --body "The continuous Academy audit found ${{ steps.audit.outputs.blocking_findings }} blocking manifest alignment finding(s). Automatic authoring and build were stopped. Review catalog/continuous-course-audit.json from workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
           exit 1
 
-      - name: Require AI authoring credential when authoring is needed
+      - name: Require protected authoring and LCMS credentials
         if: steps.audit.outputs.authoring_required == 'true'
         run: |
-          test -n "$OPENAI_API_KEY" || {
+          MISSING=""
+          test -n "$OPENAI_API_KEY" || MISSING="OPENAI_API_KEY"
+          test -n "$DATABASE_URL" || MISSING="${MISSING:+$MISSING, }ACADEMY_DATABASE_URL"
+          if [ -n "$MISSING" ]; then
             gh issue create \
-              --title "Academy AI authoring credential required" \
-              --body "Owner-review-eligible courses require AI authoring, but OPENAI_API_KEY is not configured for the continuous Academy audit workflow. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+              --title "Academy protected learner build credentials required" \
+              --body "The 60-course owner-review learner build requires protected credentials that are not configured: $MISSING. Protected learner content will not be generated or written to the public repository. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
             exit 1
-          }
+          fi
 
-      - name: AI author only missing or stale owner review courses
+      - name: AI author missing or stale owner review courses in ephemeral workspace
         if: steps.audit.outputs.authoring_required == 'true'
         run: |
           node <<'NODE'
@@ -101,35 +106,52 @@ jobs:
           npm run build:all
           npm run catalog
 
-      - name: Validate learner catalog completeness
+      - name: Validate protected learner catalog completeness
         run: npm run validate:learner-catalog
 
-      - name: Validate every manifest-defined course independently
+      - name: Validate manifest-defined courses and protected LCMS load plan
         run: |
           npm run audit:courses
           npm run validate
           npm run load:courses:check
           npm test
 
-      - name: Detect generated changes
+      - name: Load protected learner content into LCMS
+        if: steps.audit.outputs.authoring_required == 'true'
+        run: npm run load:courses
+
+      - name: Verify protected learner content remains untracked
+        run: |
+          if git ls-files --error-unmatch catalog/academy-learner-course-catalog.json >/dev/null 2>&1; then
+            echo "Protected learner catalog must not be tracked in the public repository."
+            exit 1
+          fi
+          if git ls-files 'courses/*/generated/*' | grep -q .; then
+            echo "Protected generated learner packages must not be tracked in the public repository."
+            exit 1
+          fi
+
+      - name: Detect safe public generated changes
         id: changes
         run: |
-          if git diff --quiet; then
+          git add -A courses catalog .gitignore
+          git reset -- catalog/academy-learner-course-catalog.json catalog/learner-catalog-readiness.json 2>/dev/null || true
+          git reset -- 'courses/*/generated/*' 2>/dev/null || true
+          if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Commit governed learner build to controlled branch
+      - name: Commit safe public course metadata to controlled branch
         if: steps.changes.outputs.changed == 'true' && github.ref == 'refs/heads/agent/continue-course-buildout'
         run: |
           git config user.name "Obserra Academy AI Builder"
           git config user.email "academy-ai-builder@users.noreply.github.com"
-          git add courses catalog
-          git commit -m "Generate governed learner course packages"
+          git commit -m "Regenerate governed Academy course metadata"
           git push origin HEAD:agent/continue-course-buildout
 
-      - name: Create governed course build branch
+      - name: Create governed public metadata branch
         if: steps.changes.outputs.changed == 'true' && github.ref == 'refs/heads/main'
         id: branch
         run: |
@@ -138,28 +160,25 @@ jobs:
           git config user.name "Obserra Academy AI Builder"
           git config user.email "academy-ai-builder@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add courses catalog
-          git commit -m "Regenerate manifest aligned Academy courses"
+          git commit -m "Regenerate governed Academy course metadata"
           git push origin "$BRANCH"
 
-      - name: Open draft owner review pull request
+      - name: Open draft owner review pull request for safe public metadata
         if: steps.changes.outputs.changed == 'true' && github.ref == 'refs/heads/main'
         run: |
           gh pr create \
             --draft \
             --base main \
             --head "${{ steps.branch.outputs.name }}" \
-            --title "Academy AI course build and catalog alignment" \
-            --body "Automated governed course build generated from each course's own manifest. The workflow independently checked the full 60-course owner-review learner catalog, learner lesson completeness, assessments, completion rules, certificate eligibility, owner-review bypass metadata, official logo, and full legal branding. Production publication remains separately approval-controlled. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            --title "Academy governed course metadata alignment" \
+            --body "Automated governed build validated the full 60-course owner-review learner catalog in a protected ephemeral workspace and loaded protected learner content to the configured LCMS. This PR contains only safe public manifests, metadata, and evidence. Production publication remains separately approval-controlled. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
 
-      - name: Publish audit evidence
+      - name: Publish non-sensitive audit evidence
         uses: actions/upload-artifact@v4
         with:
           name: continuous-academy-course-audit-${{ github.run_id }}
           path: |
             catalog/continuous-course-audit.json
-            catalog/learner-catalog-readiness.json
             catalog/bulk-build-report.json
             catalog/academy-course-catalog.json
-            catalog/academy-learner-course-catalog.json
           retention-days: 180
