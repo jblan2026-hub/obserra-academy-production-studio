@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +27,10 @@ if (!fs.existsSync(manifestPath)) {
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const proprietaryNotice = "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.";
 const legalName = "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC";
+
+function stableHash(value) {
+  return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
 
 function authoringPrompt() {
   const course = manifest.course;
@@ -154,11 +159,12 @@ fs.writeFileSync(path.join(outputDir, "authoring-prompt.txt"), `${proprietaryNot
 const raw = provider === "anthropic" ? await callAnthropic(prompt) : await callOpenAI(prompt);
 const authored = parseJson(raw);
 const envelope = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   courseId,
   provider,
   model: provider === "anthropic" ? process.env.ANTHROPIC_AUTHORING_MODEL || "claude-sonnet-4-5" : process.env.OPENAI_AUTHORING_MODEL || "gpt-5",
   generatedAt: new Date().toISOString(),
+  sourceManifestHash: stableHash(manifest),
   reviewStatus: "draft-ai-generated",
   legalName,
   proprietaryNotice,
