@@ -74,18 +74,25 @@ export async function providerHttpRequest({
       (response) => {
         const chunks = [];
         let receivedBytes = 0;
+        let terminalResponseError = null;
 
         response.on("data", (chunk) => {
+          if (settled || terminalResponseError) return;
           const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
           receivedBytes += buffer.length;
           if (receivedBytes > responseLimit) {
-            response.destroy(
-              new ProviderTransportError(
-                provider,
-                "provider_response_too_large",
-                `${provider} authoring response exceeded ${responseLimit} bytes.`,
-              ),
+            terminalResponseError = new ProviderTransportError(
+              provider,
+              "provider_response_too_large",
+              `${provider} authoring response exceeded ${responseLimit} bytes.`,
             );
+
+            // Settle with the policy error before destroying the stream. Newer Node
+            // runtimes can emit `aborted` before the destroy error, which previously
+            // misclassified an enforced size limit as an upstream connection abort.
+            finish(reject, terminalResponseError);
+            response.destroy();
+            request.destroy();
             return;
           }
           chunks.push(buffer);
@@ -94,7 +101,7 @@ export async function providerHttpRequest({
         response.on("aborted", () => {
           finish(
             reject,
-            new ProviderTransportError(
+            terminalResponseError ?? new ProviderTransportError(
               provider,
               "provider_connection_aborted",
               `${provider} closed the authoring response before completion.`,
@@ -105,18 +112,24 @@ export async function providerHttpRequest({
         response.on("error", (error) => {
           finish(
             reject,
-            error instanceof ProviderTransportError
-              ? error
-              : new ProviderTransportError(
-                  provider,
-                  "provider_response_failure",
-                  `${provider} authoring response failed before completion.`,
-                  error,
-                ),
+            terminalResponseError ?? (
+              error instanceof ProviderTransportError
+                ? error
+                : new ProviderTransportError(
+                    provider,
+                    "provider_response_failure",
+                    `${provider} authoring response failed before completion.`,
+                    error,
+                  )
+            ),
           );
         });
 
         response.on("end", () => {
+          if (terminalResponseError) {
+            finish(reject, terminalResponseError);
+            return;
+          }
           const responseBody = Buffer.concat(chunks).toString("utf8");
           const status = Number(response.statusCode ?? 0);
           const normalizedHeaders = Object.fromEntries(
