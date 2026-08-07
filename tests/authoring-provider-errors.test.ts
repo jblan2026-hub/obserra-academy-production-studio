@@ -25,6 +25,24 @@ test("OpenAI insufficient quota is non-retryable", () => {
   assert.equal(result.exitCode, AUTHORING_EXIT_CODES.PROVIDER_QUOTA_EXHAUSTED);
 });
 
+test("OpenAI exhausted prepaid credit balance is non-retryable", () => {
+  const result = classifyProviderHttpFailure({
+    provider: "openai",
+    status: 429,
+    body: JSON.stringify({
+      error: {
+        message: "You have no credits remaining. Add credits to continue using the API.",
+        type: "invalid_request_error",
+        code: "credit_balance_exhausted",
+      },
+    }),
+  });
+
+  assert.equal(result.category, "provider_quota_exhausted");
+  assert.equal(result.retryable, false);
+  assert.equal(result.exitCode, AUTHORING_EXIT_CODES.PROVIDER_QUOTA_EXHAUSTED);
+});
+
 test("transient 429 rate limit remains retryable", () => {
   const result = classifyProviderHttpFailure({
     provider: "openai",
@@ -60,6 +78,18 @@ test("invalid provider requests stop retrying", () => {
     provider: "openai",
     status: 400,
     body: JSON.stringify({ error: { message: "Unsupported request", code: "invalid_request_error" } }),
+  });
+
+  assert.equal(result.category, "provider_request_invalid");
+  assert.equal(result.retryable, false);
+  assert.equal(result.exitCode, AUTHORING_EXIT_CODES.PROVIDER_REQUEST_INVALID);
+});
+
+test("unexpected provider redirects stop retrying", () => {
+  const result = classifyProviderHttpFailure({
+    provider: "openai",
+    status: 307,
+    body: "temporary redirect",
   });
 
   assert.equal(result.category, "provider_request_invalid");
