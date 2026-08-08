@@ -36,7 +36,7 @@ permissions:
 
 concurrency:
   group: academy-command-center-production-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   OBSERRA_PORTFOLIO_WORKER_COUNT: 36
