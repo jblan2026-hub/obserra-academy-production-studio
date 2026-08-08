@@ -27,6 +27,9 @@ if (packageLock?.lockfileVersion !== 3) throw new Error("Command Center dependen
 if (packageLock?.name !== packageJson.name || packageLock?.version !== packageJson.version) {
   throw new Error("Command Center package-lock identity does not match package.json");
 }
+if (!Object.prototype.hasOwnProperty.call(packageLock?.packages ?? {}, "")) {
+  throw new Error("Command Center package-lock must retain npm's empty-string root package key");
+}
 
 const mediaScriptPath = path.join(root, "scripts", "build-removable-media-package.ps1");
 const mediaScript = fs.readFileSync(mediaScriptPath, "utf8");
@@ -68,6 +71,9 @@ for (const requiredTerm of [
   "Obserra-Commercial-Course-Production-Standard.json",
   "Obserra-Command-Center-Dependency-Lock.json",
   "package-lock.json",
+  "Read-JsonHashTable",
+  "ConvertFrom-Json -AsHashTable",
+  '$packageLock["packages"].Count',
   "dependencyLockSha256",
   "dependencyLockPackageCount",
   "dependencyLockVerified",
@@ -101,5 +107,5 @@ if (!mediaScript.includes("ownerEndpointInstallationMayProceedAfterHashVerificat
 }
 
 console.log(
-  `[Owner Command Center] Installer configuration verified: controlled post-install launch, deterministic npm lock evidence, one-click per-user NSIS, portable target, persistent bootstrap and Studio root, post-install health evidence, hash verification, explicit code-signing state, and ${requiredConnectorIds.length} governed connectors.`,
+  `[Owner Command Center] Installer configuration verified: Windows-compatible npm lock parsing, controlled post-install launch, deterministic dependency evidence, one-click per-user NSIS, portable target, persistent bootstrap and Studio root, post-install health evidence, hash verification, explicit code-signing state, and ${requiredConnectorIds.length} governed connectors.`,
 );
