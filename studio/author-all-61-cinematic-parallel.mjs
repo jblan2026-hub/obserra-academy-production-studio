@@ -7,9 +7,9 @@ import { classificationFromAuthoringExit } from "./authoring-provider-errors.mjs
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
-const concurrency = Math.max(1, Math.min(36, Number(process.env.ACADEMY_AUTHORING_CONCURRENCY || process.env.ACADEMY_PAID_AUTHORING_CONCURRENCY || 4)));
-const maxAttempts = Math.max(1, Math.min(4, Number(process.env.ACADEMY_AUTHORING_MAX_ATTEMPTS || 3)));
-const timeoutMs = Math.max(5 * 60_000, Math.min(45 * 60_000, Number(process.env.ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS || 30 * 60_000)));
+const concurrency = Math.max(1, Math.min(8, Number(process.env.ACADEMY_AUTHORING_CONCURRENCY || 1)));
+const maxAttempts = Math.max(1, Math.min(4, Number(process.env.ACADEMY_AUTHORING_MAX_ATTEMPTS || 2)));
+const timeoutMs = Math.max(5 * 60_000, Math.min(90 * 60_000, Number(process.env.ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS || 60 * 60_000)));
 
 const courses = fs.readdirSync(coursesRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
@@ -20,11 +20,9 @@ const courses = fs.readdirSync(coursesRoot, { withFileTypes: true })
     return !["retired", "archived"].includes(String(manifest.release?.status || "draft").toLowerCase());
   })
   .sort();
-
 if (courses.length !== 61) throw new Error(`Cinematic completion lane requires exactly 61 active governed courses; discovered ${courses.length}.`);
 
 function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
-
 function runCourse(courseId, attempt) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [
@@ -35,7 +33,7 @@ function runCourse(courseId, attempt) {
     let settled = false;
     const timer = setTimeout(() => {
       if (child.exitCode === null) child.kill("SIGTERM");
-      finish({ courseId, attempt, ok: false, code: null, timedOut: true, error: `authoring timed out after ${timeoutMs} ms` });
+      finish({ courseId, attempt, ok: false, code: null, timedOut: true, error: `local authoring timed out after ${timeoutMs} ms` });
     }, timeoutMs);
     function finish(result) {
       if (settled) return;
@@ -50,17 +48,16 @@ function runCourse(courseId, attempt) {
     }));
   });
 }
-
 async function runWithRetry(courseId) {
   let last = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    console.log(`[Academy Studio] Paid authoring slot starting ${courseId}, attempt ${attempt}/${maxAttempts}.`);
+    console.log(`[Academy Studio] Zero-cost local authoring starting ${courseId}, attempt ${attempt}/${maxAttempts}.`);
     last = await runCourse(courseId, attempt);
     if (last.ok) return { ...last, classification: { category: "success", retryable: false } };
     const classification = classificationFromAuthoringExit({ exitCode: last.code, timedOut: last.timedOut, signal: last.signal });
     last = { ...last, classification };
-    if (!classification.retryable) return last;
-    if (attempt < maxAttempts) await delay(5000 * (2 ** (attempt - 1)));
+    if (attempt < maxAttempts && classification.retryable !== false) await delay(4000 * (2 ** (attempt - 1)));
+    else if (classification.retryable === false) return last;
   }
   return last;
 }
@@ -72,26 +69,27 @@ async function worker(workerId) {
   while (queue.length > 0 && !globalHalt) {
     const courseId = queue.shift();
     if (!courseId) return;
-    console.log(`[Academy Studio] Paid authoring slot ${workerId}/${concurrency} assigned ${courseId}; 36 logical course workers remain available for no-cost work.`);
+    console.log(`[Academy Studio] Zero-cost local authoring worker ${workerId}/${concurrency} assigned ${courseId}.`);
     const result = await runWithRetry(courseId);
     results.push({ workerId, ...result });
     if (!result.ok && result.classification?.retryable === false) {
       globalHalt = { courseId, category: result.classification.category, exitCode: result.classification.exitCode };
-      console.error(`[Academy Studio] Paid authoring circuit opened after ${globalHalt.category}; remaining courses will not consume model credits.`);
+      console.error(`[Academy Studio] Local authoring circuit opened after ${globalHalt.category}; no commercial model fallback is permitted.`);
     }
   }
 }
-
 await Promise.all(Array.from({ length: Math.min(concurrency, courses.length) }, (_, index) => worker(index + 1)));
 const failed = results.filter((result) => !result.ok);
 const summary = {
-  schemaVersion: "1.2",
+  schemaVersion: "2.0",
   generatedAt: new Date().toISOString(),
-  objective: "complete-all-61-academy-courses-only-credit-last",
+  objective: "complete-all-61-academy-courses-local-ollama-zero-api-cost",
   portfolioWorkerCount: 36,
   applicationWorkerAllocation: 0,
   logicalCourseWorkers: 36,
-  paidAuthoringConcurrency: concurrency,
+  localAuthoringConcurrency: concurrency,
+  estimatedApiCostUsd: 0,
+  externalPaidApiAllowed: false,
   discoveredCourses: courses.length,
   attempted: results.length,
   completed: results.filter((result) => result.ok).length,
@@ -103,6 +101,6 @@ const summary = {
 };
 fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
 fs.writeFileSync(path.join(root, "catalog", "academy-61-cinematic-authoring-summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
-console.log(`[Academy Studio] Authoring ready for ${summary.completed}/61 courses with paid concurrency capped at ${concurrency}.`);
+console.log(`[Academy Studio] Local zero-cost authoring ready for ${summary.completed}/61 courses at concurrency ${concurrency}.`);
 if (globalHalt?.exitCode) process.exit(globalHalt.exitCode);
 if (failed.length > 0 || summary.completed !== 61) process.exit(2);
