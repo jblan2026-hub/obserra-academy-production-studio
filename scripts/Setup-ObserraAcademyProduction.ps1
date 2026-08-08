@@ -19,7 +19,7 @@ function Resolve-RepositoryRoot {
 
     $candidate = Split-Path -Parent $PSScriptRoot
     if (-not (Test-Path -LiteralPath (Join-Path $candidate 'courses'))) {
-        throw "Could not locate repository root from script path: $candidate"
+        throw ('Could not locate repository root from script path: {0}' -f $candidate)
     }
     return (Resolve-Path -LiteralPath $candidate).Path
 }
@@ -64,7 +64,7 @@ function Invoke-RobocopyMove {
     & robocopy.exe $Source $Destination /E /MOVE /COPY:DAT /DCOPY:DAT /R:2 /W:1 /NFL /NDL /NP /NJH /NJS
     $code = $LASTEXITCODE
     if ($code -gt 7) {
-        throw "Robocopy move failed with exit code $code: $Source -> $Destination"
+        throw ('Robocopy move failed with exit code {0}: {1} -> {2}' -f $code, $Source, $Destination)
     }
 }
 
@@ -76,7 +76,8 @@ function Write-JsonFile {
 
     Ensure-Directory -Path (Split-Path -Parent $Path)
     $json = $Value | ConvertTo-Json -Depth 10
-    [IO.File]::WriteAllText($Path, $json + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [IO.File]::WriteAllText($Path, $json + [Environment]::NewLine, $utf8NoBom)
 }
 
 $repoRoot = Resolve-RepositoryRoot -ExplicitRoot $RepositoryRoot
@@ -88,7 +89,7 @@ $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 
 if ($Rollback) {
     if (-not (Test-Path -LiteralPath $mappingFile)) {
-        throw "No local-storage mapping manifest exists at $mappingFile"
+        throw ('No local-storage mapping manifest exists at {0}' -f $mappingFile)
     }
 
     $state = Get-Content -LiteralPath $mappingFile -Raw | ConvertFrom-Json
@@ -103,7 +104,7 @@ if ($Rollback) {
                     Remove-Item -LiteralPath $repoGenerated -Force
                 }
             } elseif (Get-DirectoryHasContent -Path $repoGenerated) {
-                throw "Rollback stopped because repository path contains non-junction data: $repoGenerated"
+                throw ('Rollback stopped because repository path contains non-junction data: {0}' -f $repoGenerated)
             } else {
                 Remove-Item -LiteralPath $repoGenerated -Force
             }
@@ -122,8 +123,8 @@ if ($Rollback) {
         repositoryRoot = $repoRoot
         priorMappingFile = $mappingFile
     }
-    Write-JsonFile -Path (Join-Path $mappingRoot "rollback-$timestamp.json") -Value $rollbackRecord
-    Write-Host "Rollback completed. Generated course data is back under $repoRoot\courses." -ForegroundColor Green
+    Write-JsonFile -Path (Join-Path $mappingRoot ('rollback-{0}.json' -f $timestamp)) -Value $rollbackRecord
+    Write-Host ('Rollback completed. Generated course data is back under {0}\courses.' -f $repoRoot) -ForegroundColor Green
     exit 0
 }
 
@@ -145,13 +146,13 @@ foreach ($directory in $requiredDirectories) {
     }
 }
 
-$courseManifests = Get-ChildItem -LiteralPath $coursesRoot -Directory | ForEach-Object {
+$courseManifests = @(Get-ChildItem -LiteralPath $coursesRoot -Directory | ForEach-Object {
     $manifest = Join-Path $_.FullName 'course-manifest.json'
     if (Test-Path -LiteralPath $manifest) { $manifest }
-} | Sort-Object
+} | Sort-Object)
 
 if ($courseManifests.Count -ne 61) {
-    throw "Expected exactly 61 Academy course manifests, found $($courseManifests.Count). No mapping changes were made after this validation point."
+    throw ('Expected exactly 61 Academy course manifests, found {0}. No mapping changes were made after this validation point.' -f $courseManifests.Count)
 }
 
 $mappings = New-Object System.Collections.Generic.List[object]
@@ -176,22 +177,23 @@ foreach ($manifestPath in $courseManifests) {
             })
             continue
         }
-        throw "Course $courseId already uses a reparse point to a different target: $existingTarget"
+        throw ('Course {0} already uses a reparse point to a different target: {1}' -f $courseId, $existingTarget)
     }
 
     $sourceHasContent = Get-DirectoryHasContent -Path $repoGenerated
     $targetHasContent = Get-DirectoryHasContent -Path $localGenerated
     if ($sourceHasContent -and $targetHasContent -and -not $ForceMerge) {
-        throw "Both repository and local production storage contain data for $courseId. Re-run with -ForceMerge only after confirming the two copies may be merged safely."
+        throw ('Both repository and local production storage contain data for {0}. Re-run with -ForceMerge only after confirming the two copies may be merged safely.' -f $courseId)
     }
 
     if ($sourceHasContent) {
-        $backupPath = Join-Path (Join-Path (Join-Path $productionRootFull 'backups') "pre-map-$timestamp") $courseId
-        if ($PSCmdlet.ShouldProcess($repoGenerated, "Move generated data to $localGenerated")) {
+        $backupPath = Join-Path (Join-Path (Join-Path $productionRootFull 'backups') ('pre-map-{0}' -f $timestamp)) $courseId
+        if ($PSCmdlet.ShouldProcess($repoGenerated, ('Move generated data to {0}' -f $localGenerated))) {
             Ensure-Directory -Path $backupPath
             & robocopy.exe $repoGenerated $backupPath /E /COPY:DAT /DCOPY:DAT /R:2 /W:1 /NFL /NDL /NP /NJH /NJS
-            if ($LASTEXITCODE -gt 7) {
-                throw "Safety backup failed for $courseId with robocopy exit code $LASTEXITCODE"
+            $backupExitCode = $LASTEXITCODE
+            if ($backupExitCode -gt 7) {
+                throw ('Safety backup failed for {0} with robocopy exit code {1}' -f $courseId, $backupExitCode)
             }
             Invoke-RobocopyMove -Source $repoGenerated -Destination $localGenerated
         }
@@ -199,12 +201,12 @@ foreach ($manifestPath in $courseManifests) {
 
     if (Test-Path -LiteralPath $repoGenerated) {
         if (Get-DirectoryHasContent -Path $repoGenerated) {
-            throw "Repository generated directory is still non-empty after migration: $repoGenerated"
+            throw ('Repository generated directory is still non-empty after migration: {0}' -f $repoGenerated)
         }
         Remove-Item -LiteralPath $repoGenerated -Force
     }
 
-    if ($PSCmdlet.ShouldProcess($repoGenerated, "Create junction to $localGenerated")) {
+    if ($PSCmdlet.ShouldProcess($repoGenerated, ('Create junction to {0}' -f $localGenerated))) {
         New-Item -ItemType Junction -Path $repoGenerated -Target $localGenerated | Out-Null
     }
 
@@ -233,54 +235,61 @@ $state = [ordered]@{
 Write-JsonFile -Path $mappingFile -Value $state
 
 $envFile = Join-Path $productionRootFull 'academy-local-paths.ps1'
+$checkpointRoot = Join-Path $productionRootFull 'checkpoints'
+$mediaRoot = Join-Path $productionRootFull 'media'
+$catalogRootLocal = Join-Path $productionRootFull 'catalog'
+$logsRoot = Join-Path $productionRootFull 'logs'
+$cacheRoot = Join-Path $productionRootFull 'cache'
+$finalRoot = Join-Path $productionRootFull 'final'
 $envContent = @"
 `$env:OBSERRA_ACADEMY_PRODUCTION_ROOT = '$productionRootFull'
-`$env:ACADEMY_LOCAL_CHECKPOINT_DIR = '$(Join-Path $productionRootFull 'checkpoints')'
-`$env:ACADEMY_LOCAL_MEDIA_ROOT = '$(Join-Path $productionRootFull 'media')'
-`$env:ACADEMY_LOCAL_CATALOG_ROOT = '$(Join-Path $productionRootFull 'catalog')'
-`$env:ACADEMY_LOCAL_LOG_ROOT = '$(Join-Path $productionRootFull 'logs')'
-`$env:ACADEMY_LOCAL_CACHE_ROOT = '$(Join-Path $productionRootFull 'cache')'
-`$env:ACADEMY_LOCAL_FINAL_ROOT = '$(Join-Path $productionRootFull 'final')'
+`$env:ACADEMY_LOCAL_CHECKPOINT_DIR = '$checkpointRoot'
+`$env:ACADEMY_LOCAL_MEDIA_ROOT = '$mediaRoot'
+`$env:ACADEMY_LOCAL_CATALOG_ROOT = '$catalogRootLocal'
+`$env:ACADEMY_LOCAL_LOG_ROOT = '$logsRoot'
+`$env:ACADEMY_LOCAL_CACHE_ROOT = '$cacheRoot'
+`$env:ACADEMY_LOCAL_FINAL_ROOT = '$finalRoot'
 "@
-[IO.File]::WriteAllText($envFile, $envContent.TrimStart() + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[IO.File]::WriteAllText($envFile, $envContent.TrimStart() + [Environment]::NewLine, $utf8NoBom)
 
 [Environment]::SetEnvironmentVariable('OBSERRA_ACADEMY_PRODUCTION_ROOT', $productionRootFull, 'User')
-[Environment]::SetEnvironmentVariable('ACADEMY_LOCAL_CHECKPOINT_DIR', (Join-Path $productionRootFull 'checkpoints'), 'User')
+[Environment]::SetEnvironmentVariable('ACADEMY_LOCAL_CHECKPOINT_DIR', $checkpointRoot, 'User')
 $env:OBSERRA_ACADEMY_PRODUCTION_ROOT = $productionRootFull
-$env:ACADEMY_LOCAL_CHECKPOINT_DIR = Join-Path $productionRootFull 'checkpoints'
+$env:ACADEMY_LOCAL_CHECKPOINT_DIR = $checkpointRoot
 
 $validationFailures = New-Object System.Collections.Generic.List[string]
 foreach ($mapping in $mappings) {
     $source = [string]$mapping.repositoryGeneratedPath
     $target = [string]$mapping.localGeneratedPath
     if (-not (Test-Path -LiteralPath $source)) {
-        $validationFailures.Add("Missing mapped repository path: $source")
+        $validationFailures.Add(('Missing mapped repository path: {0}' -f $source))
         continue
     }
     $actualTarget = Get-ReparseTarget -Path $source
     if (-not $actualTarget) {
-        $validationFailures.Add("Repository path is not a junction: $source")
+        $validationFailures.Add(('Repository path is not a junction: {0}' -f $source))
         continue
     }
     $normalizedActual = [IO.Path]::GetFullPath([string]$actualTarget).TrimEnd('\')
     $normalizedExpected = [IO.Path]::GetFullPath($target).TrimEnd('\')
     if ($normalizedActual -ine $normalizedExpected) {
-        $validationFailures.Add("Junction target mismatch: $source -> $actualTarget, expected $target")
+        $validationFailures.Add(('Junction target mismatch: {0} -> {1}, expected {2}' -f $source, $actualTarget, $target))
     }
 }
 
 if ($validationFailures.Count -gt 0) {
     $validationFailures | ForEach-Object { Write-Error $_ }
-    throw "Academy local production storage validation failed with $($validationFailures.Count) problem(s)."
+    throw ('Academy local production storage validation failed with {0} problem(s).' -f $validationFailures.Count)
 }
 
 Write-Host ''
 Write-Host 'Obserra Academy local production storage is ready.' -ForegroundColor Green
-Write-Host "Production root : $productionRootFull"
-Write-Host "Courses mapped   : $($mappings.Count)"
-Write-Host "Checkpoints      : $(Join-Path $productionRootFull 'checkpoints')"
-Write-Host "Media            : $(Join-Path $productionRootFull 'media')"
-Write-Host "Final packages   : $(Join-Path $productionRootFull 'final')"
-Write-Host "Mapping manifest : $mappingFile"
+Write-Host ('Production root : {0}' -f $productionRootFull)
+Write-Host ('Courses mapped   : {0}' -f $mappings.Count)
+Write-Host ('Checkpoints      : {0}' -f $checkpointRoot)
+Write-Host ('Media            : {0}' -f $mediaRoot)
+Write-Host ('Final packages   : {0}' -f $finalRoot)
+Write-Host ('Mapping manifest : {0}' -f $mappingFile)
 Write-Host ''
 Write-Host 'The repository continues to use courses\<course>\generated, but those paths now resolve physically to C:\ObserraAcademyProduction.' -ForegroundColor Cyan
