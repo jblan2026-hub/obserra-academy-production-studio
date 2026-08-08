@@ -101,6 +101,12 @@ jobs:
       - name: Merge researched primary sources into governed runtime registry
         run: node studio/merge-61-course-research-registry.mjs
 
+      - name: Restore matching protected course checkpoints
+        run: node studio/restore-academy-hollywood-checkpoints.mjs
+
+      - name: Reject restored packages with stale source context
+        run: node studio/prune-stale-restored-course-packages.mjs
+
       - name: Author and checkpoint all 61 premium course packages
         run: node studio/author-all-61-cinematic-parallel.mjs
 
