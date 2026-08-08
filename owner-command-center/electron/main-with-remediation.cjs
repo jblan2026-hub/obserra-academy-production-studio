@@ -8,11 +8,27 @@ const { createEndpointEnrollmentRuntime } = require("./endpoint-enrollment.cjs")
 
 const store = new Store({ name: "owner-command-center" });
 const remediationQueue = createRemediationQueue(store);
-const endpointRuntime = createEndpointEnrollmentRuntime({
+let endpointRuntime;
+const endpointIpcMain = {
+  handle(name, handler) {
+    if (name !== "endpoint:revoke") {
+      ipcMain.handle(name, handler);
+      return;
+    }
+    ipcMain.handle(name, async (...args) => {
+      const revoked = await handler(...args);
+      store.set("endpoint.enrollment", revoked);
+      store.set("endpoint.revocation", revoked);
+      endpointRuntime.refresh();
+      return revoked;
+    });
+  },
+};
+endpointRuntime = createEndpointEnrollmentRuntime({
   store,
   app,
   safeStorage,
-  ipcMain,
+  ipcMain: endpointIpcMain,
   academyEvidenceProvider: () => getAcademyProductionEvidence(),
 });
 
