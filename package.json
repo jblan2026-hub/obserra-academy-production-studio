@@ -70,12 +70,14 @@
     "verify:500x": "npm run verify:70x && npm run test:500x-workload",
     "verify:1000x": "npm run verify:500x && npm run test:1000x-remediation",
     "verify:2000x": "npm run verify:1000x && npm run test:2000x-resilience",
-    "ci": "npm run verify:academy-worker-contract && npm run verify:2000x && npm run build"
+    "verify:free-backend": "node studio/verify-free-backend.mjs",
+    "ci": "npm run verify:academy-worker-contract && npm run verify:free-backend && npm run verify:2000x && npm run build"
   },
   "prisma": { "seed": "tsx prisma/seed.ts" },
   "dependencies": {
     "@clerk/nextjs": "^6.31.0",
     "@prisma/client": "^6.16.0",
+    "jose": "^6.0.13",
     "next": "^16.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
@@ -83,7 +85,7 @@
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react-dom": "^19.2.0",
     "prisma": "^6.16.0",
     "tsx": "^4.20.0",
     "typescript": "^5.7.0"
