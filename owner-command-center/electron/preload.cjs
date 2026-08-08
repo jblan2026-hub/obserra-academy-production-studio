@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("obserraOwner", {
   getSystemSnapshot: () => ipcRenderer.invoke("system:getSnapshot"),
+  getRuntimeHealth: () => ipcRenderer.invoke("runtime:getHealth"),
   getEndpointSnapshot: () => ipcRenderer.invoke("endpoint:getSnapshot"),
   refreshEndpointSnapshot: () => ipcRenderer.invoke("endpoint:refresh"),
   enrollEndpoint: (payload) => ipcRenderer.invoke("endpoint:enroll", payload),
@@ -10,6 +11,13 @@ contextBridge.exposeInMainWorld("obserraOwner", {
   probeConnector: (id) => ipcRenderer.invoke("connectors:probe", id),
   probeAllConnectors: () => ipcRenderer.invoke("connectors:probeAll"),
   configureConnector: (payload) => ipcRenderer.invoke("connectors:configure", payload),
+  getWebpageSnapshot: () => ipcRenderer.invoke("webpages:getSnapshot"),
+  scanWebpages: () => ipcRenderer.invoke("webpages:scanAll"),
+  scanWebpage: (id) => ipcRenderer.invoke("webpages:scanOne", id),
+  addMonitoredWebpage: (payload) => ipcRenderer.invoke("webpages:add", payload),
+  removeMonitoredWebpage: (id) => ipcRenderer.invoke("webpages:remove", id),
+  getNetworkSnapshot: () => ipcRenderer.invoke("network:getSnapshot"),
+  analyzeNetwork: () => ipcRenderer.invoke("network:analyzeNow"),
   getAcademySnapshot: () => ipcRenderer.invoke("academy:getSnapshot"),
   getAcademyProductionEvidence: () => ipcRenderer.invoke("academy:getProductionEvidence"),
   getAcademyGithubEvidence: () => ipcRenderer.invoke("academy:getGithubEvidence"),
