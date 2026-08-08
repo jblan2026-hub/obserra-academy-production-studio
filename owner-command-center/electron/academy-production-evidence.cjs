@@ -78,6 +78,14 @@ function integerOrNull(value) {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
+function firstInteger(...values) {
+  for (const value of values) {
+    const parsed = integerOrNull(value);
+    if (parsed !== null) return parsed;
+  }
+  return null;
+}
+
 function evidenceStatus(record) {
   if (!record.available) return "missing";
   if (record.error || !record.value) return "invalid";
@@ -98,8 +106,8 @@ function getAcademyProductionEvidence(rootOverride) {
       approvalStatus: { gateAvailable: false, expectedCourses: 0, stagedCourses: 0, blockedCourses: 0, allStagedForOwnerApproval: false, ownerDecisionRequired: false, ownerDecision: null },
       controlPlaneOperational: false,
       productionOperational: false,
-      blockers: ["Academy Studio workspace is unavailable. Set OBSERRA_ACADEMY_STUDIO_ROOT to the verified repository path."],
-      claimBoundary: "No live Academy production state is inferred without an accessible repository and machine-readable evidence."
+      blockers: ["Academy production evidence is unavailable. Configure the GitHub connector or set OBSERRA_ACADEMY_STUDIO_ROOT to a verified repository path."],
+      claimBoundary: "No live Academy production state is inferred without authenticated machine-readable evidence."
     };
   }
 
@@ -109,7 +117,8 @@ function getAcademyProductionEvidence(rootOverride) {
   );
   const inventory = inventoryCourses(root);
   const workerEvidence = records.workers.value || records.legacyWorkers.value || null;
-  const allocation = workerEvidence?.allocation || records.audit.value?.allocation || records.compliance.value?.allocation || records.releaseGate.value?.allocation || null;
+  const audit = records.audit.value || {};
+  const allocation = workerEvidence?.allocation || audit?.allocation || records.compliance.value?.allocation || records.releaseGate.value?.allocation || null;
   const configuredCourseWorkers = integerOrNull(firstDefined(
     allocation?.courseWorkerAllocation,
     workerEvidence?.courseWorkerAllocation
@@ -150,15 +159,30 @@ function getAcademyProductionEvidence(rootOverride) {
   const learnerCatalog = records.learnerCatalog.value || {};
   const releaseGate = records.releaseGate.value || {};
   const ownerDecision = records.ownerDecision.value || null;
+  const evidenceDiscoveredCourses = firstInteger(
+    releaseGate.discoveredCourses,
+    releaseGate.expectedCourses,
+    compliance.discoveredCourses,
+    audit.totals?.ownerReviewEligible,
+    audit.totals?.discovered,
+  ) || 0;
+  const evidenceOwnerReviewCourses = firstInteger(
+    releaseGate.expectedCourses,
+    compliance.discoveredCourses,
+    audit.totals?.ownerReviewEligible,
+  ) || evidenceDiscoveredCourses;
+  const effectiveDiscoveredCourses = inventory.discovered > 0 ? inventory.discovered : evidenceDiscoveredCourses;
+  const effectiveOwnerReviewCourses = inventory.ownerReviewEligible > 0 ? inventory.ownerReviewEligible : evidenceOwnerReviewCourses;
   const complianceStagingReady = integerOrNull(firstDefined(
     compliance.complianceStagingReadyCourses,
+    compliance.readyForComplianceStaging ? compliance.discoveredCourses : 0,
     compliance.ready ? compliance.discoveredCourses : 0
   )) || 0;
   const publicationReady = integerOrNull(firstDefined(
     compliance.publicationReadyCourses,
     compliance.publicationReady ? compliance.discoveredCourses : 0
   )) || 0;
-  const approvalExpectedCourses = integerOrNull(releaseGate.expectedCourses) || inventory.ownerReviewEligible;
+  const approvalExpectedCourses = integerOrNull(releaseGate.expectedCourses) || effectiveOwnerReviewCourses;
   const approvalStagedCourses = integerOrNull(releaseGate.stagedCourses) || 0;
   const approvalBlockedCourses = integerOrNull(releaseGate.blockedCourses);
   const releaseGateHash = records.releaseGate.value ? stableHash(records.releaseGate.value) : null;
@@ -177,9 +201,9 @@ function getAcademyProductionEvidence(rootOverride) {
   if (configuredApplicationWorkers !== 0) blockers.push(`Configured application worker evidence is ${configuredApplicationWorkers ?? "unknown"}; required surge value is 0.`);
   if (workerMode && workerMode !== "interchangeable-course-production") blockers.push(`Worker mode is ${workerMode}; interchangeable-course-production is required.`);
   if (interchangeable !== true) blockers.push("Worker interchangeability has not been proven by execution evidence.");
-  if (complianceStagingReady < inventory.ownerReviewEligible) blockers.push(`${inventory.ownerReviewEligible - complianceStagingReady} owner-review course(s) have not reached compliance staging.`);
+  if (complianceStagingReady < effectiveOwnerReviewCourses) blockers.push(`${effectiveOwnerReviewCourses - complianceStagingReady} owner-review course(s) have not reached compliance staging.`);
   if (media.allJobsSubmitted !== true) blockers.push("All required cinematic media jobs have not been submitted successfully.");
-  if (publicationReady < inventory.ownerReviewEligible) blockers.push(`${inventory.ownerReviewEligible - publicationReady} owner-review course(s) remain blocked from publication.`);
+  if (publicationReady < effectiveOwnerReviewCourses) blockers.push(`${effectiveOwnerReviewCourses - publicationReady} owner-review course(s) remain blocked from publication.`);
   if (inventory.publicationEnabled > publicationReady) blockers.push("One or more manifests enable publication without matching publication-readiness evidence.");
   if (checkpoints.skipped === true || evidenceStatus(records.checkpoints) !== "available") blockers.push("Protected checkpoint restoration evidence is unavailable or skipped.");
   if (learnerCatalog.ready !== true) blockers.push("Protected learner catalog readiness is not proven.");
@@ -192,12 +216,18 @@ function getAcademyProductionEvidence(rootOverride) {
   const evidence = Object.fromEntries(
     Object.entries(records).map(([key, record]) => [key, { status: evidenceStatus(record), file: path.basename(record.path), error: record.error }])
   );
-  const controlPlaneOperational = inventory.discovered > 0 && inventory.invalidManifests === 0;
+  const gateAvailable = evidenceStatus(records.releaseGate) === "available";
+  const controlPlaneOperational = inventory.invalidManifests === 0
+    && effectiveDiscoveredCourses > 0
+    && gateAvailable;
   const productionOperational = blockers.length === 0;
+  const source = inventory.discovered > 0
+    ? "authoritative-local-repository-evidence"
+    : "authenticated-github-actions-evidence-cache";
 
   return {
     available: true,
-    source: "authoritative-repository-evidence",
+    source,
     root,
     checkedAt: new Date().toISOString(),
     workerTarget: 36,
@@ -216,8 +246,8 @@ function getAcademyProductionEvidence(rootOverride) {
       haltReason: workerEvidence?.haltReason || null
     },
     courseStatus: {
-      discovered: inventory.discovered,
-      ownerReviewEligible: inventory.ownerReviewEligible,
+      discovered: effectiveDiscoveredCourses,
+      ownerReviewEligible: effectiveOwnerReviewCourses,
       complianceStagingReady,
       publicationReady,
       publicationApproved: inventory.publicationApproved,
@@ -225,7 +255,7 @@ function getAcademyProductionEvidence(rootOverride) {
       learnerCatalogReady: learnerCatalog.ready === true
     },
     approvalStatus: {
-      gateAvailable: evidenceStatus(records.releaseGate) === "available",
+      gateAvailable,
       gateHash: releaseGateHash,
       gateGeneratedAt: releaseGate.generatedAt || null,
       portfolioDefinition: releaseGate.portfolioDefinition || null,
@@ -276,7 +306,7 @@ function getAcademyProductionEvidence(rootOverride) {
     evidence,
     blockers: [...new Set(blockers)],
     operational: productionOperational,
-    claimBoundary: "This view reports only machine-readable repository evidence. A live Command Center may monitor and record a device-bound owner decision while course production remains blocked. Worker configuration is not worker execution, submitted media jobs are not mastered media, compliance staging is not owner approval, and an owner approval is not publication execution."
+    claimBoundary: "This view reports only authenticated machine-readable evidence. A live Command Center may synchronize GitHub production evidence and record a device-bound owner decision while course production remains blocked. Worker configuration is not worker execution, submitted media jobs are not mastered media, compliance staging is not owner approval, and an owner approval is not publication execution."
   };
 }
 
