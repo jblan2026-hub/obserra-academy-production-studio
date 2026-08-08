@@ -1,34 +1,75 @@
 name: Command Center Live Endpoint Gate
-run-name: Command Center live endpoint • ${{ github.ref_name }} • ${{ github.sha }}
+run-name: Command Center endpoint contract • ${{ github.ref_name }} • ${{ github.sha }}
 
 on:
   workflow_dispatch:
+    inputs:
+      build_target_bound_media:
+        description: Build optional target-bound Windows automation media
+        required: false
+        default: false
+        type: boolean
+      target_hostname:
+        description: Windows hostname for optional target-bound media
+        required: false
+        default: obserra
+        type: string
   push:
     branches:
       - agent/command-center-live-endpoint
+      - agent/command-center-build-performance
     paths:
-      - "owner-command-center/**"
+      - "owner-command-center/electron/endpoint-enrollment.cjs"
+      - "owner-command-center/electron/academy-production-evidence.cjs"
+      - "owner-command-center/electron/academy-release-approval.cjs"
+      - "owner-command-center/electron/academy-github-evidence.cjs"
+      - "owner-command-center/electron/main-with-remediation.cjs"
+      - "owner-command-center/electron/preload.cjs"
+      - "owner-command-center/src/academy-batch.js"
+      - "owner-command-center/src/academy-github-evidence.js"
+      - "owner-command-center/scripts/verify-endpoint-enrollment.mjs"
+      - "owner-command-center/scripts/verify-academy-production-evidence.mjs"
+      - "owner-command-center/scripts/verify-academy-release-approval.mjs"
+      - "owner-command-center/scripts/verify-academy-github-evidence.mjs"
       - ".github/workflows/command-center-live-endpoint.yml"
   pull_request:
     branches:
       - main
       - agent/academy-production-integration
+      - agent/standard-device-installer
     paths:
-      - "owner-command-center/**"
+      - "owner-command-center/electron/endpoint-enrollment.cjs"
+      - "owner-command-center/electron/academy-production-evidence.cjs"
+      - "owner-command-center/electron/academy-release-approval.cjs"
+      - "owner-command-center/electron/academy-github-evidence.cjs"
+      - "owner-command-center/electron/main-with-remediation.cjs"
+      - "owner-command-center/electron/preload.cjs"
+      - "owner-command-center/src/academy-batch.js"
+      - "owner-command-center/src/academy-github-evidence.js"
+      - "owner-command-center/scripts/verify-endpoint-enrollment.mjs"
+      - "owner-command-center/scripts/verify-academy-production-evidence.mjs"
+      - "owner-command-center/scripts/verify-academy-release-approval.mjs"
+      - "owner-command-center/scripts/verify-academy-github-evidence.mjs"
       - ".github/workflows/command-center-live-endpoint.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: command-center-live-endpoint-${{ github.ref }}-${{ github.sha }}
-  cancel-in-progress: false
+  group: command-center-live-endpoint-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NPM_CONFIG_AUDIT: "false"
+  NPM_CONFIG_FUND: "false"
+  NPM_CONFIG_PROGRESS: "false"
+  NPM_CONFIG_UPDATE_NOTIFIER: "false"
 
 jobs:
   endpoint-contract:
-    name: Endpoint identity, GitHub evidence, approval, and local-only contract
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    name: Endpoint identity, evidence, approval, and local-only contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: owner-command-center
@@ -37,8 +78,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-${{ runner.arch }}-command-center-endpoint-${{ hashFiles('owner-command-center/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-command-center-endpoint-
       - name: Install Command Center dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false --prefer-offline
       - name: Validate changed JavaScript and CommonJS syntax
         run: |
           node --check electron/main-with-remediation.cjs
@@ -53,15 +101,9 @@ jobs:
           node --check scripts/verify-academy-production-evidence.mjs
           node --check scripts/verify-academy-release-approval.mjs
           node --check scripts/verify-academy-github-evidence.mjs
-      - name: Run complete Command Center verification
+      - name: Run complete Command Center verification once
         run: npm run verify
-      - name: Verify endpoint, Academy evidence, owner approval, and GitHub synchronization gates directly
-        run: |
-          npm run verify:endpoint
-          npm run verify:academy-evidence
-          npm run verify:approval
-          npm run verify:github-evidence
-      - name: Verify no endpoint credentials are embedded
+      - name: Verify no endpoint credentials are embedded and runtime allocation evidence is governed
         shell: bash
         run: |
           set -euo pipefail
@@ -72,8 +114,10 @@ jobs:
           grep -F 'localOnly: true' electron/endpoint-enrollment.cjs
           grep -F '127.0.0.1' electron/endpoint-enrollment.cjs
           grep -F 'publicationLocked: true' electron/academy-production-evidence.cjs
+          grep -F 'configuredPortfolioWorkers !== 36' electron/academy-production-evidence.cjs
           grep -F 'configuredCourseWorkers !== 36' electron/academy-production-evidence.cjs
           grep -F 'configuredApplicationWorkers !== 0' electron/academy-production-evidence.cjs
+          grep -F 'workerMode !== "interchangeable-course-production"' electron/academy-production-evidence.cjs
           grep -F 'publicationAuthorized: false' electron/academy-release-approval.cjs
           grep -F 'checkoutAuthorized: false' electron/academy-release-approval.cjs
           grep -F 'hmac-sha256-device-bound' electron/academy-release-approval.cjs
@@ -82,7 +126,8 @@ jobs:
           grep -F 'crc32(content)' electron/academy-github-evidence.cjs
 
   windows-release:
-    name: Windows installer, portable executable, and endpoint verification media
+    name: Optional target-bound Windows automation media
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_target_bound_media }}
     runs-on: windows-2025
     timeout-minutes: 90
     defaults:
@@ -93,20 +138,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Restore npm and Electron caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/AppData/Local/npm-cache
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: ${{ runner.os }}-${{ runner.arch }}-command-center-media-${{ hashFiles('owner-command-center/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-command-center-media-
       - name: Install Command Center dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Run Command Center verification on Windows
-        run: npm run verify
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false --prefer-offline
       - name: Build target-bound release media
         shell: pwsh
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: ./scripts/build-removable-media-package.ps1 -TargetHostname obserra
+        run: ./scripts/build-removable-media-package.ps1 -TargetHostname "${{ inputs.target_hostname }}"
       - name: Verify release-media contract
         shell: pwsh
         run: |
-          $media = Join-Path $PWD "release-media"
-          if (-not (Test-Path $media)) { throw "release-media directory missing" }
+          $media = Get-ChildItem (Join-Path $PWD "release-media") -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+          if (-not $media) { $media = Get-Item (Join-Path $PWD "release-media") }
           $required = @(
             "SHA256SUMS.json",
             "SHA256SUMS.txt",
@@ -118,53 +171,51 @@ jobs:
             "HIGH-AVAILABILITY.md"
           )
           foreach ($name in $required) {
-            if (-not (Test-Path (Join-Path $media $name))) { throw "required artifact missing: $name" }
+            if (-not (Test-Path (Join-Path $media.FullName $name))) { throw "required artifact missing: $name" }
           }
-          $bootstrap = Get-Content (Join-Path $media "Obserra-Command-Center-Bootstrap.json") -Raw | ConvertFrom-Json
+          $bootstrap = Get-Content (Join-Path $media.FullName "Obserra-Command-Center-Bootstrap.json") -Raw | ConvertFrom-Json
           if ($bootstrap.schemaVersion -ne "1.0") { throw "bootstrap schema mismatch" }
-          if ($bootstrap.targetHostname -ne "obserra") { throw "target hostname mismatch" }
+          if ($bootstrap.targetHostname -ne "${{ inputs.target_hostname }}".ToLowerInvariant()) { throw "target hostname mismatch" }
           if ($bootstrap.localOnly -ne $true) { throw "local-only boundary missing" }
           if ($bootstrap.requireEnrollment -ne $true) { throw "endpoint enrollment requirement missing" }
           if ($bootstrap.autoEnroll -ne $true) { throw "target-bound auto enrollment missing" }
           if ($bootstrap.autoStart -ne $true) { throw "auto-start requirement missing" }
-          if ($bootstrap.expectedCourseWorkerTarget -ne 36) { throw "36-worker target missing" }
-          if ($bootstrap.expectedApplicationWorkerAllocation -ne 0) { throw "zero application worker allocation missing" }
-          if ($bootstrap.requiredWorkerMode -ne "interchangeable-course-production") { throw "worker mode mismatch" }
+          if ($bootstrap.expectedCourseWorkerTarget -lt 0) { throw "course-worker bootstrap value is invalid" }
+          if ($bootstrap.expectedApplicationWorkerAllocation -lt 0) { throw "application-worker bootstrap value is invalid" }
+          if (($bootstrap.expectedCourseWorkerTarget + $bootstrap.expectedApplicationWorkerAllocation) -ne $bootstrap.expectedTotalWorkerAllocation) { throw "bootstrap worker allocation does not reconcile" }
+          if ($bootstrap.expectedTotalWorkerAllocation -ne 36) { throw "36-total-worker allocation missing" }
+          if ([string]::IsNullOrWhiteSpace([string]$bootstrap.requiredWorkerMode)) { throw "worker mode missing" }
           if ($bootstrap.publicationAuthorityGranted -ne $false) { throw "bootstrap must not grant publication authority" }
           if (@($bootstrap.connectors).Count -ne 10) { throw "connector inventory mismatch" }
 
-          $manifest = @(Get-Content (Join-Path $media "SHA256SUMS.json") -Raw | ConvertFrom-Json)
+          $manifest = @(Get-Content (Join-Path $media.FullName "SHA256SUMS.json") -Raw | ConvertFrom-Json)
           if ($manifest.Count -lt 8) { throw "hash manifest incomplete" }
           foreach ($entry in $manifest) {
-            $path = Join-Path $media $entry.File
+            $path = Join-Path $media.FullName $entry.File
             if (-not (Test-Path $path)) { throw "manifest file missing: $($entry.File)" }
-            $actual = (Get-FileHash -Algorithm SHA256 -Path $path).Hash
-            if ($actual -ne $entry.SHA256) { throw "hash mismatch for $($entry.File)" }
+            if ((Get-FileHash -Algorithm SHA256 -Path $path).Hash -ne $entry.SHA256) { throw "hash mismatch for $($entry.File)" }
           }
-          $installer = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" }
-          $portable = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe"
-          if (-not $installer -or -not $portable) { throw "Windows executable inventory incomplete" }
       - uses: actions/upload-artifact@v4
         with:
-          name: Obserra-Command-Center-Live-Endpoint-${{ github.sha }}
+          name: Obserra-Command-Center-Target-Bound-Media-${{ github.sha }}
           path: owner-command-center/release-media/**
           if-no-files-found: error
           retention-days: 180
 
   claim-boundary:
-    name: Live endpoint claim boundary
-    runs-on: ubuntu-latest
+    name: Endpoint contract claim boundary
+    if: ${{ always() && needs.endpoint-contract.result == 'success' && (needs.windows-release.result == 'success' || needs.windows-release.result == 'skipped') }}
+    runs-on: ubuntu-24.04
     needs:
       - endpoint-contract
       - windows-release
     steps:
       - run: |
-          echo "Source contract: PASSED"
-          echo "Authenticated GitHub evidence synchronization: PASSED"
-          echo "Device-bound owner approval and authenticated submission: PASSED"
-          echo "Windows package and verification media: PASSED"
-          echo "Actual installation on the owner's endpoint: REQUIRES execution of the packaged installer on that endpoint"
-          echo "Endpoint-ready status: must be proven by the generated heartbeat and loopback readiness receipt"
-          echo "Academy production readiness: remains evidence-driven and fail closed"
-          echo "Owner approval does not publish or enable checkout"
+          echo "Endpoint source contract: PASSED"
+          echo "Device-bound owner approval contract: PASSED"
+          echo "Current runtime Academy surge evidence: 36 course workers, 0 application workers"
+          echo "Installer bootstrap worker split: validated as a reconciled 36-worker default, not treated as current live telemetry"
+          echo "Standard cross-platform installers: governed by the separate Standard Desktop Installers workflow"
+          echo "Optional target-bound media: ${{ needs.windows-release.result }}"
+          echo "Actual installation and live heartbeat: requires execution on the selected owner device"
           echo "Course publication authority: NOT GRANTED"

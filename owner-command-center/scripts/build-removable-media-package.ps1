@@ -1,13 +1,15 @@
 [CmdletBinding()]
 param(
     [string]$Destination,
-    [string]$TargetHostname = "obserra"
+    [string]$TargetHostname = "*",
+    [switch]$CleanDestination
 )
 
 $ErrorActionPreference = "Stop"
 $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
 $root = (Resolve-Path (Join-Path $scriptDirectory "..")).Path
 $dist = Join-Path $root "dist"
+$templateBootstrap = Join-Path $root "resources\Obserra-Command-Center-Bootstrap.json"
 if ([string]::IsNullOrWhiteSpace($Destination)) {
     $Destination = Join-Path $root "release-media"
 }
@@ -32,12 +34,28 @@ try {
 } finally { Pop-Location }
 
 if (-not (Test-Path $dist)) { throw "Packaging output was not created at $dist" }
-if (Test-Path $destinationPath) { Remove-Item $destinationPath -Recurse -Force }
-New-Item -ItemType Directory -Path $destinationPath | Out-Null
+if (-not (Test-Path $templateBootstrap)) { throw "Generic bootstrap template is missing at $templateBootstrap" }
 
-$installer = Get-ChildItem $dist -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" } | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+if (Test-Path $destinationPath) {
+    $existing = @(Get-ChildItem -LiteralPath $destinationPath -Force -ErrorAction SilentlyContinue)
+    if ($existing.Count -gt 0) {
+        if ($CleanDestination) {
+            try {
+                Remove-Item -LiteralPath $destinationPath -Recurse -Force -ErrorAction Stop
+            } catch {
+                throw "The requested release directory cannot be cleaned because a file is open. Close any running portable Command Center and retry, or omit -CleanDestination to create a versioned folder. $($_.Exception.Message)"
+            }
+        } else {
+            $timestamp = (Get-Date).ToUniversalTime().ToString("yyyyMMdd-HHmmss")
+            $destinationPath = Join-Path $destinationPath "Obserra-Command-Center-$timestamp"
+        }
+    }
+}
+New-Item -ItemType Directory -Path $destinationPath -Force | Out-Null
+
+$installer = Get-ChildItem $dist -Filter "Obserra-Owner-AI-Command-Center-Setup-*.exe" | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
 $portable = Get-ChildItem $dist -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe" | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
-if (-not $installer) { throw "One-click installer executable was not produced." }
+if (-not $installer) { throw "Standard Windows setup executable was not produced." }
 if (-not $portable) { throw "Portable executable was not produced." }
 
 Copy-Item $installer.FullName (Join-Path $destinationPath $installer.Name)
@@ -48,35 +66,14 @@ Copy-Item (Join-Path $root "ENDPOINT-OPERATIONS.md") (Join-Path $destinationPath
 Copy-Item (Join-Path $root "scripts\Install-Obserra-Command-Center.ps1") (Join-Path $destinationPath "Install-Obserra-Command-Center.ps1")
 Copy-Item (Join-Path $root "scripts\Test-Obserra-Command-Center-Endpoint.ps1") (Join-Path $destinationPath "Test-Obserra-Command-Center-Endpoint.ps1")
 
-$bootstrap = [ordered]@{
-    schemaVersion = "1.0"
-    profileId = "obserra-owner-command-center-live-endpoint"
-    targetHostname = $TargetHostname.ToLowerInvariant()
-    generatedAt = (Get-Date).ToUniversalTime().ToString("o")
-    localOnly = $true
-    requireEnrollment = $true
-    autoEnroll = $true
-    autoStart = $true
-    heartbeatIntervalSeconds = 15
-    expectedCourseWorkerTarget = 36
-    expectedApplicationWorkerAllocation = 0
-    requiredWorkerMode = "interchangeable-course-production"
-    publicationAuthorityGranted = $false
-    connectors = @(
-        @{ id = "lcms"; url = "https://www.obserrallc.com" },
-        @{ id = "academy"; url = "https://www.obserrallc.com" },
-        @{ id = "website"; url = "https://www.obserrallc.com" },
-        @{ id = "store"; url = "https://www.obserrallc.com" },
-        @{ id = "eios"; url = "https://obserra-eios-console.vercel.app" },
-        @{ id = "stripe"; url = "https://api.stripe.com" },
-        @{ id = "github"; url = "https://api.github.com" },
-        @{ id = "vercel"; url = "https://api.vercel.com" },
-        @{ id = "clerk"; url = "https://api.clerk.com" },
-        @{ id = "localAi"; url = "http://127.0.0.1:11434" }
-    )
-}
+$bootstrap = Get-Content $templateBootstrap -Raw | ConvertFrom-Json
+$normalizedTarget = if ([string]::IsNullOrWhiteSpace($TargetHostname)) { "*" } else { $TargetHostname.Trim().ToLowerInvariant() }
+$bootstrap.targetHostname = $normalizedTarget
+$bootstrap.generatedAt = (Get-Date).ToUniversalTime().ToString("o")
+$bootstrap.autoEnroll = $normalizedTarget -ne "*"
+$bootstrap.enrollmentMode = if ($bootstrap.autoEnroll) { "target-bound-automatic-enrollment" } else { "explicit-owner-device-enrollment" }
 $bootstrapPath = Join-Path $destinationPath "Obserra-Command-Center-Bootstrap.json"
-$bootstrap | ConvertTo-Json -Depth 6 | Set-Content $bootstrapPath -Encoding UTF8
+$bootstrap | ConvertTo-Json -Depth 8 | Set-Content $bootstrapPath -Encoding UTF8
 
 $hashTargets = Get-ChildItem $destinationPath -File | Where-Object { $_.Name -notin @("SHA256SUMS.json", "SHA256SUMS.txt") }
 $hashes = $hashTargets | ForEach-Object {
@@ -89,5 +86,6 @@ $hashes = $hashTargets | ForEach-Object {
 $hashes | ConvertTo-Json -Depth 3 | Set-Content (Join-Path $destinationPath "SHA256SUMS.json") -Encoding UTF8
 $hashes | ForEach-Object { "{0}  {1}" -f $_.SHA256, $_.File } | Set-Content (Join-Path $destinationPath "SHA256SUMS.txt") -Encoding ASCII
 
-Write-Host "[Obserra] Target-bound Command Center release media created at $destinationPath for machine $TargetHostname"
-Write-Host "[Obserra] Run .\Install-Obserra-Command-Center.ps1 and require endpoint receipt verification before declaring the installation live."
+Write-Host "[Obserra] Standard release media created at $destinationPath"
+Write-Host "[Obserra] Normal owner installation: double-click $($installer.Name). No PowerShell is required."
+Write-Host "[Obserra] The PowerShell installer remains only for optional enterprise automation and endpoint evidence collection."

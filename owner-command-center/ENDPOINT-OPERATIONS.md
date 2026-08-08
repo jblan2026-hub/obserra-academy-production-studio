@@ -2,118 +2,103 @@
 
 ## Operational boundary
 
-The Command Center is a local Windows owner control plane. It binds its health service to loopback only, stores device identity and connector credential material through Windows protected storage, denies browser navigation outside the packaged application, and exposes no inbound remote-administration endpoint. External services are contacted only through approved outbound connectors.
+The Command Center is a local owner desktop control plane. It binds its health service to loopback only, stores device identity and connector credential material through operating-system-backed secure storage, denies browser navigation outside the packaged application, and exposes no inbound remote-administration endpoint. External services are contacted only through approved outbound connectors.
 
-A Windows installer or portable executable is not proof that the Command Center is installed or operational. Installation is verified only when the target machine produces all of the following evidence:
+A setup executable, DMG, AppImage, DEB, or portable application is not proof that the Command Center is installed or operational. Installation is verified only when the endpoint produces all of the following evidence:
 
-1. A target-bound bootstrap profile was applied on the expected hostname.
-2. Windows credential encryption was available.
+1. The embedded generic bootstrap profile was discovered and applied.
+2. Operating-system-backed secure storage was available.
 3. A unique device identity and device fingerprint were created.
-4. The endpoint entered the enrolled state.
+4. The owner explicitly enrolled the endpoint.
 5. The running process wrote a fresh endpoint heartbeat receipt.
 6. The loopback readiness service returned a ready response for the same device identity.
 7. The installation receipt and endpoint receipt matched.
 
-The endpoint may be installed and live while Academy course production remains blocked by database, provider, course, media, accessibility, rights, entitlement, certificate, security, or owner-approval gates. Production blockers are displayed; they do not prevent the owner control plane from running, synchronizing evidence, or waiting for the release decision gate.
+The endpoint may be installed and live while Academy course production remains blocked by database, provider, course, media, accessibility, rights, entitlement, certificate, security, or owner-approval gates. Production blockers are displayed; they do not prevent the owner control plane from running, synchronizing evidence, or waiting for a release decision gate.
 
-## Installation
+## Standard installation
 
-Run the target release-media installer from an owner-controlled PowerShell session:
+### Windows
 
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\Install-Obserra-Command-Center.ps1
-```
+Download and double-click the standard graphical setup executable matching the device architecture. The assisted installer allows the owner to select the installation directory and does not require PowerShell for normal installation.
 
-For the portable executable:
+- `Obserra-Owner-AI-Command-Center-Setup-<version>-x64.exe`
+- `Obserra-Owner-AI-Command-Center-Setup-<version>-arm64.exe`
 
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\Install-Obserra-Command-Center.ps1 -Portable
-```
+The optional portable executable can run without installation, but it must be closed before replacing or re-extracting the directory that contains it.
 
-The installer verifies every release file against `SHA256SUMS.json`, enforces the target hostname unless the owner explicitly supplies `-SkipHostnameCheck`, copies the bootstrap profile into the protected local application-data directory, launches the application, and waits for verified endpoint readiness.
+### macOS
 
-Use `-RequireControlPlaneOperational` when the endpoint must also prove that authenticated Academy evidence is available to the control plane. Course-production readiness is a separate status and can remain blocked while the Command Center is live.
+Open the universal DMG, drag the application to **Applications**, and launch it. Production distribution requires signing and notarization evidence.
+
+### Linux
+
+Use the AppImage for a self-contained executable or the DEB for Debian and Ubuntu package-managed installation. Select the package matching the device architecture.
+
+### First launch
+
+On every supported platform:
+
+1. Launch the Command Center.
+2. Open **Owner device enrollment**.
+3. Select **Enroll this device**.
+4. Enter the exact confirmation phrase displayed by the application.
+5. Verify that endpoint state, heartbeat, local readiness, and blockers are visible.
+
+The same verified generic installer can be used on multiple owner-controlled devices. Each installation creates its own revocable device identity. A wildcard bootstrap never silently auto-enrolls a device.
+
+PowerShell scripts remain optional enterprise-automation and evidence utilities. They are not the normal installation path.
 
 ## Direct verification
 
-To verify an existing installation without reinstalling:
-
-```powershell
-.\Test-Obserra-Command-Center-Endpoint.ps1
-```
-
-The verifier checks the endpoint receipt at:
+The application itself displays device identity, enrollment, heartbeat, readiness, control-plane state, and blockers. On Windows, the optional verification utility can also inspect the local evidence files:
 
 ```text
 %LOCALAPPDATA%\Obserra\OwnerCommandCenter\endpoint-status.json
+%LOCALAPPDATA%\Obserra\OwnerCommandCenter\installation-receipt.json
 ```
 
-It also checks the installation receipt, device identity, target hostname, enrollment state, Windows encryption, bootstrap status, heartbeat age, and loopback readiness response.
+On macOS and Linux, the evidence directory is derived from the Electron application data directory. Verification must reconcile the enrolled device identity, application version, bootstrap profile, heartbeat, loopback response, and installation receipt.
 
 ## GitHub Academy evidence authorization
 
-The installed Command Center can operate without a manually maintained local Academy repository. It synchronizes the latest governed Academy production evidence from the GitHub Actions artifact generated by `academy-36-worker-hollywood-production.yml`.
+The installed Command Center can operate without a manually maintained local Academy repository. It can synchronize governed Academy production evidence from an approved GitHub Actions artifact.
 
-In **Owner Connections**, authorize the **GitHub** connector with an owner-controlled fine-grained token for `jblan2026-hub/obserra-academy-production-studio`. The token must permit:
+In **Owner Connections**, authorize the **GitHub** connector with an owner-controlled fine-grained token for `jblan2026-hub/obserra-academy-production-studio`. The token must permit only the capabilities required by the approved workflow, including repository metadata read, Actions artifact read, and governed owner-decision submission where enabled.
 
-1. Repository metadata read.
-2. Actions and workflow-run artifact read.
-3. Issues read and write so the device-bound owner decision can be posted to the governed approval issue.
+The token is encrypted through operating-system-backed secure storage. It must not be written to the evidence cache, installation receipts, logs, approval record, or GitHub issue comment.
 
-The token is encrypted through Windows protected storage. It is never written to the evidence cache, installation receipts, logs, approval record, or GitHub issue comment.
+The Command Center must:
 
-Select **Sync production evidence** in the Authenticated GitHub Evidence panel. The Command Center then:
-
-1. Verifies that the token resolves to the required owner account.
-2. Selects the newest completed governed Academy workflow run with an unexpired production evidence artifact.
-3. Downloads the artifact through the GitHub API.
-4. Verifies the advertised SHA-256 digest when present.
-5. Parses only the allowlisted Academy evidence files.
-6. Rejects encrypted, oversized, unsupported, path-traversal, CRC-invalid, or malformed archive entries.
-7. Writes the validated evidence to the protected local cache.
-8. Recalculates the exact release-gate hash used by the owner-decision control.
-
-The cache resides under:
-
-```text
-%LOCALAPPDATA%\Obserra\OwnerCommandCenter\academy-evidence-cache
-```
+1. Verify that the token resolves to the required owner account.
+2. Select a completed governed Academy workflow run with an unexpired production-evidence artifact.
+3. Download the artifact through the GitHub API.
+4. Verify the advertised SHA-256 digest when present.
+5. Parse only allowlisted Academy evidence files.
+6. Reject encrypted, oversized, unsupported, path-traversal, CRC-invalid, or malformed archive entries.
+7. Write validated evidence to the protected local cache.
+8. Recalculate the exact release-gate hash used by the owner-decision control.
 
 ## Owner approval workflow
 
 The Owner Release Decision panel remains disabled until all of the following are true:
 
 1. The Command Center endpoint is enrolled and endpoint-ready.
-2. The release gate uses the supported schema.
-3. The expected, discovered, staged, and course-record counts reconcile exactly.
+2. The release gate uses a supported schema.
+3. Expected, discovered, staged, and course-record counts reconcile exactly.
 4. Every course record is staged for owner approval.
 5. The blocked-course count is zero.
-6. The governed 36-worker, 36-course-worker, zero-application-worker, interchangeable-role allocation is present in the gate evidence.
+6. The approved portfolio allocation is present in evidence: **20 application workers, 16 Academy workers, 36 total logical workers**.
 7. Publication and checkout remain explicitly unauthorized.
 8. No prior owner decision exists for the same exact gate hash.
 
 The owner selects **Approve**, **Reject**, or **Return for revision** and enters the exact confirmation phrase shown by the Command Center. Reject and revise decisions require a substantive note.
 
-The Command Center records:
-
-1. The exact gate hash and gate generation timestamp.
-2. All staged course identifiers.
-3. The owner decision and note.
-4. The enrolled device identity and fingerprint.
-5. The Windows user, hostname, and platform.
-6. An HMAC-SHA-256 signature derived from the Windows-protected device identity.
-7. Explicit false values for publication, checkout, pricing-change, and learner-access authority.
-8. A separate immutable local history record.
-
-When the GitHub connector is authorized, the Command Center also posts the signed decision to governed issue `#27` through the authenticated owner account. A failed GitHub submission does not erase the local decision; use **Submit recorded decision** to retry.
-
 An **Approve** decision records owner acceptance of the exact staged portfolio only. It does not publish courses, enable checkout, change pricing, grant learner access, or complete release execution. Those actions require a separate governed release process and post-release verification.
 
 ## Status definitions
 
-`endpointReady=true` means the local process, target bootstrap, encrypted device identity, enrollment, current heartbeat, and loopback readiness service are verified.
+`endpointReady=true` means the local process, generic bootstrap, device-specific encrypted identity, explicit enrollment, current heartbeat, and loopback readiness service are verified.
 
 `controlPlaneOperational=true` means endpoint readiness is verified and an authoritative local or authenticated GitHub Academy evidence source is available for monitoring and owner decisions. It does not mean every course is complete.
 
@@ -125,18 +110,32 @@ An **Approve** decision records owner acceptance of the exact staged portfolio o
 
 Use the encrypted recovery-bundle controls inside the Command Center to preserve connector configuration and authorized local state. Recovery bundles require a passphrase of at least 14 characters and use authenticated encryption. Restore operations recheck connector, endpoint, GitHub evidence, and gate state rather than treating stored data as current live evidence.
 
-The endpoint identity is device-bound. Moving application files to another machine does not transfer enrollment or approval authority. The new machine must receive an intentionally generated target bootstrap and create its own encrypted identity.
+The endpoint identity is device-specific. Copying application files to another machine does not transfer enrollment or approval authority. The new machine must create its own encrypted identity and receive explicit owner enrollment.
 
 ## Revocation
 
-Use the Endpoint Enrollment panel to revoke the local endpoint. Revocation removes the enrolled state and disables owner-decision authority, but it does not silently uninstall the application or delete audit evidence. Reenrollment requires the target bootstrap and explicit owner confirmation unless a target-bound package is configured for automatic enrollment.
+Use **Owner device enrollment** to revoke the local endpoint. Revocation removes the enrolled state and disables owner-decision authority, but it does not silently uninstall the application or delete audit evidence. Re-enrollment requires explicit owner confirmation.
 
 ## Fail-closed conditions
 
-The endpoint remains not ready when Windows protected storage is unavailable, the bootstrap is missing or targets another hostname, endpoint enrollment is absent or revoked, the loopback service is unavailable, the heartbeat is stale, or receipt identities do not match.
+The endpoint remains not ready when secure storage is unavailable, the embedded bootstrap is missing or invalid, endpoint enrollment is absent or revoked, the loopback service is unavailable, the heartbeat is stale, or receipt identities do not match.
 
-The GitHub approval inbox remains blocked when the GitHub token is missing, belongs to another user, lacks required repository permissions, cannot retrieve the governed workflow artifact, fails artifact integrity validation, or produces a gate that does not reconcile.
+The GitHub approval inbox remains blocked when the token is missing, belongs to another user, lacks required repository permissions, cannot retrieve the governed workflow artifact, fails artifact-integrity validation, or produces a gate that does not reconcile.
 
 The owner decision remains blocked when any course is unstaged, any pre-owner blocker exists, the gate grants publication or checkout authority, the endpoint is not enrolled, or a decision has already been recorded for the exact gate hash.
 
-Course production remains not operational when worker execution evidence is absent, the 36-worker and zero-application-worker allocation is not proven, provider preflight is not green, checkpoints are unavailable, course compliance staging is incomplete, media submission or mastering is incomplete, the protected learner catalog is not ready, or release evidence remains blocked.
+Course production remains not operational when worker execution evidence is absent, the approved **20/16/36** portfolio allocation is not proven, provider preflight is not green, checkpoints are unavailable, course compliance staging is incomplete, media submission or mastering is incomplete, the protected learner catalog is not ready, or release evidence remains blocked.
+
+## Distribution assurance
+
+A production desktop release requires:
+
+- current-head source, dependency, security, and packaging gates;
+- SHA-256 manifests;
+- Windows Authenticode signing for Windows production distribution;
+- Apple signing and notarization for macOS production distribution;
+- architecture-appropriate Linux package verification;
+- clean-device installation, upgrade, uninstall, rollback, recovery, and revocation tests;
+- direct owner acceptance of the exact release.
+
+A successful package build is not a production-operational claim.

@@ -1,0 +1,291 @@
+name: Standard Desktop Installers
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/standard-device-installer
+    paths:
+      - "owner-command-center/**"
+      - ".github/workflows/standard-desktop-installers.yml"
+  pull_request:
+    branches:
+      - main
+      - agent/academy-production-integration
+    paths:
+      - "owner-command-center/**"
+      - ".github/workflows/standard-desktop-installers.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: standard-desktop-installers-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NPM_CONFIG_AUDIT: "false"
+  NPM_CONFIG_FUND: "false"
+  NPM_CONFIG_PROGRESS: "false"
+  NPM_CONFIG_UPDATE_NOTIFIER: "false"
+
+jobs:
+  contract-gate:
+    name: Installer, startup, shortcut, and endpoint contract gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore npm and Electron caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-${{ runner.arch }}-command-center-${{ hashFiles('owner-command-center/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-command-center-
+      - name: Install Command Center dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false --prefer-offline
+      - name: Verify standard installer, startup, shortcut, and endpoint contracts
+        run: npm run verify
+      - name: Verify distributable bootstrap and enrollment UI syntax
+        run: |
+          node --check src/endpoint-enrollment-ui.js
+          node --check electron/bootstrap-main.cjs
+          node --check electron/main.cjs
+          node --check electron/main-with-remediation.cjs
+          node --check electron/endpoint-enrollment.cjs
+          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('resources/Obserra-Command-Center-Bootstrap.json','utf8')); if(p.targetHostname!=='*'||p.autoEnroll!==false||p.requireEnrollment!==true) throw new Error('generic enrollment profile invalid'); console.log('Generic owner-enrolled bootstrap verified.')"
+
+  windows:
+    name: Windows ${{ matrix.arch }} graphical setup and portable packages
+    needs: contract-gate
+    runs-on: windows-2025
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        arch:
+          - x64
+          - arm64
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore npm and Electron caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/AppData/Local/npm-cache
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/Cache
+          key: ${{ runner.os }}-${{ matrix.arch }}-command-center-${{ hashFiles('owner-command-center/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-command-center-
+      - name: Install Command Center dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false --prefer-offline
+      - name: Resolve package version
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          if (-not $version) { throw "Package version is unavailable." }
+          "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Verify Windows packaging and native-ESM startup contract
+        run: |
+          node scripts/verify-installer-config.mjs
+          node scripts/verify-packaged-startup-contract.mjs
+          node --check electron/bootstrap-main.cjs
+      - name: Build Windows standard setup and portable package
+        shell: pwsh
+        run: npx electron-builder --win nsis portable --${{ matrix.arch }} --publish never --config.compression=normal
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+      - name: Verify Windows package inventory and create SHA-256 manifest
+        shell: pwsh
+        run: |
+          $arch = "${{ matrix.arch }}"
+          $required = @(
+            "dist/Obserra-Owner-AI-Command-Center-Setup-$env:APP_VERSION-$arch.exe",
+            "dist/Obserra-Owner-AI-Command-Center-Portable-$env:APP_VERSION-$arch.exe"
+          )
+          foreach ($file in $required) {
+            if (-not (Test-Path $file)) { throw "Missing Windows package: $file" }
+            if ((Get-Item $file).Length -lt 1000000) { throw "Windows package is unexpectedly small: $file" }
+          }
+          $required | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash -Algorithm SHA256 $_).Hash, (Split-Path $_ -Leaf)
+          } | Set-Content "dist/SHA256SUMS-Windows-$arch.txt" -Encoding ascii
+      - name: Install, verify desktop shortcut, launch, and uninstall on Windows x64
+        if: matrix.arch == 'x64'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $setup = Resolve-Path "dist/Obserra-Owner-AI-Command-Center-Setup-$env:APP_VERSION-x64.exe"
+          $installDir = Join-Path $env:RUNNER_TEMP "ObserraCommandCenterSmoke"
+          if (Test-Path $installDir) { Remove-Item $installDir -Recurse -Force }
+
+          $installer = Start-Process -FilePath $setup -ArgumentList @('/S', "/D=$installDir") -Wait -PassThru
+          if ($installer.ExitCode -ne 0) { throw "Graphical installer silent validation failed with exit code $($installer.ExitCode)." }
+
+          $installedExe = Join-Path $installDir "Obserra Owner AI Command Center.exe"
+          if (-not (Test-Path $installedExe)) { throw "Installed application executable is missing: $installedExe" }
+
+          $desktop = [Environment]::GetFolderPath([Environment+SpecialFolder]::DesktopDirectory)
+          $programs = [Environment]::GetFolderPath([Environment+SpecialFolder]::Programs)
+          $desktopShortcut = Join-Path $desktop "Obserra Owner AI Command Center.lnk"
+          $startMenuShortcut = Join-Path $programs "Obserra Owner AI Command Center.lnk"
+          if (-not (Test-Path $desktopShortcut)) { throw "Desktop shortcut was not created: $desktopShortcut" }
+          if (-not (Test-Path $startMenuShortcut)) { throw "Start menu shortcut was not created: $startMenuShortcut" }
+
+          $env:OBSERRA_STARTUP_SMOKE_TEST = "true"
+          $env:ELECTRON_ENABLE_LOGGING = "true"
+          $appProcess = Start-Process -FilePath $installedExe -PassThru
+          if (-not $appProcess.WaitForExit(30000)) {
+            Stop-Process -Id $appProcess.Id -Force -ErrorAction SilentlyContinue
+            throw "Installed Command Center did not complete its governed startup smoke test within 30 seconds."
+          }
+          if ($appProcess.ExitCode -ne 0) { throw "Installed Command Center startup failed with exit code $($appProcess.ExitCode)." }
+
+          $uninstaller = Join-Path $installDir "Uninstall Obserra Owner AI Command Center.exe"
+          if (Test-Path $uninstaller) {
+            $uninstallProcess = Start-Process -FilePath $uninstaller -ArgumentList '/S' -Wait -PassThru
+            if ($uninstallProcess.ExitCode -ne 0) { throw "Uninstaller failed with exit code $($uninstallProcess.ExitCode)." }
+          }
+      - name: Upload Windows standard installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Command-Center-Standard-Windows-${{ matrix.arch }}-${{ github.sha }}
+          path: |
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-Setup-${{ env.APP_VERSION }}-${{ matrix.arch }}.exe
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-Portable-${{ env.APP_VERSION }}-${{ matrix.arch }}.exe
+            owner-command-center/dist/SHA256SUMS-Windows-${{ matrix.arch }}.txt
+          if-no-files-found: error
+          retention-days: 180
+
+  macos:
+    name: macOS universal DMG and ZIP
+    needs: contract-gate
+    runs-on: macos-14
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore npm and Electron caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-${{ runner.arch }}-command-center-${{ hashFiles('owner-command-center/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-command-center-
+      - name: Install Command Center dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false --prefer-offline
+      - name: Resolve package version
+        run: echo "APP_VERSION=$(node -p \"require('./package.json').version\")" >> "$GITHUB_ENV"
+      - name: Build macOS universal packages
+        run: npx electron-builder --mac dmg zip --universal --publish never --config.compression=normal
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CSC_LINK: ${{ secrets.MACOS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CSC_KEY_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      - name: Verify macOS package inventory
+        run: |
+          test -f "dist/Obserra-Owner-AI-Command-Center-${APP_VERSION}-universal.dmg"
+          test -f "dist/Obserra-Owner-AI-Command-Center-${APP_VERSION}-universal.zip"
+          shasum -a 256 "dist/Obserra-Owner-AI-Command-Center-${APP_VERSION}-universal.dmg" "dist/Obserra-Owner-AI-Command-Center-${APP_VERSION}-universal.zip" > dist/SHA256SUMS-macOS.txt
+      - name: Upload macOS standard installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Command-Center-Standard-macOS-${{ github.sha }}
+          path: |
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-${{ env.APP_VERSION }}-universal.dmg
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-${{ env.APP_VERSION }}-universal.zip
+            owner-command-center/dist/SHA256SUMS-macOS.txt
+          if-no-files-found: error
+          retention-days: 180
+
+  linux:
+    name: Linux ${{ matrix.arch }} AppImage and DEB
+    needs: contract-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        arch:
+          - x64
+          - arm64
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore npm and Electron caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-${{ matrix.arch }}-command-center-${{ hashFiles('owner-command-center/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-command-center-
+      - name: Install Linux packaging prerequisites
+        working-directory: .
+        run: sudo apt-get update -qq && sudo apt-get install --no-install-recommends -y -qq libopenjp2-tools
+      - name: Install Command Center dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false --prefer-offline
+      - name: Resolve package version
+        run: echo "APP_VERSION=$(node -p \"require('./package.json').version\")" >> "$GITHUB_ENV"
+      - name: Build Linux packages
+        run: npx electron-builder --linux AppImage deb --${{ matrix.arch }} --publish never --config.compression=normal
+      - name: Verify Linux package inventory
+        run: |
+          mapfile -t appimages < <(find dist -maxdepth 1 -type f -name "Obserra-Owner-AI-Command-Center-${APP_VERSION}-*.AppImage" -print | sort)
+          mapfile -t debs < <(find dist -maxdepth 1 -type f -name "Obserra-Owner-AI-Command-Center-${APP_VERSION}-*.deb" -print | sort)
+          test "${#appimages[@]}" -eq 1
+          test "${#debs[@]}" -eq 1
+          test "$(stat -c '%s' "${appimages[0]}")" -gt 1000000
+          test "$(stat -c '%s' "${debs[0]}")" -gt 1000000
+          sha256sum "${appimages[0]}" "${debs[0]}" > "dist/SHA256SUMS-Linux-${{ matrix.arch }}.txt"
+      - name: Upload Linux standard installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Command-Center-Standard-Linux-${{ matrix.arch }}-${{ github.sha }}
+          path: |
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-${{ env.APP_VERSION }}-*.AppImage
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-${{ env.APP_VERSION }}-*.deb
+            owner-command-center/dist/SHA256SUMS-Linux-${{ matrix.arch }}.txt
+          if-no-files-found: error
+          retention-days: 180
