@@ -101,8 +101,10 @@ try {
 
   const staging = fs.readFileSync(path.join(root, "studio/stage-courses-for-release-approval.mjs"), "utf8");
   for (const phrase of [
-    "ACADEMY_EXPECTED_REVIEW_COURSES || 60",
+    "ACADEMY_CORE_COURSE_TARGET || 60",
+    "ACADEMY_SUPPLEMENTAL_COURSE_TARGET || 1",
     "ACADEMY_RELEASE_APPROVAL_ISSUE || 27",
+    "60 core Academy courses plus the supplemental PMP course",
     "allStagedForOwnerApproval",
     "publicationAuthorized: false",
     "checkoutAuthorized: false",
@@ -127,7 +129,7 @@ try {
 
   const renderer = fs.readFileSync(path.join(root, "owner-command-center/src/academy-batch.js"), "utf8");
   for (const phrase of [
-    "60-COURSE RELEASE APPROVAL GATE",
+    "RELEASE APPROVAL GATE",
     "READY FOR OWNER APPROVAL",
     "stage-approval",
     "Publication",
@@ -142,10 +144,13 @@ try {
     "OBSERRA_APPLICATION_WORKER_COUNT: 0",
     "ACADEMY_COURSE_WORKER_COUNT: 36",
     "ACADEMY_AUTHORING_CONCURRENCY: 36",
+    "ACADEMY_EXPECTED_REVIEW_COURSES: 61",
+    "ACADEMY_CORE_COURSE_TARGET: 60",
+    "ACADEMY_SUPPLEMENTAL_COURSE_TARGET: 1",
     "ACADEMY_RELEASE_APPROVAL_ISSUE: 27",
     "Launch up to 36 interchangeable course workers",
     "Update owner notification issue",
-    "All 60 courses are staged for explicit owner release approval",
+    "All governed Academy courses are staged for explicit owner release approval",
   ]) {
     record(`production workflow requirement ${phrase}`, workflow.includes(phrase));
   }
@@ -162,9 +167,11 @@ try {
   record("CI binds worker contract", String(scripts.ci ?? "").includes("verify:academy-worker-contract"), scripts.ci);
 
   const report = {
-    schemaVersion: "1.0",
+    schemaVersion: "1.1",
     verifiedAt: new Date().toISOString(),
     gate: "academy-36-worker-interchangeable-course-production",
+    portfolioDefinition: "60 core Academy courses plus the supplemental PMP course",
+    expectedOwnerReviewCourses: 61,
     portfolioWorkerCount,
     applicationWorkerAllocation,
     courseWorkerAllocation,
@@ -179,7 +186,7 @@ try {
     checkCount: checks.length,
     passedCount: checks.filter((check) => check.passed).length,
     checks,
-    claimBoundary: "This verification proves source-level worker allocation, course-production binding, staging-gate binding, and Command Center visibility. It does not prove course generation, media mastering, release staging, owner approval, publication, or endpoint installation.",
+    claimBoundary: "This verification proves source-level worker allocation, complete-portfolio course-production binding, staging-gate binding, and Command Center visibility. It does not prove course generation, media mastering, release staging, owner approval, publication, or endpoint installation.",
   };
   fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
   fs.writeFileSync(path.join(root, "catalog", "academy-worker-contract-verification.json"), `${JSON.stringify(report, null, 2)}\n`);
