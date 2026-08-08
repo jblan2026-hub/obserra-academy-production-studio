@@ -17,27 +17,21 @@ function writeJson(filePath, value) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+const allocation = {
+  portfolioWorkerCount: 36,
+  courseWorkerAllocation: 36,
+  applicationWorkerAllocation: 0,
+  workerMode: "interchangeable-course-production",
+  crossRoleReassignmentAllowed: true,
+};
+
 writeJson(path.join(courseRoot, "course-manifest.json"), {
   course: { id: "evidence-test-course", title: "Evidence Test Course" },
   release: { status: "draft", publishToAcademy: false },
 });
-writeJson(path.join(catalogRoot, "academy-hollywood-course-audit.json"), {
-  allocation: {
-    portfolioWorkerCount: 36,
-    courseWorkerAllocation: 36,
-    applicationWorkerAllocation: 0,
-    workerMode: "interchangeable-course-production",
-    crossRoleReassignmentAllowed: true,
-  },
-});
+writeJson(path.join(catalogRoot, "academy-hollywood-course-audit.json"), { allocation });
 writeJson(path.join(catalogRoot, "academy-hollywood-parallel-summary.json"), {
-  allocation: {
-    portfolioWorkerCount: 36,
-    courseWorkerAllocation: 36,
-    applicationWorkerAllocation: 0,
-    workerMode: "interchangeable-course-production",
-    crossRoleReassignmentAllowed: true,
-  },
+  allocation,
   launchedWorkerCount: 1,
   workerRoster: [{ workerId: 1 }],
   startedCourses: 1,
@@ -53,6 +47,7 @@ writeJson(path.join(catalogRoot, "academy-hollywood-compliance-staging.json"), {
   publicationReadyCourses: 1,
   readyForComplianceStaging: true,
   publicationReady: true,
+  allocation,
 });
 writeJson(path.join(catalogRoot, "academy-hollywood-media-submission.json"), {
   requestedVideoJobs: 4,
@@ -76,6 +71,30 @@ writeJson(path.join(catalogRoot, "learner-catalog-readiness.json"), {
   ready: true,
   discoveredCourses: 1,
 });
+writeJson(path.join(catalogRoot, "academy-release-approval-gate.json"), {
+  schemaVersion: "1.1",
+  generatedAt: new Date().toISOString(),
+  portfolioDefinition: "Verification fixture portfolio",
+  expectedCourses: 1,
+  discoveredCourses: 1,
+  stagedCourses: 1,
+  blockedCourses: 0,
+  progressPercent: 100,
+  portfolioCountMatches: true,
+  allStagedForOwnerApproval: true,
+  ownerDecisionRequired: true,
+  ownerAcceptanceRecorded: false,
+  publicationAuthorized: false,
+  checkoutAuthorized: false,
+  allocation,
+  stagedCourseIds: ["evidence-test-course"],
+  courses: [{
+    courseId: "evidence-test-course",
+    stagedForOwnerApproval: true,
+    ownerAcceptanceRecorded: false,
+    publicationAuthorized: false,
+  }],
+});
 
 try {
   const evidence = getAcademyProductionEvidence(root);
@@ -91,7 +110,14 @@ try {
   assert.equal(evidence.courseStatus.complianceStagingReady, 1);
   assert.equal(evidence.courseStatus.publicationReady, 1);
   assert.equal(evidence.courseStatus.publicationApproved, 0);
+  assert.equal(evidence.approvalStatus.gateAvailable, true);
+  assert.equal(evidence.approvalStatus.expectedCourses, 1);
+  assert.equal(evidence.approvalStatus.stagedCourses, 1);
+  assert.equal(evidence.approvalStatus.blockedCourses, 0);
+  assert.equal(evidence.approvalStatus.ownerDecisionRequired, true);
   assert.equal(evidence.publicationLocked, true);
+  assert.equal(evidence.controlPlaneOperational, true);
+  assert.equal(evidence.productionOperational, true);
   assert.equal(evidence.operational, true);
   assert.deepEqual(evidence.blockers, []);
   assert.equal(evidence.mediaStatus.allJobsSubmitted, true);
@@ -100,19 +126,24 @@ try {
 
   fs.rmSync(path.join(catalogRoot, "academy-hollywood-provider-preflight.json"));
   const degraded = getAcademyProductionEvidence(root);
+  assert.equal(degraded.controlPlaneOperational, true);
+  assert.equal(degraded.productionOperational, false);
   assert.equal(degraded.operational, false);
   assert.ok(degraded.blockers.some((blocker) => blocker.includes("provider preflight evidence")));
   assert.equal(degraded.providerStatus.ready, false);
 
   console.log(JSON.stringify({
     gate: "command-center-academy-production-evidence",
-    authoritativeOperationalEvidence: evidence.operational,
-    publicationRemainsLockedWithoutApproval: evidence.publicationLocked,
+    controlPlaneOperationalWithoutProductionInference: evidence.controlPlaneOperational,
+    authoritativeProductionEvidence: evidence.productionOperational,
+    publicationRemainsLockedWithoutReleaseExecution: evidence.publicationLocked,
     configuredCourseWorkers: evidence.workerStatus.configuredCourseWorkers,
     configuredApplicationWorkers: evidence.workerStatus.configuredApplicationWorkers,
     interchangeabilityVerified: evidence.workerStatus.interchangeable,
     complianceStagingReady: evidence.courseStatus.complianceStagingReady,
-    missingEvidenceFailsClosed: degraded.operational === false,
+    ownerApprovalGateReady: evidence.approvalStatus.allStagedForOwnerApproval,
+    missingEvidenceFailsProductionClosed: degraded.productionOperational === false,
+    liveControlPlaneRemainsObservable: degraded.controlPlaneOperational === true,
     passed: true,
   }, null, 2));
 } finally {
