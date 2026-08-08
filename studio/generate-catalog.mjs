@@ -8,11 +8,22 @@ const coursesRoot = path.join(root, "courses");
 const outputDir = path.join(root, "catalog");
 const publicCatalogPath = path.join(outputDir, "academy-course-catalog.json");
 const learnerCatalogPath = path.join(outputDir, "academy-learner-course-catalog.json");
+const pricingPolicyPath = path.join(root, "policy", "academy-pricing-policy.json");
 
 fs.mkdirSync(outputDir, { recursive: true });
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+const pricingPolicy = readJson(pricingPolicyPath);
+
+function governedPrice(level) {
+  const tier = pricingPolicy?.tiers?.[level];
+  if (!tier || !Number.isFinite(Number(tier.price)) || Number(tier.price) <= 0) {
+    throw new Error(`Academy pricing policy has no valid price for level: ${level}`);
+  }
+  return Number(tier.price);
 }
 
 function authoredPackage(courseDir) {
@@ -31,6 +42,7 @@ function publicCourse(manifest, courseDir) {
   const modules = Array.isArray(manifest.course.modules) ? manifest.course.modules : [];
   const nestedLessons = modules.flatMap((module) => Array.isArray(module.lessons) ? module.lessons : []);
   const tutor = tutorProfile(courseDir);
+  const price = governedPrice(manifest.course.level);
 
   return {
     id: manifest.course.id,
@@ -75,11 +87,13 @@ function publicCourse(manifest, courseDir) {
     moduleCount: modules.length,
     tags: manifest.tags,
     commerce: {
-      model: manifest.commerce.model,
-      price: manifest.commerce.price,
-      currency: manifest.commerce.currency,
+      model: pricingPolicy.model,
+      price,
+      currency: pricingPolicy.currency,
       paymentLink: manifest.commerce.paymentLink ?? null,
       stripePriceId: manifest.commerce.stripePriceId ?? null,
+      pricingPolicyId: pricingPolicy.policyId,
+      pricingPolicyEffectiveDate: pricingPolicy.effectiveDate,
     },
     licensing: {
       entitlementType: "course-enrollment",
@@ -232,6 +246,12 @@ const shared = {
   officialLogo: officialBrand.officialLogo,
   visualSystem: officialBrand.visualSystem,
   disclaimer: officialBrand.disclaimer,
+  pricing: {
+    policyId: pricingPolicy.policyId,
+    effectiveDate: pricingPolicy.effectiveDate,
+    currency: pricingPolicy.currency,
+    tiers: pricingPolicy.tiers,
+  },
 };
 
 fs.writeFileSync(publicCatalogPath, `${JSON.stringify({ schemaVersion: "1.5", ...shared, courses: publicCourses }, null, 2)}\n`);
@@ -252,3 +272,4 @@ const learnerReady = learnerCourses.filter((course) =>
 ).length;
 console.log(`[Academy Studio] Generated governed public catalog with ${publicCourses.length} publication-approved course(s).`);
 console.log(`[Academy Studio] Generated protected owner-review learner catalog with ${learnerCourses.length} course(s), ${learnerReady} learner-content-ready.`);
+console.log(`[Academy Studio] Applied governed pricing policy ${pricingPolicy.policyId} (${pricingPolicy.effectiveDate}).`);
