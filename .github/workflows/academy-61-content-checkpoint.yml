@@ -29,9 +29,6 @@ env:
   OBSERRA_PORTFOLIO_WORKER_COUNT: "36"
   OBSERRA_APPLICATION_WORKER_COUNT: "0"
   ACADEMY_COURSE_WORKER_COUNT: "36"
-  ACADEMY_AUTHORING_CONCURRENCY: "36"
-  ACADEMY_RESEARCH_CONCURRENCY: "36"
-  ACADEMY_REVIEW_CONCURRENCY: "36"
   ACADEMY_WORKER_MODE: interchangeable-course-production
   ACADEMY_EXPECTED_SURGE_COURSES: "61"
   ACADEMY_EXPECTED_REVIEW_COURSES: "61"
@@ -39,8 +36,12 @@ env:
   ACADEMY_MINIMUM_LESSON_WORDS: "1200"
   ACADEMY_MINIMUM_EXACT_SOURCES_PER_COURSE: "2"
   ACADEMY_PROVIDER_PREFERENCE: anthropic,openai
-  ACADEMY_AUTHORING_MAX_ATTEMPTS: "3"
-  ACADEMY_RESEARCH_MAX_ATTEMPTS: "2"
+  ACADEMY_PAID_RESEARCH_CONCURRENCY: "4"
+  ACADEMY_PAID_AUTHORING_CONCURRENCY: "4"
+  ACADEMY_PAID_REVIEW_CONCURRENCY: "2"
+  ACADEMY_AUTHORING_MAX_ATTEMPTS: "2"
+  ACADEMY_RESEARCH_MAX_ATTEMPTS: "1"
+  ACADEMY_REVIEW_MAX_ATTEMPTS: "1"
   ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: "2700000"
   ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: "1800000"
   ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: "true"
@@ -61,7 +62,7 @@ env:
 
 jobs:
   checkpoint-all-course-content:
-    name: Research, author, review, and checkpoint all 61 courses
+    name: Free-first research, author, review, and checkpoint all 61 courses
     runs-on: ubuntu-24.04
     timeout-minutes: 720
     env:
@@ -83,10 +84,7 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Resolve funded production provider
-        run: node studio/resolve-academy-production-provider.mjs
-
-      - name: Verify all 36 workers are assigned to the 61-course Academy objective
+      - name: Verify all 36 logical workers are assigned only to Academy
         run: node studio/verify-academy-61-worker-contract.mjs
 
       - name: Preflight protected OIDC checkpoint gateway
@@ -95,19 +93,35 @@ jobs:
       - name: Apply governed course policy
         run: npm run apply:course-policy
 
-      - name: Research current primary sources and documented cases for all 61 courses
-        run: node studio/research-all-61-courses.mjs
-
-      - name: Merge researched primary sources into governed runtime registry
-        run: node studio/merge-61-course-research-registry.mjs
-
-      - name: Restore matching protected course checkpoints
+      - name: Restore matching protected course checkpoints before any paid work
         run: node studio/restore-academy-hollywood-checkpoints.mjs
 
       - name: Reject restored packages with stale source context
         run: node studio/prune-stale-restored-course-packages.mjs
 
-      - name: Author and checkpoint all 61 premium course packages
+      - name: Build deterministic no-model source context from local authoritative registry
+        run: node studio/build-free-course-source-context.mjs
+
+      - name: Validate all currently reusable packages without model credits
+        run: node studio/validate-academy-hollywood-surge.mjs || true
+
+      - name: Build credit-last work plan
+        run: node studio/plan-academy-credit-last.mjs
+
+      - name: Resolve a funded production provider only if paid work remains
+        if: env.ACADEMY_PAID_MODEL_REQUIRED == 'true'
+        run: node studio/resolve-academy-production-provider.mjs
+
+      - name: Research only courses that still lack current passing evidence
+        if: env.ACADEMY_PAID_MODEL_REQUIRED == 'true'
+        run: node studio/research-all-61-courses.mjs
+
+      - name: Merge researched primary sources into governed runtime registry
+        if: env.ACADEMY_PAID_MODEL_REQUIRED == 'true'
+        run: node studio/merge-61-course-research-registry.mjs
+
+      - name: Author and checkpoint only courses without reusable packages
+        if: env.ACADEMY_PAID_MODEL_REQUIRED == 'true'
         run: node studio/author-all-61-cinematic-parallel.mjs
 
       - name: Materialize learner, instructor, assessment, accessibility, rights, and certificate assets
@@ -116,7 +130,11 @@ jobs:
       - name: Validate all 61 structural packages and exact source mappings
         run: node studio/validate-academy-hollywood-surge.mjs
 
-      - name: Independently review all 61 courses
+      - name: Rebuild gap plan after deterministic validation
+        run: node studio/plan-academy-credit-last.mjs
+
+      - name: Independently review only courses without reusable 90-plus evidence
+        if: env.ACADEMY_PAID_MODEL_REQUIRED == 'true'
         run: node studio/review-all-61-courses.mjs
 
       - name: Confirm protected checkpoint count
