@@ -31,7 +31,7 @@ permissions:
 
 concurrency:
   group: owner-command-center-windows-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   production-gate:
