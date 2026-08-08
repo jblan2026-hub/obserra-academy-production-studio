@@ -55,13 +55,16 @@ for (const [pattern, description] of [
 requirePattern(preload, /contextBridge\.exposeInMainWorld/, "renderer APIs must use a constrained context bridge");
 for (const method of [
   "getAcademySnapshot",
-  "updateAcademyCourse",
-  "runAcademyAction",
+  "getAcademyControlSnapshot",
+  "updateAcademyReview",
+  "transitionAcademyCourse",
+  "runAcademyControlledAction",
+  "verifyAcademyPurchase",
+  "retrieveWebsiteAcademyCourse",
+  "retrieveWebsiteAcademyCertificate",
   "previewAcademyCourse",
   "previewAcademyMaterials",
   "previewAcademyCertificate",
-  "retrieveWebsiteCourse",
-  "retrieveWebsiteCertificate",
 ]) requirePattern(preload, new RegExp(`${method}\\s*:`), `preload bridge must expose ${method}`);
 rejectPattern(preload, /require\(["']node:(fs|child_process|net|http|https)|require\(["'](fs|child_process|net|http|https)/, "preload must not expose raw filesystem, process, or network modules");
 
@@ -101,8 +104,11 @@ requirePattern(index, /academy-reset\.css/, "Academy reset stylesheet must be pa
 requirePattern(index, /Content-Security-Policy/, "Academy reset shell must define a CSP");
 requirePattern(index, /connect-src 'none'/, "renderer must not make direct network connections");
 rejectPattern(index, /ownerAiPanel|securityPanel|trendPanel/, "legacy broad command-center panels must not return to the Academy-only shell");
-requirePattern(resetUi, /getAcademySnapshot/, "Academy reset UI must load governed course state");
+requirePattern(resetUi, /getAcademyControlSnapshot/, "Academy reset UI must load governed course-control state");
 requirePattern(resetUi, /previewAcademyCourse|previewAcademyMaterials|previewAcademyCertificate/, "Academy reset UI must support governed review previews");
+requirePattern(resetUi, /updateAcademyReview/, "Academy reset UI must record owner review decisions through IPC");
+requirePattern(resetUi, /transitionAcademyCourse/, "Academy reset UI must use governed release transitions");
+requirePattern(resetUi, /verifyAcademyPurchase/, "Academy reset UI must support secure real-purchase verification");
 requirePattern(resetCss, /courseList|detailPanel|evidencePanel/, "Academy reset styling must cover owner review surfaces");
 
 if (packageJson.private !== true) throw new Error("Command Center verification failed: package must remain private");
