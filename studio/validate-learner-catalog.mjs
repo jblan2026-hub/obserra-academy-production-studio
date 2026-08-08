@@ -6,13 +6,16 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const catalogPath = path.join(root, "catalog", "academy-learner-course-catalog.json");
 const expectedReviewCourses = Number(process.env.ACADEMY_EXPECTED_REVIEW_COURSES || 60);
 const requiredAuthoringPolicyVersion = "2026.08.07.2";
+const supportedCatalogSchemas = new Set(["1.2", "1.3"]);
 
 if (!fs.existsSync(catalogPath)) throw new Error(`Learner catalog not found: ${catalogPath}`);
 const catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
 const courses = Array.isArray(catalog.courses) ? catalog.courses : [];
 const findings = [];
 
-if (catalog.schemaVersion !== "1.2") findings.push(`unsupported-learner-catalog-schema-${catalog.schemaVersion ?? "missing"}`);
+if (!supportedCatalogSchemas.has(String(catalog.schemaVersion || ""))) {
+  findings.push(`unsupported-learner-catalog-schema-${catalog.schemaVersion ?? "missing"}`);
+}
 if (courses.length !== expectedReviewCourses) {
   findings.push(`expected-${expectedReviewCourses}-owner-review-courses-found-${courses.length}`);
 }
@@ -96,8 +99,10 @@ for (const course of courses) {
 
 const reportPath = path.join(root, "catalog", "learner-catalog-readiness.json");
 fs.writeFileSync(reportPath, `${JSON.stringify({
-  schemaVersion: "1.2",
+  schemaVersion: "1.3",
   generatedAt: new Date().toISOString(),
+  supportedCatalogSchemas: [...supportedCatalogSchemas],
+  catalogSchemaVersion: catalog.schemaVersion ?? null,
   requiredAuthoringPolicyVersion,
   expectedReviewCourses,
   discoveredCourses: courses.length,
