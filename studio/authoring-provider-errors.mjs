@@ -44,8 +44,13 @@ export function classifyProviderHttpFailure({ provider, status, body }) {
   const quotaExhausted =
     status === 429 && (
       code.includes("insufficient_quota") ||
+      code.includes("credit_balance_exhausted") ||
+      code.includes("billing") ||
       type.includes("insufficient_quota") ||
+      type.includes("credit") ||
       message.includes("exceeded your current quota") ||
+      message.includes("no credits remaining") ||
+      message.includes("credit balance") ||
       message.includes("billing quota") ||
       message.includes("billing limit")
     );
