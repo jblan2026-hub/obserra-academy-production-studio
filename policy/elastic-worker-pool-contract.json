@@ -38,6 +38,7 @@
     "mandatoryRules": [
       "commercial-cinematic-quality-gate",
       "original-instructional-content-only",
+      "claim-level-reference-and-applicability-required",
       "no-placeholder-media-as-final",
       "human-media-qc-required",
       "rights-cleared-assets-only",
@@ -80,6 +81,7 @@
     "releaseRequiresOwnerApproval": true,
     "requiredEvidence": [
       "source-traceability",
+      "claim-level-source-and-applicability-audit",
       "assessment-integrity",
       "accessibility-equivalence",
       "creative-treatment-approval",
