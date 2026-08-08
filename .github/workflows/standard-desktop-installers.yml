@@ -1,0 +1,206 @@
+name: Standard Desktop Installers
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/standard-device-installer
+    paths:
+      - "owner-command-center/**"
+      - ".github/workflows/standard-desktop-installers.yml"
+  pull_request:
+    branches:
+      - main
+      - agent/academy-production-integration
+    paths:
+      - "owner-command-center/**"
+      - ".github/workflows/standard-desktop-installers.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: standard-desktop-installers-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract-gate:
+    name: Installer and endpoint contract gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Studio dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install Command Center dependencies
+        working-directory: owner-command-center
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Verify standard installer and endpoint contracts
+        working-directory: owner-command-center
+        run: npm run verify
+      - name: Verify distributable bootstrap and enrollment UI syntax
+        working-directory: owner-command-center
+        run: |
+          node --check src/endpoint-enrollment-ui.js
+          node --check electron/main.cjs
+          node --check electron/main-with-remediation.cjs
+          node --check electron/endpoint-enrollment.cjs
+          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('resources/Obserra-Command-Center-Bootstrap.json','utf8')); if(p.targetHostname!=='*'||p.autoEnroll!==false||p.requireEnrollment!==true) throw new Error('generic enrollment profile invalid'); console.log('Generic owner-enrolled bootstrap verified.')"
+
+  windows:
+    name: Windows standard setup and portable packages
+    needs: contract-gate
+    runs-on: windows-2025
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Studio dependencies
+        working-directory: .
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install Command Center dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Re-run installer contract gate on Windows
+        run: npm run verify
+      - name: Build Windows x64 standard setup and portable package
+        shell: pwsh
+        run: npx electron-builder --win nsis portable --x64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+      - name: Build Windows ARM64 standard setup and portable package
+        shell: pwsh
+        run: npx electron-builder --win nsis portable --arm64 --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+      - name: Verify Windows package inventory
+        shell: pwsh
+        run: |
+          $required = @(
+            "dist/Obserra-Owner-AI-Command-Center-Setup-0.4.0-x64.exe",
+            "dist/Obserra-Owner-AI-Command-Center-Portable-0.4.0-x64.exe",
+            "dist/Obserra-Owner-AI-Command-Center-Setup-0.4.0-arm64.exe",
+            "dist/Obserra-Owner-AI-Command-Center-Portable-0.4.0-arm64.exe"
+          )
+          foreach ($file in $required) {
+            if (-not (Test-Path $file)) { throw "Missing Windows package: $file" }
+            if ((Get-Item $file).Length -lt 1000000) { throw "Windows package is unexpectedly small: $file" }
+          }
+          Get-ChildItem dist -File | Select-Object Name, Length | Format-Table -AutoSize
+      - name: Create Windows SHA-256 manifest
+        shell: pwsh
+        run: |
+          Get-ChildItem dist -File -Filter "*.exe" | Sort-Object Name | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash -Algorithm SHA256 $_.FullName).Hash, $_.Name
+          } | Set-Content dist/SHA256SUMS-Windows.txt -Encoding ascii
+      - name: Upload Windows standard installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Command-Center-Standard-Windows-${{ github.sha }}
+          path: |
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-Setup-*.exe
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-Portable-*.exe
+            owner-command-center/dist/SHA256SUMS-Windows.txt
+          if-no-files-found: error
+          retention-days: 180
+
+  macos:
+    name: macOS universal DMG and ZIP
+    needs: contract-gate
+    runs-on: macos-14
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Studio dependencies
+        working-directory: .
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install Command Center dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Build macOS universal packages
+        run: npx electron-builder --mac dmg zip --universal --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CSC_LINK: ${{ secrets.MACOS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CSC_KEY_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      - name: Verify macOS package inventory
+        run: |
+          test -f dist/Obserra-Owner-AI-Command-Center-0.4.0-universal.dmg
+          test -f dist/Obserra-Owner-AI-Command-Center-0.4.0-universal.zip
+          shasum -a 256 dist/Obserra-Owner-AI-Command-Center-0.4.0-universal.dmg dist/Obserra-Owner-AI-Command-Center-0.4.0-universal.zip > dist/SHA256SUMS-macOS.txt
+      - name: Upload macOS standard installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Command-Center-Standard-macOS-${{ github.sha }}
+          path: |
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-0.4.0-universal.dmg
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-0.4.0-universal.zip
+            owner-command-center/dist/SHA256SUMS-macOS.txt
+          if-no-files-found: error
+          retention-days: 180
+
+  linux:
+    name: Linux ${{ matrix.arch }} AppImage and DEB
+    needs: contract-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - x64
+          - arm64
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Linux packaging prerequisites
+        working-directory: .
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libopenjp2-tools
+      - name: Install Studio dependencies
+        working-directory: .
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install Command Center dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Build Linux packages
+        run: npx electron-builder --linux AppImage deb --${{ matrix.arch }} --publish never
+      - name: Verify Linux package inventory
+        run: |
+          test -f dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.AppImage
+          test -f dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.deb
+          sha256sum dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.AppImage dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.deb > dist/SHA256SUMS-Linux-${{ matrix.arch }}.txt
+      - name: Upload Linux standard installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Command-Center-Standard-Linux-${{ matrix.arch }}-${{ github.sha }}
+          path: |
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.AppImage
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.deb
+            owner-command-center/dist/SHA256SUMS-Linux-${{ matrix.arch }}.txt
+          if-no-files-found: error
+          retention-days: 180
