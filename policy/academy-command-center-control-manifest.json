@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0",
+  "controlSet": "obserra-academy-command-center-reset-v2",
+  "effectiveDate": "2026-08-08",
+  "documentation": "docs/ACADEMY-COMMAND-CENTER-AUDIT-REGISTER.md",
+  "controls": [
+    {
+      "id": "ACC-001",
+      "name": "Owner endpoint enrollment",
+      "implementation": ["owner-command-center/electron/endpoint-enrollment.cjs"],
+      "verification": ["owner-command-center/scripts/verify-endpoint-enrollment.mjs"],
+      "required": true
+    },
+    {
+      "id": "ACC-002",
+      "name": "Renderer privacy boundary",
+      "implementation": [
+        "owner-command-center/electron/academy-data-protection.cjs",
+        "owner-command-center/electron/academy-course-control-resolver.cjs"
+      ],
+      "verification": [
+        "owner-command-center/scripts/verify-academy-data-protection.mjs",
+        "owner-command-center/scripts/verify-payment-control-behavior.mjs"
+      ],
+      "required": true
+    },
+    {
+      "id": "ACC-004",
+      "name": "Stripe-hosted payment security",
+      "implementation": [
+        "policy/academy-payment-security.json",
+        "policy/academy-pci-dss-v4.0.1-profile.json"
+      ],
+      "verification": [
+        "owner-command-center/scripts/verify-payment-control-baseline.mjs",
+        "owner-command-center/scripts/verify-payment-control-behavior.mjs",
+        "owner-command-center/scripts/verify-academy-commerce-policy.mjs"
+      ],
+      "required": true
+    },
+    {
+      "id": "ACC-007",
+      "name": "Secure purchase verification",
+      "implementation": ["owner-command-center/electron/academy-secure-purchase-verifier.cjs"],
+      "verification": ["owner-command-center/scripts/verify-live-academy-purchase.mjs"],
+      "required": true
+    },
+    {
+      "id": "ACC-009",
+      "name": "All Sales Are Final disclosure",
+      "implementation": ["policy/academy-commerce-policy.json"],
+      "verification": ["owner-command-center/scripts/verify-academy-commerce-policy.mjs"],
+      "required": true
+    },
+    {
+      "id": "ACC-012",
+      "name": "Website published-course retrieval",
+      "implementation": [
+        "owner-command-center/electron/academy-website-retrieval.cjs",
+        "owner-command-center/electron/academy-website-retrieval-ipc.cjs"
+      ],
+      "verification": [],
+      "required": true,
+      "externalImplementation": "jblan2026-hub/obserra-website:app/api/academy/course/[courseId]/route.ts"
+    },
+    {
+      "id": "ACC-013",
+      "name": "Website certificate retrieval",
+      "implementation": [
+        "owner-command-center/electron/academy-website-retrieval.cjs",
+        "owner-command-center/electron/academy-website-retrieval-ipc.cjs"
+      ],
+      "verification": [],
+      "required": true,
+      "externalImplementation": "jblan2026-hub/obserra-website:app/api/academy/certificate/verify/route.ts"
+    },
+    {
+      "id": "ACC-016",
+      "name": "Academy-only Command Center",
+      "implementation": [
+        "owner-command-center/src/index.html",
+        "owner-command-center/src/academy-reset-ui.js",
+        "owner-command-center/src/academy-reset.css"
+      ],
+      "verification": ["owner-command-center/scripts/verify-local-academy-review-dashboard.mjs"],
+      "required": true
+    },
+    {
+      "id": "ACC-017",
+      "name": "Product pricing source of truth",
+      "implementation": [
+        "studio/generate-catalog.mjs"
+      ],
+      "verification": [],
+      "required": true,
+      "status": "pricing-normalization-in-progress"
+    },
+    {
+      "id": "ACC-020",
+      "name": "Standard verification chain",
+      "implementation": ["owner-command-center/package.json"],
+      "verification": [
+        "owner-command-center/scripts/verify-payment-control-baseline.mjs",
+        "owner-command-center/scripts/verify-payment-control-behavior.mjs"
+      ],
+      "required": true
+    }
+  ]
+}
