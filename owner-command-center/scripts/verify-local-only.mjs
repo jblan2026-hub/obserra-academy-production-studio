@@ -66,7 +66,7 @@ rejectPattern(preload, /require\(["']node:(fs|child_process|net|http|https)|requ
 
 requirePattern(academyStudio, /ALLOWED_ACTIONS/, "Studio actions must be allowlisted");
 requirePattern(academyStudio, /function\s+studioActionArgs/, "Studio action dispatch must validate only the selected action");
-requirePattern(academyStudio, /case\s+["']author-all["'][\s\S]*return\s+\[["']run["'],\s*["']author:all["']\]/, "batch authoring must not require a single course identifier");
+requirePattern(academyStudio, /case\s+["']author-all["'][\s\S]*return\s+\[["']run["'],\s*["']author:parallel["']\]/, "batch authoring must dispatch governed parallel portfolio authoring without requiring a single course identifier");
 requirePattern(academyStudio, /case\s+["']build-all["'][\s\S]*return\s+\[["']run["'],\s*["']build:all["']\]/, "batch building must not require a single course identifier");
 requirePattern(academyStudio, /ACADEMY_COMMAND_CENTER_ACTION_TIMEOUT_MS/, "owner Academy actions must have a governed timeout override");
 requirePattern(academyStudio, /ACTION_TIMEOUT_DEFAULTS_MS/, "owner Academy actions must have action-specific timeout defaults");
