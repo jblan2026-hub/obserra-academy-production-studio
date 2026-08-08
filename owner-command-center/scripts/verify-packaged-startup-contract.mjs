@@ -20,7 +20,7 @@ const main = fs.readFileSync(
   "utf8",
 );
 
-assert.equal(packageJson.version, "0.4.1");
+assert.equal(packageJson.version, "0.4.2");
 assert.equal(packageJson.main, "electron/bootstrap-main.cjs");
 assert.equal(packageJson.build.asar, true);
 assert.equal(packageJson.build.compression, "normal");
@@ -34,16 +34,33 @@ assert.match(bootstrap, /installElectronStoreCompatibility/);
 assert.match(bootstrap, /request === "electron-store"/);
 assert.match(bootstrap, /require\("\.\/main-with-remediation\.cjs"\)/);
 assert.match(bootstrap, /OBSERRA_STARTUP_SMOKE_TEST/);
+assert.match(bootstrap, /OBSERRA_STARTUP_HEALTH_PATH/);
 assert.match(bootstrap, /startup-health\.json/);
+assert.match(bootstrap, /retainedWindows/);
+assert.match(bootstrap, /obserra:primary-window-created/);
+assert.match(bootstrap, /startup-smoke-passed/);
+assert.match(bootstrap, /primary-window-ready-timeout/);
 assert.match(bootstrap, /rendererRecoveryAttempts/);
 assert.match(bootstrap, /primary-window-ready/);
 assert.match(bootstrap, /createSplashWindow/);
 assert.match(mainWithRemediation, /require\("electron-store"\)/);
 assert.match(main, /require\("electron-store"\)/);
+assert.match(main, /let mainWindow = null/);
+assert.match(main, /let mainWindowShowTimer = null/);
+assert.match(main, /app\.emit\("obserra:primary-window-created", window\)/);
+assert.match(main, /function showPrimaryWindow\(\)/);
+assert.match(main, /function startBackgroundServices\(\)/);
+assert.match(main, /runMonitoringCycle\("startup-background"\)/);
+assert.match(main, /ready-to-show-timeout/);
+assert.match(main, /windowLoadFailureMarkup/);
 
 const importIndex = bootstrap.indexOf('await import("electron-store")');
 const mainIndex = bootstrap.indexOf('require("./main-with-remediation.cjs")');
 assert.ok(importIndex >= 0 && mainIndex > importIndex);
+
+const createWindowIndex = main.lastIndexOf("  createWindow();");
+const backgroundStartIndex = main.indexOf("void startBackgroundServices();", createWindowIndex);
+assert.ok(createWindowIndex >= 0 && backgroundStartIndex > createWindowIndex);
 
 console.log(
   JSON.stringify(
@@ -54,9 +71,14 @@ console.log(
       persistentDesktopShortcut: true,
       startMenuShortcut: true,
       selectableInstallDirectory: true,
+      primaryWindowStrongReference: true,
+      immediateVisibleInterfaceBeforeMonitoring: true,
       startupHealthTelemetry: true,
       startupSplash: true,
+      startupSmokeRequiresPrimaryWindow: true,
+      secondInstanceFocusRecovery: true,
       rendererSingleRecoveryAttempt: true,
+      interfaceLoadFailureFallback: true,
       normalCompressionForFasterInstall: true,
       passed: true,
     },
