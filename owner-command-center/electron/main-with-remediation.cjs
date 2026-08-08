@@ -106,40 +106,52 @@ function promoteEndpointBootstrapProfile(profilePath) {
   return endpointPath;
 }
 
-app.whenReady().then(async () => {
-  ipcMain.handle("remediation:getSnapshot", async () => remediationQueue.snapshot());
-  ipcMain.handle("remediation:propose", async (_event, payload) => {
-    const request = requireObject(payload, "Remediation proposal");
-    const requestFinding = requireObject(request.finding, "Known-bad finding");
-    const verifiedFinding = resolveVerifiedFinding(requestFinding.id || requestFinding.findingId);
-    assertFindingEvidenceMatch(requestFinding, verifiedFinding);
-    return remediationQueue.propose(
-      { ...verifiedFinding, id: verifiedFinding.id || verifiedFinding.findingId },
-      String(request.target || ""),
-      Array.isArray(request.files) ? request.files : [],
-    );
-  });
-  ipcMain.handle("remediation:decide", async (_event, payload) => {
-    const request = requireObject(payload, "Remediation decision");
-    return remediationQueue.decide(String(request.proposalId || ""), String(request.decision || ""), String(request.note || ""));
-  });
-  ipcMain.handle("remediation:execute", async (_event, proposalId) => remediationQueue.execute(String(proposalId || "")));
-  ipcMain.handle("academy:getProductionEvidence", async () => getAcademyProductionEvidence());
-
-  try {
-    const profilePath = await waitForBootstrapProfile();
-    if (profilePath) promoteEndpointBootstrapProfile(profilePath);
-    await endpointRuntime.start();
-  } catch (error) {
-    store.set("endpoint.startupFailure", {
+const primaryInstance = app.requestSingleInstanceLock();
+if (!primaryInstance) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    store.set("endpoint.lastDuplicateLaunch", {
       at: new Date().toISOString(),
-      error: error instanceof Error ? error.message : String(error),
+      action: "duplicate-process-denied",
     });
-  }
-});
+  });
 
-app.on("before-quit", () => {
-  endpointRuntime.stop().catch(() => {});
-});
+  app.whenReady().then(async () => {
+    ipcMain.handle("remediation:getSnapshot", async () => remediationQueue.snapshot());
+    ipcMain.handle("remediation:propose", async (_event, payload) => {
+      const request = requireObject(payload, "Remediation proposal");
+      const requestFinding = requireObject(request.finding, "Known-bad finding");
+      const verifiedFinding = resolveVerifiedFinding(requestFinding.id || requestFinding.findingId);
+      assertFindingEvidenceMatch(requestFinding, verifiedFinding);
+      return remediationQueue.propose(
+        { ...verifiedFinding, id: verifiedFinding.id || verifiedFinding.findingId },
+        String(request.target || ""),
+        Array.isArray(request.files) ? request.files : [],
+      );
+    });
+    ipcMain.handle("remediation:decide", async (_event, payload) => {
+      const request = requireObject(payload, "Remediation decision");
+      return remediationQueue.decide(String(request.proposalId || ""), String(request.decision || ""), String(request.note || ""));
+    });
+    ipcMain.handle("remediation:execute", async (_event, proposalId) => remediationQueue.execute(String(proposalId || "")));
+    ipcMain.handle("academy:getProductionEvidence", async () => getAcademyProductionEvidence());
 
-require("./main.cjs");
+    try {
+      const profilePath = await waitForBootstrapProfile();
+      if (profilePath) promoteEndpointBootstrapProfile(profilePath);
+      await endpointRuntime.start();
+    } catch (error) {
+      store.set("endpoint.startupFailure", {
+        at: new Date().toISOString(),
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
+  app.on("before-quit", () => {
+    endpointRuntime.stop().catch(() => {});
+  });
+
+  require("./main.cjs");
+}
