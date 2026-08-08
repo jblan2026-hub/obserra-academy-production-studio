@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "policyId": "obserra-academy-green-path-locks",
+  "effectiveDate": "2026-08-08",
+  "principle": "A production path that has passed its required verification suite may be frozen. Frozen paths cannot change without an explicit owner-approved re-baseline that produces a new auditable lock record.",
+  "defaultState": "unlocked-until-green",
+  "rebaseline": {
+    "ownerApprovalRequired": true,
+    "reasonRequired": true,
+    "verificationEvidenceRequired": true,
+    "previousLockRetainedInGitHistory": true,
+    "silentHashRefreshForbidden": true
+  },
+  "locks": []
+}
