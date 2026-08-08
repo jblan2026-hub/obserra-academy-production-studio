@@ -1,7 +1,13 @@
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+
+import {
+  ACADEMY_AUTHORING_POLICY_VERSION,
+  academyAuthoringQualityContract,
+} from "./academy-authoring-quality-contract.mjs";
+import { authoredPackageFindings } from "./validate-authored-package.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
@@ -46,22 +52,21 @@ function writeJson(filePath, value) {
   fs.renameSync(temporary, filePath);
 }
 
-function normalizedText(value) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
 function packagePaths(courseId) {
   const courseRoot = path.join(coursesRoot, courseId);
   return {
-    courseRoot,
     manifestPath: path.join(courseRoot, "course-manifest.json"),
-    packagePath: path.join(courseRoot, "generated", "authoring", "course-package.json"),
+    packagePath: path.join(
+      courseRoot,
+      "generated",
+      "authoring",
+      "course-package.json",
+    ),
   };
 }
 
 function validateCoursePackage(courseId) {
   const { manifestPath, packagePath } = packagePaths(courseId);
-  const findings = [];
   if (!fs.existsSync(manifestPath)) return [`${courseId}:missing-manifest`];
   if (!fs.existsSync(packagePath)) return [`${courseId}:missing-authored-package`];
 
@@ -78,81 +83,28 @@ function validateCoursePackage(courseId) {
     return [`${courseId}:invalid-authored-json:${error.message}`];
   }
 
-  const content = envelope?.content || {};
-  const expectedModules = Array.isArray(manifest?.course?.modules)
-    ? manifest.course.modules
-    : [];
-  const modules = Array.isArray(content.modules) ? content.modules : [];
-  const modulesById = new Map(modules.map((module) => [module?.id, module]));
-  const workbookByModule = new Map(
-    (Array.isArray(content.learnerWorkbook) ? content.learnerWorkbook : [])
-      .map((entry) => [entry?.moduleId, entry]),
-  );
-
-  if (!normalizedText(content?.courseSummary?.executiveValue)) {
-    findings.push(`${courseId}:missing-course-summary-executive-value`);
+  const findings = authoredPackageFindings({
+    manifest,
+    authored: envelope?.content,
+  });
+  if (envelope?.authoringPolicyVersion !== ACADEMY_AUTHORING_POLICY_VERSION) {
+    findings.push(
+      `authoring-policy-${envelope?.authoringPolicyVersion || "missing"}-expected-${ACADEMY_AUTHORING_POLICY_VERSION}`,
+    );
   }
-  if (!normalizedText(content?.courseSummary?.instructionalStrategy)) {
-    findings.push(`${courseId}:missing-course-summary-instructional-strategy`);
-  }
-  if (!Array.isArray(content.sourceRegister) || content.sourceRegister.length === 0) {
-    findings.push(`${courseId}:missing-source-register`);
-  }
-  if (!Array.isArray(content.frameworkAlignment)) {
-    findings.push(`${courseId}:missing-framework-alignment-array`);
-  }
-  if (!content.assessmentBlueprint || !Array.isArray(content.assessmentBlueprint.coverageByModule)) {
-    findings.push(`${courseId}:missing-assessment-blueprint`);
-  }
-  if (modules.length !== expectedModules.length) {
-    findings.push(`${courseId}:expected-${expectedModules.length}-modules-found-${modules.length}`);
-  }
-
-  for (const expected of expectedModules) {
-    const module = modulesById.get(expected.id);
-    const prefix = `${courseId}/${expected.id}`;
-    if (!module) {
-      findings.push(`${prefix}:missing-module`);
-      continue;
-    }
-    if (!normalizedText(module.lessonNarrative)) findings.push(`${prefix}:missing-lesson-narrative`);
-    if (!Array.isArray(module.learningObjectives) || module.learningObjectives.length === 0) {
-      findings.push(`${prefix}:missing-learning-objectives`);
-    }
-    if (!Array.isArray(module.keyConcepts) || module.keyConcepts.length < 4) {
-      findings.push(`${prefix}:insufficient-key-concepts`);
-    }
-    if (!module.scenario) findings.push(`${prefix}:missing-scenario`);
-    if (!module.exercise) findings.push(`${prefix}:missing-exercise`);
-    if (!Array.isArray(module.knowledgeChecks) || module.knowledgeChecks.length < 4) {
-      findings.push(`${prefix}:insufficient-knowledge-checks`);
-    }
-    if (!Array.isArray(module.slideNarrative) || module.slideNarrative.length < 8) {
-      findings.push(`${prefix}:insufficient-slide-narrative`);
-    }
-    if (!module.videoScript) findings.push(`${prefix}:missing-video-script`);
-    if (!Array.isArray(module.accessibilityNotes) || module.accessibilityNotes.length < 4) {
-      findings.push(`${prefix}:insufficient-accessibility-notes`);
-    }
-    const workbook = workbookByModule.get(expected.id);
-    if (!workbook) findings.push(`${prefix}:missing-workbook`);
-  }
-
-  const finalAssessment = Array.isArray(content.finalAssessment)
-    ? content.finalAssessment
-    : [];
-  if (finalAssessment.length < 25) {
-    findings.push(`${courseId}:insufficient-final-assessment-${finalAssessment.length}`);
-  }
-
-  return findings;
+  return [...new Set(findings)]
+    .sort()
+    .map((finding) => `${courseId}:${finding}`);
 }
 
 function courseIds() {
-  return fs.readdirSync(coursesRoot, { withFileTypes: true })
+  return fs
+    .readdirSync(coursesRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .filter((courseId) => fs.existsSync(path.join(coursesRoot, courseId, "course-manifest.json")))
+    .filter((courseId) =>
+      fs.existsSync(path.join(coursesRoot, courseId, "course-manifest.json")),
+    )
     .sort();
 }
 
@@ -160,7 +112,12 @@ function regenerate(courseId) {
   return new Promise((resolve) => {
     const child = spawn(
       process.execPath,
-      [path.join(root, "studio", "author-course-ai.mjs"), "--course", courseId, "--force"],
+      [
+        path.join(root, "studio", "author-course-ai.mjs"),
+        "--course",
+        courseId,
+        "--force",
+      ],
       {
         cwd: root,
         env: { ...process.env },
@@ -206,6 +163,7 @@ function regenerate(courseId) {
 }
 
 async function runBounded(items, concurrency, worker) {
+  if (items.length === 0) return [];
   const results = [];
   let cursor = 0;
   async function runWorker() {
@@ -215,41 +173,61 @@ async function runBounded(items, concurrency, worker) {
       results[index] = await worker(items[index], index);
     }
   }
-  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, runWorker));
+  await Promise.all(
+    Array.from(
+      { length: Math.min(concurrency, items.length) },
+      runWorker,
+    ),
+  );
   return results;
 }
 
 async function main() {
   const ids = courseIds();
-  const initial = Object.fromEntries(ids.map((courseId) => [courseId, validateCoursePackage(courseId)]));
+  const initial = Object.fromEntries(
+    ids.map((courseId) => [courseId, validateCoursePackage(courseId)]),
+  );
   let pending = ids.filter((courseId) => initial[courseId].length > 0);
   const attempts = [];
 
-  for (let attempt = 1; attempt <= maximumRepairAttempts && pending.length > 0; attempt += 1) {
+  for (
+    let attempt = 1;
+    attempt <= maximumRepairAttempts && pending.length > 0;
+    attempt += 1
+  ) {
     console.log(
-      `[Academy Studio] Selective authoring repair attempt ${attempt}/${maximumRepairAttempts} for ${pending.length} incomplete course package(s).`,
+      `[Academy Studio] Selective authoring repair attempt ${attempt}/${maximumRepairAttempts} for ${pending.length} package(s) that do not satisfy policy ${ACADEMY_AUTHORING_POLICY_VERSION}.`,
     );
-    const regenerated = await runBounded(pending, repairConcurrency, async (courseId) => {
-      const result = await regenerate(courseId);
-      const findings = validateCoursePackage(courseId);
-      return { attempt, ...result, findings };
-    });
+    const regenerated = await runBounded(
+      pending,
+      repairConcurrency,
+      async (courseId) => {
+        const result = await regenerate(courseId);
+        const findings = validateCoursePackage(courseId);
+        return { attempt, ...result, findings };
+      },
+    );
     attempts.push(...regenerated);
     pending = regenerated
       .filter((result) => !result.ok || result.findings.length > 0)
       .map((result) => result.courseId);
   }
 
-  const final = Object.fromEntries(ids.map((courseId) => [courseId, validateCoursePackage(courseId)]));
+  const final = Object.fromEntries(
+    ids.map((courseId) => [courseId, validateCoursePackage(courseId)]),
+  );
   const failed = ids.filter((courseId) => final[courseId].length > 0);
   const repaired = ids.filter(
     (courseId) => initial[courseId].length > 0 && final[courseId].length === 0,
   );
   const report = {
-    schemaVersion: "1.0",
+    schemaVersion: "2.0",
     generatedAt: new Date().toISOString(),
+    authoringQualityContract: academyAuthoringQualityContract(),
     discoveredCourses: ids.length,
-    initiallyIncomplete: Object.values(initial).filter((findings) => findings.length > 0).length,
+    initiallyIncomplete: Object.values(initial).filter(
+      (findings) => findings.length > 0,
+    ).length,
     repairedCourses: repaired,
     failedCourses: failed,
     maximumRepairAttempts,
@@ -263,7 +241,7 @@ async function main() {
 
   if (failed.length > 0) {
     console.error(
-      `[Academy Studio] Authored-package quality gate failed for ${failed.length} course(s).`,
+      `[Academy Studio] Production authoring quality gate failed for ${failed.length} course(s).`,
     );
     for (const courseId of failed) {
       console.error(`- ${courseId}: ${final[courseId].join(", ")}`);
@@ -272,7 +250,7 @@ async function main() {
   }
 
   console.log(
-    `[Academy Studio] Authored-package quality gate passed for all ${ids.length} course(s); selectively repaired ${repaired.length}.`,
+    `[Academy Studio] Production authoring quality gate passed for all ${ids.length} course(s) under policy ${ACADEMY_AUTHORING_POLICY_VERSION}; selectively repaired ${repaired.length}.`,
   );
 }
 
