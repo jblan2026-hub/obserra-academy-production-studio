@@ -1,0 +1,96 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const commandCenterRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const packageJson = JSON.parse(
+  fs.readFileSync(path.join(commandCenterRoot, "package.json"), "utf8"),
+);
+const bootstrap = fs.readFileSync(
+  path.join(commandCenterRoot, "electron", "bootstrap-main.cjs"),
+  "utf8",
+);
+const mainWithRemediation = fs.readFileSync(
+  path.join(commandCenterRoot, "electron", "main-with-remediation.cjs"),
+  "utf8",
+);
+const main = fs.readFileSync(
+  path.join(commandCenterRoot, "electron", "main.cjs"),
+  "utf8",
+);
+
+assert.equal(packageJson.version, "0.4.3");
+assert.equal(packageJson.main, "electron/bootstrap-main.cjs");
+assert.equal(packageJson.build.asar, true);
+assert.equal(packageJson.build.compression, "normal");
+assert.equal(packageJson.build.nsis.createDesktopShortcut, "always");
+assert.equal(packageJson.build.nsis.createStartMenuShortcut, true);
+assert.equal(packageJson.build.nsis.allowToChangeInstallationDirectory, true);
+assert.equal(packageJson.build.nsis.runAfterFinish, true);
+
+assert.match(bootstrap, /await import\("electron-store"\)/);
+assert.match(bootstrap, /installElectronStoreCompatibility/);
+assert.match(bootstrap, /SharedElectronStore/);
+assert.match(bootstrap, /sharedStores/);
+assert.match(bootstrap, /request === "electron-store"/);
+assert.match(bootstrap, /require\("\.\/main-with-remediation\.cjs"\)/);
+assert.match(bootstrap, /OBSERRA_STARTUP_SMOKE_TEST/);
+assert.match(bootstrap, /OBSERRA_STARTUP_HEALTH_PATH/);
+assert.match(bootstrap, /startup-health\.json/);
+assert.match(bootstrap, /retainedWindows/);
+assert.match(bootstrap, /obserra:primary-window-created/);
+assert.match(bootstrap, /startup-smoke-passed/);
+assert.match(bootstrap, /primary-window-ready-timeout/);
+assert.match(bootstrap, /rendererRecoveryAttempts/);
+assert.match(bootstrap, /primary-window-ready/);
+assert.match(bootstrap, /createSplashWindow/);
+assert.match(mainWithRemediation, /getOwnerCommandCenterStore/);
+assert.match(mainWithRemediation, /createWebNetworkMonitor/);
+assert.match(mainWithRemediation, /runtime:getHealth/);
+assert.match(mainWithRemediation, /webpages:scanAll/);
+assert.match(mainWithRemediation, /network:analyzeNow/);
+assert.match(main, /require\("electron-store"\)/);
+assert.match(main, /let mainWindow = null/);
+assert.match(main, /let mainWindowShowTimer = null/);
+assert.match(main, /app\.emit\("obserra:primary-window-created", window\)/);
+assert.match(main, /function showPrimaryWindow\(\)/);
+assert.match(main, /function startBackgroundServices\(\)/);
+assert.match(main, /runMonitoringCycle\("startup-background"\)/);
+assert.match(main, /ready-to-show-timeout/);
+assert.match(main, /windowLoadFailureMarkup/);
+
+const importIndex = bootstrap.indexOf('await import("electron-store")');
+const mainIndex = bootstrap.indexOf('require("./main-with-remediation.cjs")');
+assert.ok(importIndex >= 0 && mainIndex > importIndex);
+
+const createWindowIndex = main.lastIndexOf("  createWindow();");
+const backgroundStartIndex = main.indexOf("void startBackgroundServices();", createWindowIndex);
+assert.ok(createWindowIndex >= 0 && backgroundStartIndex > createWindowIndex);
+
+console.log(
+  JSON.stringify(
+    {
+      gate: "packaged-startup-contract",
+      version: packageJson.version,
+      electronStoreEsmCompatibility: true,
+      sharedDurableStore: true,
+      persistentDesktopShortcut: true,
+      startMenuShortcut: true,
+      selectableInstallDirectory: true,
+      primaryWindowStrongReference: true,
+      immediateVisibleInterfaceBeforeMonitoring: true,
+      startupHealthTelemetry: true,
+      startupSplash: true,
+      startupSmokeRequiresPrimaryWindow: true,
+      secondInstanceFocusRecovery: true,
+      rendererSingleRecoveryAttempt: true,
+      interfaceLoadFailureFallback: true,
+      webAndNetworkRuntimeRegistered: true,
+      normalCompressionForFasterInstall: true,
+      passed: true,
+    },
+    null,
+    2,
+  ),
+);

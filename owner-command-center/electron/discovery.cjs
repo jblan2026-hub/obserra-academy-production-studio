@@ -13,7 +13,7 @@ function networkTopology(connectors) {
         family: address.family,
         address: address.address,
         cidr: address.cidr || null,
-        mac: address.mac || null
+        mac: address.mac || null,
       });
     }
   }
@@ -28,7 +28,7 @@ function networkTopology(connectors) {
       hostname: parsed.hostname,
       port: parsed.port || (parsed.protocol === "https:" ? "443" : "80"),
       localOnly: connector.localOnly === true,
-      intelligenceReporting: Boolean(connector.intelligencePath)
+      intelligenceReporting: Boolean(connector.intelligencePath),
     };
   }).sort((a, b) => a.id.localeCompare(b.id));
 
@@ -37,7 +37,7 @@ function networkTopology(connectors) {
     interfaces,
     approvedServices,
     discoveryMode: "approved-endpoints-and-local-interfaces",
-    unrestrictedPortScanning: false
+    unrestrictedPortScanning: false,
   };
 }
 
@@ -50,7 +50,9 @@ async function readBoundedText(response) {
     const { done, value } = await reader.read();
     if (done) break;
     total += value.byteLength;
-    if (total > MAX_RESPONSE_BYTES) throw new Error("Intelligence response exceeded the approved size limit");
+    if (total > MAX_RESPONSE_BYTES) {
+      throw new Error("Intelligence response exceeded the approved size limit");
+    }
     chunks.push(Buffer.from(value));
   }
   return Buffer.concat(chunks).toString("utf8");
@@ -63,12 +65,29 @@ async function collectIntelligence(connector, headers) {
   try {
     const response = await fetch(`${connector.url}${connector.intelligencePath}`, {
       method: "GET",
-      headers: { ...headers, Accept: "application/json", "X-Obserra-Intelligence-Contract": "obserra-intelligence-v1" },
+      headers: {
+        ...headers,
+        Accept: "application/json",
+        "X-Obserra-Intelligence-Contract": "obserra-intelligence-v1",
+      },
       signal: controller.signal,
-      redirect: "error"
+      redirect: "error",
     });
-    if (response.status === 404) return { sourceId: connector.id, status: "not-supported", observedAt: new Date().toISOString() };
-    if (!response.ok) return { sourceId: connector.id, status: "degraded", httpStatus: response.status, observedAt: new Date().toISOString() };
+    if (response.status === 404) {
+      return {
+        sourceId: connector.id,
+        status: "not-supported",
+        observedAt: new Date().toISOString(),
+      };
+    }
+    if (!response.ok) {
+      return {
+        sourceId: connector.id,
+        status: "degraded",
+        httpStatus: response.status,
+        observedAt: new Date().toISOString(),
+      };
+    }
     const text = await readBoundedText(response);
     const report = text ? JSON.parse(text) : {};
     return {
@@ -77,14 +96,14 @@ async function collectIntelligence(connector, headers) {
       contract: report.contract || null,
       observedAt: new Date().toISOString(),
       report,
-      memory: typeof report.memory === "string" ? report.memory : null
+      memory: typeof report.memory === "string" ? report.memory : null,
     };
   } catch (error) {
     return {
       sourceId: connector.id,
       status: "unavailable",
       error: error instanceof Error ? error.message : String(error),
-      observedAt: new Date().toISOString()
+      observedAt: new Date().toISOString(),
     };
   } finally {
     clearTimeout(timeout);
