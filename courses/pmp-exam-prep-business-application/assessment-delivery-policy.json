@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "status": "draft",
+  "protectedSimulation": {
+    "totalQuestions": 180,
+    "sections": [
+      { "section": 1, "questions": 60, "timeMinutes": 80, "breakAfterMinutes": 10 },
+      { "section": 2, "questions": 60, "timeMinutes": 80, "breakAfterMinutes": 10 },
+      { "section": 3, "questions": 60, "timeMinutes": 80, "breakAfterMinutes": 0 }
+    ],
+    "totalTimeMinutes": 240,
+    "scheduledBreaks": 2,
+    "canReturnToPriorSectionAfterBreakStarts": false,
+    "aiTutorLocked": true,
+    "answerExplanationsDuringSection": false,
+    "domainFeedbackDuringSection": false,
+    "technicalSupportAllowed": true
+  },
+  "finalBlueprint": {
+    "domainCounts": {
+      "people": 59,
+      "process": 74,
+      "businessEnvironment": 47
+    },
+    "domainPercentages": {
+      "people": 32.78,
+      "process": 41.11,
+      "businessEnvironment": 26.11
+    },
+    "deliveryApproachTarget": {
+      "predictive": 72,
+      "adaptiveAgileAndHybrid": 108
+    },
+    "questionFormatsRequired": [
+      "single-response",
+      "multiple-response",
+      "case-or-scenario",
+      "graphic-based",
+      "matching",
+      "enhanced-matching",
+      "sequencing-or-drag-and-drop-with-accessible-alternative"
+    ]
+  },
+  "randomization": {
+    "questionOrder": "randomize-within-blueprint-bands",
+    "optionOrder": "randomize-per-learner-session-where-order-is-not-semantic",
+    "preserveOptionOrderFor": [
+      "sequencing",
+      "timeline",
+      "ordered-calculation-steps",
+      "accessible-matching-alternative"
+    ],
+    "correctAnswerRemappingRequired": true,
+    "deterministicAuditSeedRequired": true,
+    "learnerSeedNotExposed": true
+  },
+  "qualityControls": {
+    "credentialedPmpSmeReviewRequired": true,
+    "technicalReviewRequired": true,
+    "editorialReviewRequired": true,
+    "psychometricReviewRequired": true,
+    "accessibilityReviewRequired": true,
+    "originalityReviewRequired": true,
+    "sourceMappingRequired": true,
+    "distractorRationaleRequired": true,
+    "blockedItemsExcluded": true,
+    "knownDefectFailClosed": true,
+    "duplicateAndNearDuplicateDetectionRequired": true,
+    "answerPositionBalanceReviewedBeforeRelease": true,
+    "difficultyDistributionReviewedBeforeRelease": true,
+    "domainAndTaskCoverageReviewedBeforeRelease": true,
+    "predictiveAdaptiveHybridCoverageReviewedBeforeRelease": true,
+    "calculationVerificationRequired": true,
+    "graphicAlternativeTextRequired": true
+  },
+  "integrity": {
+    "examDumpsProhibited": true,
+    "recalledQuestionsProhibited": true,
+    "confidentialExamContentProhibited": true,
+    "liveQuestionReconstructionProhibited": true,
+    "allItemsMustBeOriginal": true,
+    "learnerCannotExportProtectedItems": true,
+    "copyPasteDisabledWhereSupported": true,
+    "screenCaptureDeterrenceWhereSupported": true,
+    "accessAndSubmissionAudited": true,
+    "appealAndReviewWorkflowRequired": true
+  },
+  "postSubmission": {
+    "showOverallScore": true,
+    "showDomainPerformance": true,
+    "showTaskPerformance": true,
+    "showApproachPerformance": true,
+    "showQuestionFormatPerformance": true,
+    "showTimingPerformance": true,
+    "showConfidenceCalibration": true,
+    "showRationales": true,
+    "showDistractorAnalysis": true,
+    "showSourceIds": true,
+    "allowCourseTutorRemediation": true,
+    "generatePersonalizedPractice": true,
+    "officialPmiScoreClaim": false,
+    "passingGuaranteeClaim": false
+  },
+  "currentStatus": {
+    "questionsDrafted": 30,
+    "questionsRequired": 180,
+    "releaseEligible": false,
+    "reason": "The current internal-review bank is an initial domain-spanning diagnostic set, not the final three-section simulation."
+  }
+}

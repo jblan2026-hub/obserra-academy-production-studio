@@ -1,0 +1,150 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "courseVersion": "0.1.0",
+  "status": "not-release-ready",
+  "recordedAt": "2026-08-07T06:45:00Z",
+  "automatedRepositoryValidationExecutedInCurrentSession": false,
+  "automatedValidationLimitation": "Release-aware audit and canonical AI-native validators are now wired into the verification chain. GitHub-hosted validation must still pass against the latest branch head before any release decision.",
+  "structuralObservations": {
+    "declaredDuration": "35 hours",
+    "instructionalHours": 35,
+    "lessonCount": 35,
+    "ecoDomainsMapped": 3,
+    "ecoTasksMapped": 26,
+    "authoritativeSourceArtifacts": 2,
+    "authoritativeSourcesExpandedForTeamLearning": true,
+    "authoritativeSourcesExpandedForStakeholderChange": true,
+    "videoScriptsDrafted": 13,
+    "assessmentQuestionsDrafted": 30,
+    "assessmentTarget": 180,
+    "examOrientationModuleScriptsComplete": true,
+    "peopleVisionLeadershipModuleScriptsComplete": true,
+    "peopleStakeholderConflictModuleScriptsComplete": true,
+    "peopleDomainScriptsComplete": true,
+    "duplicateCourseManifestRemoved": true,
+    "ownerFinalReviewGateImplemented": true,
+    "ownerFinalReviewRendersDatabasePackageDirectly": true,
+    "ownerFinalReviewTutorProxyImplemented": true,
+    "releaseAwareAuditImplemented": true,
+    "canonicalAiNativeValidatorImplemented": true
+  },
+  "checks": [
+    {
+      "id": "QA-001",
+      "check": "Course-specific hours and lessons replace a generic fixed template",
+      "status": "pass-structural",
+      "evidence": "Manifest declares 35 hours and 35 lessons with nested lesson-level durations and sources."
+    },
+    {
+      "id": "QA-002",
+      "check": "All July 2026 ECO domains and tasks are mapped",
+      "status": "pass-structural",
+      "evidence": "Exam-domain and lesson traceability records map the People, Process, and Business Environment responsibilities."
+    },
+    {
+      "id": "QA-003",
+      "check": "Primary-source, standards, government, and peer-reviewed research records exist",
+      "status": "pass-structural",
+      "evidence": "The governed source records include PMI, ISO, GAO, NASA investigation, VA modernization, and peer-reviewed team-learning and psychological-safety research with explicit usage limitations."
+    },
+    {
+      "id": "QA-004",
+      "check": "AI tutor is entitlement scoped and protected-assessment aware",
+      "status": "pass-structural",
+      "evidence": "The tutor profile is course scoped, source governed, includes the approved stakeholder-change supplement, and prohibits protected-answer disclosure."
+    },
+    {
+      "id": "QA-005",
+      "check": "Cinematic video production system exists",
+      "status": "pass-structural",
+      "evidence": "Video production bible, visual brief, and 13 detailed lesson scripts exist. The exam-orientation and both People-domain module script sets are complete in draft."
+    },
+    {
+      "id": "QA-006",
+      "check": "All 35 lesson scripts are complete",
+      "status": "fail-incomplete",
+      "evidence": "Thirteen of 35 production scripts are drafted."
+    },
+    {
+      "id": "QA-007",
+      "check": "All 35 lesson videos are mastered and accessible",
+      "status": "fail-incomplete",
+      "evidence": "No mastered video, captions, transcripts, audio descriptions, or reduced-motion alternatives are present."
+    },
+    {
+      "id": "QA-008",
+      "check": "Full 180-question simulation exists",
+      "status": "fail-incomplete",
+      "evidence": "The current internal-review bank contains 30 original questions."
+    },
+    {
+      "id": "QA-009",
+      "check": "Trademark, copyright, independence, and training-hour language is approved",
+      "status": "pending-legal-review",
+      "evidence": "Rights and independence records are drafted but not approved."
+    },
+    {
+      "id": "QA-010",
+      "check": "Public title, price, checkout, and release date are owner approved",
+      "status": "pending-owner-and-commerce-review",
+      "evidence": "The course is not yet an approved public website catalog offering."
+    },
+    {
+      "id": "QA-011",
+      "check": "Credentialed PMP SME, technical, assessment, brand, accessibility, AI, and owner reviews are complete",
+      "status": "pending",
+      "evidence": "Required reviews remain open."
+    },
+    {
+      "id": "QA-012",
+      "check": "Full repository tests, Studio validation, FINAL package, catalog, and LCMS dry run pass",
+      "status": "in-progress",
+      "evidence": "The verification chain now includes release-aware audit and all AI-native course validation. A successful current-head GitHub run remains required."
+    },
+    {
+      "id": "QA-013",
+      "check": "Owner final review displays only the exact final paid learner package",
+      "status": "pass-structural",
+      "evidence": "The admin gate excludes scripts and prototypes, requires all reviews and quality gates, and directly renders the database-backed final lesson package with mastered video, verified audio, captions, transcript, sources, learner materials, practice, and AI tutor controls."
+    },
+    {
+      "id": "QA-014",
+      "check": "Owner final-review AI tutor is governed and fail closed",
+      "status": "pass-structural",
+      "evidence": "The owner-only proxy requires final-review readiness, validates the staged lesson, uses an HTTPS allowlisted runtime, sanitizes returned sources, and fails closed when the governed learner tutor is unavailable."
+    },
+    {
+      "id": "QA-015",
+      "check": "Owner approval cannot publish automatically",
+      "status": "pass-structural",
+      "evidence": "Approval records an immutable owner decision and moves the staged release to approved and course to ready while audit metadata explicitly records publicationTriggered false."
+    },
+    {
+      "id": "QA-016",
+      "check": "Documented public cases include limitations and respectful treatment",
+      "status": "pass-structural",
+      "evidence": "GAO and NASA cases are source-labeled, separated from synthetic scenarios, and include limitations against unsupported causal claims or sensational treatment."
+    },
+    {
+      "id": "QA-017",
+      "check": "Draft commerce and branding do not create false release blockers while approved releases remain strict",
+      "status": "pass-structural",
+      "evidence": "The course audit now distinguishes nonblocking draft placeholders from approved-release price and official-logo requirements."
+    },
+    {
+      "id": "QA-018",
+      "check": "AI-native validator matches the canonical course source and current artifact contracts",
+      "status": "pass-structural",
+      "evidence": "The validator discovers all AI-native courses, verifies nested hours and lesson counts, source supplements, ECO coverage, tutor controls, original assessment rationale, actual production-script paths, media counts, rights records, and production-queue consistency."
+    }
+  ],
+  "releaseDecision": {
+    "approved": false,
+    "publishToAcademy": false,
+    "allowCheckout": false,
+    "allowLearnerEnrollment": false,
+    "allowCompletionCertificate": false,
+    "accurateCurrentClaim": "PMP course production foundation in active development"
+  }
+}

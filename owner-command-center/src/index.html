@@ -13,6 +13,12 @@
     <section class="panel hero"><div><p class="eyebrow">LIVE OPERATIONS</p><h2>Secure Auto-Connect</h2><p>The Command Center continuously discovers approved Obserra services, verifies availability, preserves the last known state, learns normal behavior, and enables control only after successful owner authorization.</p></div><button id="connectAll">Refresh all now</button></section>
     <section class="grid metrics" id="metrics"></section>
 
+    <section class="panel" id="websiteOpsPanel">
+      <div class="sectionTitle"><div><p class="eyebrow">WEBSITE OPERATIONS CENTER</p><h2>Owner control and live website health</h2><p id="websiteOpsStatus" class="subhead">Checking website, deployment, source-control, and Academy health…</p></div><div class="actions"><button id="websiteOpsRefresh">Refresh website health</button><button id="websiteOpsSecurityScan" class="secondary">Run full-site security scan</button><button id="websiteOpsAuthorize" class="secondary">Authorize website control</button></div></div>
+      <section id="websiteOpsMetrics" class="grid metrics"></section>
+      <div><h3>Website operational findings</h3><div id="websiteOpsFindings" class="gapList"></div></div>
+    </section>
+
     <section class="panel" id="ownerAiPanel">
       <div class="sectionTitle"><div><p class="eyebrow">OWNER AI</p><h2>Persistent intelligence, recommendations, and approvals</h2><p class="subhead">Live while the Command Center is open. Durable memory and evidence persist across sessions.</p></div><div class="actions"><button id="ownerAiAnalyze">Analyze now</button><button id="securityScanNow" class="secondary">Scan entire site</button></div></div>
       <section id="ownerAiMetrics" class="grid metrics"></section>
@@ -52,6 +58,6 @@
   <template id="connectorTemplate"><article class="connectorCard"><div class="connectorTop"><div><h3></h3><p class="endpoint"></p></div><span class="status"></span></div><p class="description"></p><div class="connectorMeta"></div><button class="configure secondary">Authorize / configure</button></article></template>
   <template id="courseOpsTemplate"><article class="courseOpsCard"><div class="courseOpsHeader"><div><p class="courseDepartment"></p><h3 class="courseTitle"></h3></div><span class="status courseStatus"></span></div><p class="courseDescription"></p><div class="courseFacts"></div><div class="courseProgress"></div><div class="courseRecommendations"></div><div class="courseActions"><button data-action="author">Generate course</button><button data-action="build" class="secondary">Build release</button><button data-action="edit" class="secondary">Edit metadata</button></div></article></template>
   <dialog id="academyPreviewDialog" class="academyPreviewDialog"><div class="previewHeader"><div><p class="eyebrow">ACADEMY PREVIEW</p><h2 id="academyPreviewTitle">Course preview</h2><p id="academyPreviewMeta" class="subhead"></p></div><button id="academyPreviewClose" class="secondary">Close</button></div><pre id="academyPreviewBody" class="academyPreviewBody"></pre></dialog>
-  <script src="app.js"></script><script src="academy-batch.js"></script><script src="academy-preview-ui.js"></script><script src="security-dashboard.js"></script><script src="remediation-dashboard.js"></script>
+  <script src="app.js"></script><script src="website-dashboard.js"></script><script src="academy-batch.js"></script><script src="academy-github-evidence.js"></script><script src="academy-preview-ui.js"></script><script src="security-dashboard.js"></script><script src="remediation-dashboard.js"></script>
 </body>
 </html>

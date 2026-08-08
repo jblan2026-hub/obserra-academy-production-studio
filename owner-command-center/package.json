@@ -1,6 +1,6 @@
 {
   "name": "obserra-owner-ai-command-center",
-  "version": "0.2.0",
+  "version": "0.3.3",
   "private": true,
   "description": "Owner-only local AI command center for the Obserra ecosystem.",
   "main": "electron/main-with-remediation.cjs",
@@ -8,7 +8,12 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
+    "verify:endpoint": "node scripts/verify-endpoint-enrollment.mjs",
+    "verify:academy-evidence": "node scripts/verify-academy-production-evidence.mjs",
+    "verify:approval": "node scripts/verify-academy-release-approval.mjs",
+    "verify:github-evidence": "node scripts/verify-academy-github-evidence.mjs",
+    "verify:remote-cache": "node scripts/verify-academy-remote-evidence-cache.mjs",
+    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-endpoint-enrollment.mjs && node scripts/verify-academy-production-evidence.mjs && node scripts/verify-academy-release-approval.mjs && node scripts/verify-academy-github-evidence.mjs && node scripts/verify-academy-remote-evidence-cache.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
     "package:windows": "electron-builder --win nsis portable",
     "package:media": "powershell -ExecutionPolicy Bypass -File scripts/build-removable-media-package.ps1"
   },
@@ -24,7 +29,7 @@
     "productName": "Obserra Owner AI Command Center",
     "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}",
     "directories": {"output": "dist"},
-    "files": ["electron/**/*","src/**/*","scripts/**/*","HIGH-AVAILABILITY.md","INSTALL-AND-RECOVERY.md","package.json"],
+    "files": ["electron/**/*","src/**/*","scripts/**/*","HIGH-AVAILABILITY.md","INSTALL-AND-RECOVERY.md","ENDPOINT-OPERATIONS.md","package.json"],
     "asar": true,
     "compression": "maximum",
     "win": {
@@ -40,7 +45,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Obserra Owner AI Command Center",
-      "uninstallDisplayName": "Obserra Owner AI Command Center"
+      "uninstallDisplayName": "Obserra Owner AI Command Center",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
     },
     "portable": {"artifactName":"Obserra-Owner-AI-Command-Center-Portable-${version}-${arch}.${ext}"}
   }
