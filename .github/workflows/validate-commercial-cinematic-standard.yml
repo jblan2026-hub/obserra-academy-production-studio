@@ -1,4 +1,4 @@
-name: Studio Authentication Validation
+name: Validate Commercial Cinematic Course Production Standard
 
 # Temporary branch-only scheduling guard for PR 46. Restore the full workflow from main before merge.
 on:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: studio-auth-validation-${{ github.ref }}
+  group: commercial-cinematic-course-standard-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -20,5 +20,5 @@ jobs:
     steps:
       - name: Require restoration outside PR 46
         run: |
-          echo "Temporary PR 46 scheduling guard is active. Restore .github/workflows/studio-auth-validation.yml from main before other use."
+          echo "Temporary PR 46 scheduling guard is active. Restore .github/workflows/validate-commercial-cinematic-standard.yml from main before other use."
           exit 1
