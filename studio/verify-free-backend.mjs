@@ -43,7 +43,7 @@ if (!String(packageJson.scripts?.["worker:free-ai"] || "").includes("run-free-ai
 
 for (const [needle, label] of [
   ['BACKEND_COST_MODE || "free-first"', "backend-cost-mode-not-free-first-by-default"],
-  ['STUDIO_AUTH_PROVIDER", ["supabase", "clerk", "machine-only"], "supabase"', "supabase-auth-not-default"],
+  ['STUDIO_AUTH_PROVIDER", ["supabase", "oidc", "clerk", "machine-only"], "supabase"', "supabase-auth-not-default"],
   ['STUDIO_STORAGE_PROVIDER", ["local", "supabase"], "supabase"', "supabase-storage-not-default"],
   ['STUDIO_QUEUE_PROVIDER", ["postgres", "inline"], "postgres"', "postgres-queue-not-default"],
   ['STUDIO_AI_PROVIDER", ["local", "disabled", "paid-fallback"], "local"', "local-ai-not-default"],
@@ -52,7 +52,8 @@ for (const [needle, label] of [
   if (!backendConfig.includes(needle)) findings.push(label);
 }
 
-if (!studioAuth.includes("createRemoteJWKSet") || !studioAuth.includes("jwtVerify")) findings.push("supabase-jwt-verification-not-implemented");
+if (!studioAuth.includes("createRemoteJWKSet") || !studioAuth.includes("jwtVerify")) findings.push("jwt-verification-not-implemented");
+if (!studioAuth.includes("openid-configuration") || !studioAuth.includes("jwks_uri")) findings.push("self-hosted-oidc-discovery-not-implemented");
 if (!storageService.includes("putPrivateObject") || !storageService.includes("SUPABASE_SERVICE_ROLE_KEY")) findings.push("private-storage-adapter-incomplete");
 if (!aiService.includes("/api/chat") || !aiService.includes("estimatedCostUsd: 0")) findings.push("local-zero-cost-ai-adapter-incomplete");
 if (!worker.includes("FOR UPDATE SKIP LOCKED") || !worker.includes("estimatedCostUsd: 0")) findings.push("postgres-free-ai-worker-incomplete");
@@ -71,11 +72,11 @@ for (const dependency of forbiddenRuntimeDependencies) {
 }
 
 const report = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
   objective: "academy-backend-free-first-no-required-paid-services",
   defaults: {
-    auth: "supabase",
+    auth: "supabase-with-self-hosted-oidc-option",
     database: "postgresql",
     storage: "supabase-private-or-local",
     queue: "postgresql-skip-locked",
