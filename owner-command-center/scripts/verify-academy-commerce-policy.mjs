@@ -7,9 +7,11 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "..", "..");
 const policyPath = path.join(repoRoot, "policy", "academy-commerce-policy.json");
 const securityPath = path.join(repoRoot, "policy", "academy-payment-security.json");
+const pciPath = path.join(repoRoot, "policy", "academy-pci-dss-v4.0.1-profile.json");
 
 const commerce = JSON.parse(fs.readFileSync(policyPath, "utf8"));
 const security = JSON.parse(fs.readFileSync(securityPath, "utf8"));
+const pci = JSON.parse(fs.readFileSync(pciPath, "utf8"));
 
 assert.equal(commerce.salesPolicy?.allSalesFinal, true);
 assert.equal(commerce.salesPolicy?.acknowledgementRequired, true);
@@ -35,4 +37,21 @@ assert.equal(security.requirements?.checkoutFulfillmentRequiresServerSideVerific
 assert.equal(security.releaseGate?.blockPublicationIfHttpPaymentRouteDetected, true);
 assert.equal(security.releaseGate?.blockPublicationIfRawCardInputDetected, true);
 
-console.log("Academy commerce/security policy verification passed: HTTPS/TLS, Stripe-hosted card collection, final-sale disclosure, receipt notice, and payment-data minimization are enforced by policy contract.");
+assert.equal(pci.standard, "PCI DSS v4.0.1");
+assert.match(pci.targetValidationModel || "", /SAQ A/i);
+assert.equal(pci.architecture?.preferredCheckoutPattern, "full-redirect-to-stripe-hosted-checkout");
+assert.equal(pci.architecture?.merchantHostedCardFieldsForbidden, true);
+assert.equal(pci.architecture?.directPostForbidden, true);
+assert.equal(pci.architecture?.primaryAccountNumberStorageForbidden, true);
+assert.equal(pci.architecture?.cvcStorageForbidden, true);
+assert.equal(pci.architecture?.successRedirectDoesNotGrantEntitlement, true);
+assert.equal(pci.merchantWebsiteControls?.httpsRequired, true);
+assert.equal(pci.merchantWebsiteControls?.externalAsvScanningRequiredWhereApplicable, true);
+assert.equal(pci.merchantWebsiteControls?.redirectIntegrityProtectionRequired, true);
+assert.equal(pci.merchantWebsiteControls?.thirdPartyProviderComplianceMonitoringRequired, true);
+assert.equal(pci.complianceOperations?.saqEligibilityMustBeConfirmedWithAcquirer, true);
+assert.equal(pci.releaseGate?.blockIfMerchantHostedCardFieldDetected, true);
+assert.equal(pci.releaseGate?.blockIfHttpCheckoutOrReturnUrlDetected, true);
+assert.equal(pci.releaseGate?.blockIfEntitlementCanBeGrantedFromClientRedirectAlone, true);
+
+console.log("Academy commerce/security policy verification passed: PCI DSS v4.0.1 controls, HTTPS/TLS, Stripe-hosted card collection, final-sale disclosure, receipt notice, and payment-data minimization are enforced by policy contract.");
