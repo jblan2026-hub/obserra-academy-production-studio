@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { academySurgePortfolio } from "./academy-course-portfolio.mjs";
 
+// Governed authoritative registry: sources/authoritative-sources.json
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const registryPath = path.join(root, "sources", "authoritative-sources.json");
 if (!fs.existsSync(registryPath)) {
