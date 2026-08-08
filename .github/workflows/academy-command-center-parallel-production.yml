@@ -1,0 +1,384 @@
+name: Academy and Command Center Parallel Production
+run-name: 36-worker governed production surge • ${{ github.ref_name }} • ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/academy-36-worker-course-surge
+    paths:
+      - "policy/**"
+      - "studio/**"
+      - "courses/**/course-manifest.json"
+      - "owner-command-center/**"
+      - "prisma/**"
+      - "package.json"
+      - ".github/workflows/academy-command-center-parallel-production.yml"
+  pull_request:
+    branches:
+      - main
+      - agent/continue-course-buildout
+    paths:
+      - "policy/**"
+      - "studio/**"
+      - "courses/**/course-manifest.json"
+      - "owner-command-center/**"
+      - "prisma/**"
+      - "package.json"
+      - ".github/workflows/academy-command-center-parallel-production.yml"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: academy-command-center-production-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  OBSERRA_PORTFOLIO_WORKER_COUNT: 36
+  OBSERRA_APPLICATION_WORKER_COUNT: 0
+  COMMAND_CENTER_WORKER_ALLOCATION: 8
+  IDLE_WORKER_ALLOCATION: 0
+
+jobs:
+  academy-production:
+    name: Build and compliance-stage all 60 Academy courses
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      ACADEMY_AUTHORING_PROVIDER: openai
+      ACADEMY_AUTHORING_CONCURRENCY: 28
+      ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
+      ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
+      ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: 1200000
+      ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: 1800000
+      ACADEMY_AUTHORING_PREFLIGHT_TIMEOUT_MS: 120000
+      ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: true
+      ACADEMY_EXPECTED_REVIEW_COURSES: 60
+      ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
+      ACADEMY_SUPABASE_REGION: us-east-1
+      STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
+      STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
+      OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
+      DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout governed production source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Normalize protected provider and PostgreSQL credentials
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const output = process.env.GITHUB_ENV;
+          if (!output) throw new Error('GITHUB_ENV is unavailable.');
+
+          function trimOuterQuotes(value) {
+            const normalized = String(value ?? '').trim();
+            const quoted = (normalized.startsWith('"') && normalized.endsWith('"'))
+              || (normalized.startsWith("'") && normalized.endsWith("'"));
+            return quoted ? normalized.slice(1, -1).trim() : normalized;
+          }
+
+          function normalizeDatabaseUrl(raw) {
+            let value = trimOuterQuotes(raw);
+            const assignment = value.match(/^(?:ACADEMY_DATABASE_URL|DATABASE_URL)\s*=\s*(.+)$/is);
+            if (assignment) value = trimOuterQuotes(assignment[1]);
+            if (!value) return '';
+            if (/\r|\n/.test(value)) throw new Error('DATABASE_URL contains an unexpected newline.');
+
+            if (!/^postgres(?:ql)?:\/\//i.test(value)) {
+              const projectRef = String(process.env.ACADEMY_SUPABASE_PROJECT_REF ?? '').trim();
+              const region = String(process.env.ACADEMY_SUPABASE_REGION ?? '').trim();
+              if (!projectRef || !region) throw new Error('Supabase project metadata is unavailable.');
+              value = `postgresql://${encodeURIComponent(`postgres.${projectRef}`)}:${encodeURIComponent(value)}@aws-0-${region}.pooler.supabase.com:5432/postgres?schema=public&sslmode=require&connect_timeout=30`;
+            }
+
+            try {
+              const parsed = new URL(value);
+              if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+              return parsed.toString();
+            } catch {
+              const schemeEnd = value.indexOf('://');
+              const scheme = value.slice(0, schemeEnd + 3);
+              const remainder = value.slice(schemeEnd + 3);
+              const at = remainder.lastIndexOf('@');
+              if (at <= 0) throw new Error('DATABASE_URL must contain credentials and a host.');
+              const credentials = remainder.slice(0, at);
+              const hostAndPath = remainder.slice(at + 1);
+              const colon = credentials.indexOf(':');
+              if (colon <= 0) throw new Error('DATABASE_URL must contain a username and password.');
+              const username = credentials.slice(0, colon);
+              const password = credentials.slice(colon + 1);
+              let decodedPassword = password;
+              try { decodedPassword = decodeURIComponent(password); } catch {}
+              const candidate = `${scheme}${encodeURIComponent(username)}:${encodeURIComponent(decodedPassword)}@${hostAndPath}`;
+              const parsed = new URL(candidate);
+              if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+              return parsed.toString();
+            }
+          }
+
+          for (const name of ['OPENAI_API_KEY', 'OPENAI_ORGANIZATION', 'OPENAI_PROJECT']) {
+            const value = trimOuterQuotes(process.env[name]);
+            if (value && /\r|\n/.test(value)) throw new Error(`${name} contains an unexpected newline.`);
+            if (value) fs.appendFileSync(output, `${name}=${value}\n`);
+          }
+
+          const databaseUrl = normalizeDatabaseUrl(process.env.DATABASE_URL);
+          if (databaseUrl) fs.appendFileSync(output, `DATABASE_URL=${databaseUrl}\n`);
+          console.log(`[Academy Studio] Protected selectors normalized. providerCredential=${Boolean(trimOuterQuotes(process.env.OPENAI_API_KEY))} databaseCredential=${Boolean(databaseUrl)}`);
+          NODE
+
+      - name: Install locked production dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Verify 36-worker and commercial cinematic contracts
+        run: npm run verify:worker-contract
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Normalize governed course policy
+        run: npm run apply:course-policy
+
+      - name: Require protected Academy PostgreSQL
+        shell: bash
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Protected Academy PostgreSQL is required before authoring workers may launch."
+            exit 1
+          fi
+
+      - name: Bootstrap and verify protected Academy schema
+        run: npm run db:bootstrap:protected
+
+      - name: Restore protected authoring checkpoints
+        run: npm run restore:authoring-checkpoints
+
+      - name: Audit all governed course manifests and packages
+        id: audit
+        run: npm run audit:courses
+
+      - name: Reject blocking manifest findings
+        if: steps.audit.outputs.blocking_findings != '0'
+        shell: bash
+        run: |
+          echo "The Academy audit reported ${{ steps.audit.outputs.blocking_findings }} blocking finding(s)."
+          exit 1
+
+      - name: Require protected authoring provider
+        if: steps.audit.outputs.authoring_required == 'true'
+        shell: bash
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "OPENAI_API_KEY is required for the remaining governed course packages."
+            exit 1
+          fi
+
+      - name: Verify funded authoring provider routing and capacity
+        if: steps.audit.outputs.authoring_required == 'true'
+        run: npm run preflight:authoring
+
+      - name: Launch 28 Academy workers across all remaining courses
+        if: steps.audit.outputs.authoring_required == 'true'
+        run: npm run author:parallel
+
+      - name: Prove every owner-review package was restored or authored
+        run: |
+          npm run audit:courses
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('catalog/continuous-course-audit.json', 'utf8'));
+          const unresolved = (report.courses ?? []).filter((course) =>
+            course.ownerReviewEligible && (
+              course.authoringMissing
+              || course.findings?.includes('stale-ai-course-package')
+              || course.findings?.includes('untraceable-ai-course-package')
+              || course.findings?.includes('outdated-ai-authoring-policy')
+            )
+          );
+          if (unresolved.length) {
+            throw new Error(`${unresolved.length} course package(s) remain unresolved: ${unresolved.map((course) => course.courseId).join(', ')}`);
+          }
+          NODE
+
+      - name: Materialize learner materials, assessments, media plans, and certificate packages
+        run: |
+          npm run build:all
+          npm run catalog
+
+      - name: Validate learner catalog and implementation guidance
+        run: npm run validate:learner-catalog
+
+      - name: Validate protected LCMS load plan and source package
+        run: |
+          npm run validate
+          npm run load:courses:check
+          npm test
+          npm run db:validate
+
+      - name: Load validated course packages into protected LCMS
+        run: npm run load:courses
+
+      - name: Publish Academy production evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-commercial-production-${{ github.run_id }}
+          path: |
+            catalog/worker-pool-contract-verification.json
+            catalog/commercial-course-production-standard-verification.json
+            catalog/authoring-provider-preflight.json
+            catalog/authoring-checkpoint-restore.json
+            catalog/continuous-course-audit.json
+            catalog/parallel-authoring-summary.json
+            catalog/bulk-build-report.json
+            catalog/academy-course-catalog.json
+            catalog/learner-catalog-readiness.json
+          if-no-files-found: ignore
+          retention-days: 365
+
+  command-center-production:
+    name: Validate and package Owner Command Center for endpoint installation
+    runs-on: windows-2025
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: owner-command-center
+
+    steps:
+      - name: Checkout governed production source
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Studio dependencies
+        working-directory: .
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Install Command Center dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Verify worker and commercial production contracts
+        working-directory: .
+        run: npm run verify:worker-contract
+
+      - name: Validate Command Center source and policy syntax
+        shell: pwsh
+        run: |
+          $files = @(
+            "electron/main.cjs",
+            "electron/preload.cjs",
+            "electron/connectors.cjs",
+            "electron/academy-studio.cjs",
+            "electron/academy-preview.cjs",
+            "electron/owner-ai.cjs",
+            "electron/discovery.cjs",
+            "electron/vulnerability-scan.cjs",
+            "electron/threat-policy.cjs",
+            "electron/security-enforcement.cjs",
+            "electron/trend-store.cjs",
+            "electron/ai-remediation.cjs",
+            "electron/remediation-queue.cjs",
+            "src/app.js",
+            "src/security-dashboard.js",
+            "src/remediation-dashboard.js"
+          )
+          foreach ($file in $files) { node --check $file }
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('policy/connector-catalog.json','utf8')); console.log('Command Center policy JSON validated')"
+
+      - name: Run owner-only security, connector, Academy, installer, and recovery gates
+        run: npm run verify
+
+      - name: Execute 500x Command Center workload gate
+        working-directory: .
+        run: npm run test:500x-workload
+
+      - name: Execute 1000x governed remediation gate
+        working-directory: .
+        run: npm run test:1000x-remediation
+
+      - name: Execute 2000x cross-project resilience gate
+        working-directory: .
+        run: npm run test:2000x-resilience
+
+      - name: Build installer, portable executable, and endpoint media bundle
+        shell: pwsh
+        run: ./scripts/build-removable-media-package.ps1 -TargetHostname obserra
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Verify endpoint package inventory and SHA-256 integrity
+        shell: pwsh
+        run: |
+          function Get-Sha256Hex {
+            param([Parameter(Mandatory = $true)][string]$Path)
+            $stream = [System.IO.File]::OpenRead($Path)
+            try {
+              $algorithm = [System.Security.Cryptography.SHA256]::Create()
+              try { return ([BitConverter]::ToString($algorithm.ComputeHash($stream))).Replace('-','') }
+              finally { $algorithm.Dispose() }
+            } finally { $stream.Dispose() }
+          }
+
+          $media = Join-Path $PWD "release-media"
+          if (-not (Test-Path $media)) { throw "release-media directory missing" }
+          $installer = @(Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" })
+          $portable = @(Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe")
+          if ($installer.Count -lt 1) { throw "One-click installer missing" }
+          if ($portable.Count -lt 1) { throw "Portable executable missing" }
+
+          foreach ($file in @(
+            "SHA256SUMS.txt",
+            "SHA256SUMS.json",
+            "Install-Obserra-Command-Center.ps1",
+            "Obserra-Command-Center-Bootstrap.json",
+            "INSTALL-AND-RECOVERY.md",
+            "HIGH-AVAILABILITY.md"
+          )) {
+            if (-not (Test-Path (Join-Path $media $file))) { throw "Required release file missing: $file" }
+          }
+
+          $bootstrap = Get-Content (Join-Path $media "Obserra-Command-Center-Bootstrap.json") -Raw | ConvertFrom-Json
+          if ($bootstrap.schemaVersion -ne "1.0") { throw "Unsupported bootstrap schema" }
+          if ($bootstrap.targetHostname -ne "obserra") { throw "Bootstrap target must be machine 'obserra'" }
+          $requiredConnectorIds = @("lcms","academy","website","store","eios","stripe","github","vercel","clerk","localAi")
+          foreach ($connectorId in $requiredConnectorIds) {
+            if (-not (@($bootstrap.connectors) | Where-Object { $_.id -eq $connectorId })) { throw "Bootstrap connector missing: $connectorId" }
+          }
+
+          $manifest = @(Get-Content (Join-Path $media "SHA256SUMS.json") -Raw | ConvertFrom-Json)
+          if ($manifest.Count -lt 6) { throw "Integrity manifest is incomplete" }
+          foreach ($entry in $manifest) {
+            $filePath = Join-Path $media $entry.File
+            if (-not (Test-Path $filePath)) { throw "Manifest references missing file: $($entry.File)" }
+            if ((Get-Sha256Hex -Path $filePath) -ne $entry.SHA256) { throw "SHA-256 mismatch for $($entry.File)" }
+          }
+
+          Write-Host "Command Center endpoint release gate passed."
+          Write-Host "Installer: $($installer[0].Name)"
+          Write-Host "Portable: $($portable[0].Name)"
+
+      - name: Upload verified endpoint installation bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Owner-AI-Command-Center-Windows-${{ github.sha }}
+          path: owner-command-center/release-media/**
+          if-no-files-found: error
+          retention-days: 365
