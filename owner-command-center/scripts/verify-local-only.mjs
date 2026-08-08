@@ -76,9 +76,21 @@ for (const functionName of ["previewCourse", "previewMaterials", "previewCertifi
   requirePattern(academyPreview, new RegExp(`function\\s+${functionName}|${functionName}\\s*=`), `${functionName} must be implemented`);
 }
 
-for (const pattern of [/authorization/i, /cookie/i, /password/i, /card/i, /paymentmethod/i]) {
-  requirePattern(dataProtection, pattern, `data protection rules must cover ${pattern}`);
-}
+for (const [pattern, description] of [
+  [/authorization/, "authorization headers"],
+  [/cookie/, "cookies"],
+  [/token/, "access and refresh tokens"],
+  [/secret/, "API and client secrets"],
+  [/password|passphrase/, "passwords and passphrases"],
+  [/email|phone|address|billing|shipping/, "customer and learner contact/billing data"],
+  [/card|cvc|cvv|pan/, "primary card data and card verification values"],
+  [/account\[_-\]\?number|routing\[_-\]\?number/, "bank account and routing numbers"],
+  [/payment\[_-\]\?method/, "payment method identifiers"],
+  [/payment\[_-\]\?intent/, "payment intent identifiers"],
+  [/LONG_DIGIT_PATTERN/, "card-like digit sequences"],
+  [/REDACTED_PAYMENT_DATA/, "card-like value replacement"],
+]) requirePattern(dataProtection, pattern, `data protection rules must cover ${description}`);
+
 requirePattern(websiteRetrieval, /parsed\.protocol !== "https:"/, "website retrieval must reject non-HTTPS connector origins");
 requirePattern(websiteRetrieval, /redirect:\s*"error"/, "website retrieval must reject redirects");
 requirePattern(websiteRetrieval, /MAX_RESPONSE_BYTES/, "website retrieval must bound response size");
@@ -109,6 +121,8 @@ requirePattern(resetUi, /previewAcademyCourse|previewAcademyMaterials|previewAca
 requirePattern(resetUi, /updateAcademyReview/, "Academy reset UI must record owner review decisions through IPC");
 requirePattern(resetUi, /transitionAcademyCourse/, "Academy reset UI must use governed release transitions");
 requirePattern(resetUi, /verifyAcademyPurchase/, "Academy reset UI must support secure real-purchase verification");
+requirePattern(resetUi, /retrieveWebsiteAcademyCourse/, "Academy reset UI must support live website course readback");
+requirePattern(resetUi, /retrieveWebsiteAcademyCertificate/, "Academy reset UI must support live website certificate readback");
 requirePattern(resetCss, /courseList|detailPanel|evidencePanel/, "Academy reset styling must cover owner review surfaces");
 
 if (packageJson.private !== true) throw new Error("Command Center verification failed: package must remain private");
