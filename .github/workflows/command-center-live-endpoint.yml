@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   endpoint-contract:
-    name: Endpoint identity, evidence, and local-only contract
+    name: Endpoint identity, evidence, approval, and local-only contract
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:
@@ -44,16 +44,19 @@ jobs:
           node --check electron/main-with-remediation.cjs
           node --check electron/endpoint-enrollment.cjs
           node --check electron/academy-production-evidence.cjs
+          node --check electron/academy-release-approval.cjs
           node --check electron/preload.cjs
           node --check src/academy-batch.js
           node --check scripts/verify-endpoint-enrollment.mjs
           node --check scripts/verify-academy-production-evidence.mjs
+          node --check scripts/verify-academy-release-approval.mjs
       - name: Run complete Command Center verification
         run: npm run verify
-      - name: Verify endpoint and Academy evidence gates directly
+      - name: Verify endpoint, Academy evidence, and owner approval gates directly
         run: |
           npm run verify:endpoint
           npm run verify:academy-evidence
+          npm run verify:approval
       - name: Verify no endpoint credentials are embedded
         shell: bash
         run: |
@@ -64,9 +67,12 @@ jobs:
           fi
           grep -F 'localOnly: true' electron/endpoint-enrollment.cjs
           grep -F '127.0.0.1' electron/endpoint-enrollment.cjs
-          grep -F 'publicationLocked' electron/academy-production-evidence.cjs
+          grep -F 'publicationLocked: true' electron/academy-production-evidence.cjs
           grep -F 'configuredCourseWorkers !== 36' electron/academy-production-evidence.cjs
           grep -F 'configuredApplicationWorkers !== 0' electron/academy-production-evidence.cjs
+          grep -F 'publicationAuthorized: false' electron/academy-release-approval.cjs
+          grep -F 'checkoutAuthorized: false' electron/academy-release-approval.cjs
+          grep -F 'hmac-sha256-device-bound' electron/academy-release-approval.cjs
 
   windows-release:
     name: Windows installer, portable executable, and endpoint verification media
@@ -147,8 +153,10 @@ jobs:
     steps:
       - run: |
           echo "Source contract: PASSED"
+          echo "Device-bound owner approval control: PASSED"
           echo "Windows package and verification media: PASSED"
           echo "Actual installation on the owner's endpoint: REQUIRES execution of the packaged installer on that endpoint"
           echo "Endpoint-ready status: must be proven by the generated heartbeat and loopback readiness receipt"
-          echo "Academy control-plane operational status: remains evidence-driven and fail closed"
+          echo "Academy production readiness: remains evidence-driven and fail closed"
+          echo "Owner approval does not publish or enable checkout"
           echo "Course publication authority: NOT GRANTED"
