@@ -8,10 +8,12 @@ const { createAcademyReleaseApproval } = require("./academy-release-approval.cjs
 const { createAcademyGithubEvidence } = require("./academy-github-evidence.cjs");
 const { resolveStudioRoot } = require("./academy-studio.cjs");
 const { createEndpointEnrollmentRuntime } = require("./endpoint-enrollment.cjs");
+const { createMissionControlRuntime } = require("./mission-control-runtime.cjs");
 
 const store = new Store({ name: "owner-command-center" });
 const remediationQueue = createRemediationQueue(store);
 const academyGithubEvidence = createAcademyGithubEvidence({ store, safeStorage, app });
+const missionControlRuntime = createMissionControlRuntime({ store, safeStorage, app });
 const githubSyncIntervalMs = Math.max(
   30000,
   Math.min(15 * 60 * 1000, Number(process.env.ACADEMY_GITHUB_SYNC_INTERVAL_MS || 60000)),
@@ -203,6 +205,8 @@ if (!primaryInstance) {
   });
 
   app.whenReady().then(async () => {
+    missionControlRuntime.registerIpc(ipcMain);
+
     ipcMain.handle("remediation:getSnapshot", async () => remediationQueue.snapshot());
     ipcMain.handle("remediation:propose", async (_event, payload) => {
       const request = requireObject(payload, "Remediation proposal");
@@ -260,6 +264,7 @@ if (!primaryInstance) {
       const profilePath = await waitForBootstrapProfile();
       if (profilePath) promoteEndpointBootstrapProfile(profilePath);
       await endpointRuntime.start();
+      await missionControlRuntime.start();
       if (academyGithubEvidence.snapshot().tokenConfigured) {
         await synchronizeGithubEvidence("startup").catch(() => {});
       }
@@ -278,6 +283,7 @@ if (!primaryInstance) {
 
   app.on("before-quit", () => {
     if (githubSyncTimer) clearInterval(githubSyncTimer);
+    missionControlRuntime.stop();
     endpointRuntime.stop().catch(() => {});
   });
 
