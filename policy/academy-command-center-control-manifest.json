@@ -59,7 +59,7 @@
         "owner-command-center/electron/academy-website-retrieval.cjs",
         "owner-command-center/electron/academy-website-retrieval-ipc.cjs"
       ],
-      "verification": [],
+      "verification": ["owner-command-center/scripts/verify-academy-website-retrieval.mjs"],
       "required": true,
       "externalImplementation": "jblan2026-hub/obserra-website:app/api/academy/course/[courseId]/route.ts"
     },
@@ -70,7 +70,7 @@
         "owner-command-center/electron/academy-website-retrieval.cjs",
         "owner-command-center/electron/academy-website-retrieval-ipc.cjs"
       ],
-      "verification": [],
+      "verification": ["owner-command-center/scripts/verify-academy-website-retrieval.mjs"],
       "required": true,
       "externalImplementation": "jblan2026-hub/obserra-website:app/api/academy/certificate/verify/route.ts"
     },
@@ -100,6 +100,8 @@
       "verification": [
         "owner-command-center/scripts/verify-payment-control-baseline.mjs",
         "owner-command-center/scripts/verify-payment-control-behavior.mjs",
+        "owner-command-center/scripts/verify-credential-encryption-controls.mjs",
+        "owner-command-center/scripts/verify-academy-website-retrieval.mjs",
         "owner-command-center/scripts/verify-control-manifest.mjs",
         "owner-command-center/scripts/verify-green-path-locks.mjs"
       ],
@@ -116,6 +118,19 @@
       "required": true,
       "state": "enabled",
       "rule": "After required verification is green, freeze the control's implementation and verification files by SHA-256. Drift fails standard verification until an explicit owner-approved re-baseline is committed."
+    },
+    {
+      "id": "ACC-022",
+      "name": "Credential, secret, and production-storage encryption",
+      "implementation": [
+        "policy/academy-credential-and-encryption-security.json",
+        "owner-command-center/electron/main.cjs",
+        "owner-command-center/electron/endpoint-enrollment.cjs",
+        "scripts/Test-ObserraAcademyStorageEncryption.ps1"
+      ],
+      "verification": ["owner-command-center/scripts/verify-credential-encryption-controls.mjs"],
+      "required": true,
+      "runtimeEvidence": "Windows BitLocker status for the volume containing C:\\ObserraAcademyProduction; recovery material must never be captured."
     }
   ]
 }
