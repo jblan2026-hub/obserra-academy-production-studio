@@ -1,5 +1,6 @@
 const academyStudio = require("./academy-studio.cjs");
 const { ownerSafe, ownerSafeError } = require("./academy-data-protection.cjs");
+const { createSecureAcademyPurchaseVerifier } = require("./academy-secure-purchase-verifier.cjs");
 
 const originalGetStudioSnapshot = academyStudio.getStudioSnapshot;
 const originalRunStudioAction = academyStudio.runStudioAction;
@@ -46,6 +47,7 @@ function createAcademyCourseControlResolver({ store, safeStorage, app } = {}) {
     studioRootProvider: resolveStudioRoot,
   });
   const remote = createAcademyRemoteCourseControl({ store, safeStorage, app });
+  const securePurchases = createSecureAcademyPurchaseVerifier({ store, safeStorage });
 
   function useLocal() {
     return Boolean(resolveStudioRoot());
@@ -71,7 +73,7 @@ function createAcademyCourseControlResolver({ store, safeStorage, app } = {}) {
         controlMode: useLocal() ? "local-studio-workspace" : "github-remote-control",
         installedAnywhereReady: useLocal() || value?.available === true,
         privacyBoundary:
-          "Owner UI receives redacted, minimum-necessary operational metadata. Secrets, cookies, tokens, card data, payment-method details, and direct customer/student contact data are removed before renderer delivery.",
+          "Owner UI receives redacted, minimum-necessary operational metadata. Secrets, cookies, tokens, card data, payment-method details, and direct customer/student contact data are removed before renderer delivery. Purchase verification uses a separate privacy-preserving verifier and does not persist raw Stripe or Clerk customer payloads.",
       };
     });
   }
@@ -91,17 +93,28 @@ function createAcademyCourseControlResolver({ store, safeStorage, app } = {}) {
     });
   }
 
+  function combinedLedger(limit = 200) {
+    const bounded = Math.max(1, Math.min(1000, Number(limit) || 200));
+    const lifecycle = typeof active().ledger === "function" ? active().ledger(bounded) : [];
+    const purchase = securePurchases.ledger(bounded);
+    return ownerSafe(
+      [...lifecycle, ...purchase]
+        .sort((left, right) => Date.parse(right?.occurredAt || 0) - Date.parse(left?.occurredAt || 0))
+        .slice(0, bounded),
+    );
+  }
+
   return {
     snapshot,
     updateReview: (payload) => safeInvoke(() => active().updateReview(payload)),
     transitionCourse: (payload) => safeInvoke(() => active().transitionCourse(payload)),
     runCourseAction,
     listPurchases: (payload) => safeInvoke(() => active().listPurchases(payload)),
-    verifyPurchase: (payload) => safeInvoke(() => active().verifyPurchase(payload)),
+    verifyPurchase: (payload) => safeInvoke(() => securePurchases.verifyPurchase(payload)),
     commerceHealth: (options) => safeInvoke(() => active().commerceHealth(options)),
     publicationJobs: () => ownerSafe(active().publicationJobs()),
     studioJobs: () => ownerSafe(typeof active().studioJobs === "function" ? active().studioJobs() : {}),
-    ledger: (limit) => ownerSafe(active().ledger(limit)),
+    ledger: combinedLedger,
     mode: () => (useLocal() ? "local-studio-workspace" : "github-remote-control"),
   };
 }
