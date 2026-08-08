@@ -54,14 +54,29 @@ function runAuthoringProcess() {
   });
 }
 
+function readJsonIfPresent(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
 async function persistGeneratedPackage() {
-  const manifestPath = path.join(root, "courses", courseId, "course-manifest.json");
-  const packagePath = path.join(root, "courses", courseId, "generated", "authoring", "course-package.json");
+  const courseRoot = path.join(root, "courses", courseId);
+  const manifestPath = path.join(courseRoot, "course-manifest.json");
+  const packagePath = path.join(courseRoot, "generated", "authoring", "course-package.json");
   if (!fs.existsSync(manifestPath) || !fs.existsSync(packagePath)) {
     throw new Error(`Generated cinematic package or manifest is missing for ${courseId}.`);
   }
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   const envelope = JSON.parse(fs.readFileSync(packagePath, "utf8"));
+  const researchEvidence = readJsonIfPresent(path.join(courseRoot, "generated", "research", "authoritative-source-research.json"));
+  const qualityReviewEvidence = readJsonIfPresent(path.join(courseRoot, "generated", "quality", "independent-course-quality-review.json"));
+
+  envelope.protectedEvidence = {
+    schemaVersion: "1.0",
+    research: researchEvidence,
+    independentReview: qualityReviewEvidence,
+  };
+  fs.writeFileSync(packagePath, `${JSON.stringify(envelope, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
 
   for (let attempt = 1; attempt <= persistenceAttempts; attempt += 1) {
     try {
@@ -70,7 +85,7 @@ async function persistGeneratedPackage() {
         throw new Error(`Checkpoint persistence was required but skipped: ${result.reason}.`);
       }
       console.log(result.stored
-        ? `[Academy Studio] Protected cinematic checkpoint stored for ${courseId}.`
+        ? `[Academy Studio] Protected cinematic checkpoint stored for ${courseId} with reusable evidence.`
         : `[Academy Studio] Cinematic checkpoint skipped for ${courseId}: ${result.reason}.`);
       return;
     } catch (error) {
