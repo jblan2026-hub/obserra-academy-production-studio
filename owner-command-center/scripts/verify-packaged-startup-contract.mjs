@@ -20,7 +20,7 @@ const main = fs.readFileSync(
   "utf8",
 );
 
-assert.equal(packageJson.version, "0.4.2");
+assert.equal(packageJson.version, "0.4.3");
 assert.equal(packageJson.main, "electron/bootstrap-main.cjs");
 assert.equal(packageJson.build.asar, true);
 assert.equal(packageJson.build.compression, "normal");
@@ -31,6 +31,8 @@ assert.equal(packageJson.build.nsis.runAfterFinish, true);
 
 assert.match(bootstrap, /await import\("electron-store"\)/);
 assert.match(bootstrap, /installElectronStoreCompatibility/);
+assert.match(bootstrap, /SharedElectronStore/);
+assert.match(bootstrap, /sharedStores/);
 assert.match(bootstrap, /request === "electron-store"/);
 assert.match(bootstrap, /require\("\.\/main-with-remediation\.cjs"\)/);
 assert.match(bootstrap, /OBSERRA_STARTUP_SMOKE_TEST/);
@@ -43,7 +45,11 @@ assert.match(bootstrap, /primary-window-ready-timeout/);
 assert.match(bootstrap, /rendererRecoveryAttempts/);
 assert.match(bootstrap, /primary-window-ready/);
 assert.match(bootstrap, /createSplashWindow/);
-assert.match(mainWithRemediation, /require\("electron-store"\)/);
+assert.match(mainWithRemediation, /getOwnerCommandCenterStore/);
+assert.match(mainWithRemediation, /createWebNetworkMonitor/);
+assert.match(mainWithRemediation, /runtime:getHealth/);
+assert.match(mainWithRemediation, /webpages:scanAll/);
+assert.match(mainWithRemediation, /network:analyzeNow/);
 assert.match(main, /require\("electron-store"\)/);
 assert.match(main, /let mainWindow = null/);
 assert.match(main, /let mainWindowShowTimer = null/);
@@ -68,6 +74,7 @@ console.log(
       gate: "packaged-startup-contract",
       version: packageJson.version,
       electronStoreEsmCompatibility: true,
+      sharedDurableStore: true,
       persistentDesktopShortcut: true,
       startMenuShortcut: true,
       selectableInstallDirectory: true,
@@ -79,6 +86,7 @@ console.log(
       secondInstanceFocusRecovery: true,
       rendererSingleRecoveryAttempt: true,
       interfaceLoadFailureFallback: true,
+      webAndNetworkRuntimeRegistered: true,
       normalCompressionForFasterInstall: true,
       passed: true,
     },
