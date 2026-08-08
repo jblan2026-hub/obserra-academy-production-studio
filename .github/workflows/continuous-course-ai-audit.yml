@@ -8,8 +8,11 @@ on:
   pull_request:
     branches:
       - main
+      - agent/continue-course-buildout
     paths:
       - "courses/**/course-manifest.json"
+      - "policy/elastic-worker-pool-contract.json"
+      - "policy/commercial-cinematic-course-production-standard.json"
       - "studio/apply-course-policy.mjs"
       - "studio/audit-course-build-readiness.mjs"
       - "studio/author-course-ai.mjs"
@@ -22,8 +25,16 @@ on:
       - "studio/restore-authoring-checkpoints.mjs"
       - "studio/bootstrap-protected-database.mjs"
       - "studio/build-all-courses.mjs"
+      - "studio/materialize-commercial-implementation-guidance.mjs"
+      - "studio/build-course.mjs"
+      - "studio/stage-all-courses.mjs"
+      - "studio/collect-authoritative-sources.mjs"
       - "studio/generate-catalog.mjs"
       - "studio/validate-learner-catalog.mjs"
+      - "studio/validate-commercial-implementation-guidance.mjs"
+      - "studio/validate-commercial-course-release.mjs"
+      - "studio/verify-worker-pool-contract.mjs"
+      - "studio/verify-commercial-course-production-standard.mjs"
       - "package.json"
       - "prisma/schema.prisma"
       - ".github/workflows/continuous-course-ai-audit.yml"
@@ -32,8 +43,11 @@ on:
     branches:
       - main
       - agent/continue-course-buildout
+      - agent/academy-36-worker-course-surge
     paths:
       - "courses/**/course-manifest.json"
+      - "policy/elastic-worker-pool-contract.json"
+      - "policy/commercial-cinematic-course-production-standard.json"
       - "studio/apply-course-policy.mjs"
       - "studio/audit-course-build-readiness.mjs"
       - "studio/author-course-ai.mjs"
@@ -46,8 +60,16 @@ on:
       - "studio/restore-authoring-checkpoints.mjs"
       - "studio/bootstrap-protected-database.mjs"
       - "studio/build-all-courses.mjs"
+      - "studio/materialize-commercial-implementation-guidance.mjs"
+      - "studio/build-course.mjs"
+      - "studio/stage-all-courses.mjs"
+      - "studio/collect-authoritative-sources.mjs"
       - "studio/generate-catalog.mjs"
       - "studio/validate-learner-catalog.mjs"
+      - "studio/validate-commercial-implementation-guidance.mjs"
+      - "studio/validate-commercial-course-release.mjs"
+      - "studio/verify-worker-pool-contract.mjs"
+      - "studio/verify-commercial-course-production-standard.mjs"
       - "package.json"
       - "prisma/schema.prisma"
       - ".github/workflows/continuous-course-ai-audit.yml"
@@ -64,14 +86,25 @@ concurrency:
 
 jobs:
   audit-author-build:
-    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'agent/continue-course-buildout')
+    if: >-
+      github.event_name != 'pull_request' ||
+      (
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        (
+          github.head_ref == 'agent/continue-course-buildout' ||
+          github.head_ref == 'agent/academy-36-worker-course-surge'
+        )
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 360
     env:
       OBSERRA_PORTFOLIO_WORKER_COUNT: 36
-      OBSERRA_APPLICATION_WORKER_COUNT: 20
+      OBSERRA_APPLICATION_WORKER_COUNT: 0
+      COMMAND_CENTER_WORKER_ALLOCATION: 8
+      IDLE_WORKER_ALLOCATION: 0
       ACADEMY_AUTHORING_PROVIDER: openai
-      ACADEMY_AUTHORING_CONCURRENCY: 16
+      ACADEMY_AUTHORING_CONCURRENCY: 28
+      ACADEMY_STAGING_CONCURRENCY: 28
       ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
       ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
       ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: 1200000
@@ -81,7 +114,7 @@ jobs:
       ACADEMY_EXPECTED_REVIEW_COURSES: 60
       ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
       ACADEMY_SUPABASE_REGION: us-east-1
-      ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/agent/continue-course-buildout' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'agent/continue-course-buildout')) && 'true' || 'false' }}
+      ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/agent/continue-course-buildout' || github.ref == 'refs/heads/agent/academy-36-worker-course-surge' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'agent/continue-course-buildout' || github.head_ref == 'agent/academy-36-worker-course-surge'))) && 'true' || 'false' }}
       STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
       STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -99,8 +132,8 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          BODY="Protected Academy owner-review build execution started. Protected PostgreSQL checkpoint restore and provider capacity preflight run before authoring workers. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.head_ref || github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring allocation: 16 course workers across 60 owner-review courses within the fixed 36-worker portfolio; 20 workers remain reserved for applications."
-          gh issue edit 17 --body "$BODY"
+          BODY="Protected commercial Academy production started. The governed elastic pool assigns 28 workers to detailed course authoring, references, real-world cases, implementation guidance, assessments, learner materials, cinematic production planning, and compliance staging; 8 workers remain available to the separate Owner Command Center release workstream; 0 workers are assigned to unrelated applications. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.head_ref || github.ref_name }}. Commit: ${{ github.sha }}. Publication, checkout, and Hollywood-grade completion claims remain disabled until exact media, source, accessibility, rights, security, release, and owner-acceptance evidence passes."
+          gh issue edit 17 --body "$BODY" || true
 
       - name: Configure Node.js
         uses: actions/setup-node@v4
@@ -188,6 +221,9 @@ jobs:
       - name: Generate Prisma Client
         run: npm run db:generate
 
+      - name: Verify elastic worker and commercial production contracts
+        run: npm run verify:worker-contract
+
       - name: Normalize governed course policy before restore and audit
         run: npm run apply:course-policy
 
@@ -273,7 +309,7 @@ jobs:
           gh issue edit 17 --body "$BODY" || true
           exit 1
 
-      - name: AI author remaining owner-review courses with immediate checkpoints
+      - name: AI author detailed commercial courses with immediate checkpoints
         if: steps.audit.outputs.authoring_required == 'true'
         run: npm run author:parallel
 
@@ -283,13 +319,19 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
           const report = JSON.parse(fs.readFileSync('catalog/continuous-course-audit.json', 'utf8'));
+          const authoringFindings = new Set([
+            'missing-ai-course-package',
+            'stale-ai-course-package',
+            'untraceable-ai-course-package',
+            'outdated-ai-authoring-policy',
+            'unsupported-ai-authoring-envelope',
+            'worker-contract-mismatch',
+            'production-standard-mismatch',
+            'missing-detailed-reference-structure',
+            'missing-commercial-production-structure',
+          ]);
           const unresolved = report.courses.filter((course) =>
-            course.ownerReviewEligible && (
-              course.authoringMissing ||
-              course.findings.includes('stale-ai-course-package') ||
-              course.findings.includes('untraceable-ai-course-package') ||
-              course.findings.includes('outdated-ai-authoring-policy')
-            )
+            course.ownerReviewEligible && course.findings.some((finding) => authoringFindings.has(finding))
           );
           if (unresolved.length > 0) {
             console.error(`[Academy Studio] ${unresolved.length} owner-review course package(s) remain unresolved after checkpoint restore and parallel authoring: ${unresolved.map((course) => course.courseId).join(', ')}`);
@@ -297,13 +339,51 @@ jobs:
           }
           NODE
 
-      - name: Regenerate governed course assets and catalogs
-        run: |
-          npm run build:all
-          npm run catalog
+      - name: Materialize detailed learner, implementation, assessment, and cinematic assets
+        run: npm run build:all
 
-      - name: Validate protected learner catalog completeness
+      - name: Regenerate governed course catalogs
+        run: npm run catalog
+
+      - name: Build authoritative source resolution queue
+        run: npm run collect:sources
+
+      - name: Validate protected learner catalog and implementation completeness
         run: npm run validate:learner-catalog
+
+      - name: Stage every course at the compliance gate
+        run: npm run stage:courses
+
+      - name: Measure commercial release blockers without promoting courses
+        id: commercial_release
+        continue-on-error: true
+        run: npm run validate:commercial-release
+
+      - name: Publish commercial release readiness summary
+        if: always()
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = 'catalog/commercial-release-readiness.json';
+          if (!fs.existsSync(path)) {
+            console.log('No commercial release readiness report was produced.');
+            process.exit(0);
+          }
+          const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const summary = [
+            '## Academy commercial cinematic release readiness',
+            '',
+            `- Ready: ${Boolean(report.ready)}`,
+            `- Courses ready: ${report.readyCourses ?? 0}/${report.evaluatedCourses ?? 0}`,
+            `- Blockers: ${report.blockerCount ?? 0}`,
+            `- Quality tier: ${report.qualityTier ?? 'unknown'}`,
+            '',
+            report.claimBoundary ?? 'Publication and checkout remain disabled until final acceptance.',
+          ].join('\n');
+          if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
+          console.log(summary);
+          NODE
 
       - name: Validate manifest-defined courses and protected LCMS load plan
         run: |
@@ -315,14 +395,14 @@ jobs:
       - name: Validate protected database schema
         run: npm run db:validate
 
-      - name: Load protected learner content into LCMS
+      - name: Load protected owner-review learner content into LCMS
         run: npm run load:courses
 
-      - name: Close resolved protected Academy blocker
+      - name: Close resolved protected Academy database blocker
         continue-on-error: true
         shell: bash
         run: |
-          gh issue close 17 --comment "Protected Academy PostgreSQL authentication, checkpoint restore, provider authoring where required, learner catalog validation, Prisma validation, and LCMS load succeeded in workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}." || true
+          gh issue close 17 --comment "Protected Academy PostgreSQL authentication, checkpoint restore, detailed provider authoring where required, learner catalog validation, compliance staging, Prisma validation, and LCMS owner-review load succeeded in workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. This closes only the database blocker; commercial media, reference, accessibility, rights, release, and owner-acceptance gates remain independently controlled." || true
 
       - name: Verify protected learner content remains untracked
         run: |
@@ -337,10 +417,52 @@ jobs:
 
       - name: Detect safe public generated changes
         id: changes
+        shell: bash
         run: |
           git add -A courses catalog .gitignore
-          git reset -- catalog/academy-learner-course-catalog.json catalog/learner-catalog-readiness.json catalog/parallel-authoring-summary.json catalog/authoring-provider-preflight.json catalog/authoring-checkpoint-restore.json 2>/dev/null || true
-          git reset -- 'courses/*/generated/*' 2>/dev/null || true
+          git reset -- \
+            catalog/academy-learner-course-catalog.json \
+            catalog/learner-catalog-readiness.json \
+            catalog/parallel-authoring-summary.json \
+            catalog/authoring-provider-preflight.json \
+            catalog/authoring-checkpoint-restore.json \
+            catalog/worker-pool-contract-verification.json \
+            catalog/commercial-course-production-standard-verification.json \
+            catalog/commercial-implementation-guidance-readiness.json \
+            catalog/commercial-implementation-materialization.json \
+            catalog/authoritative-source-resolution-queue.json \
+            catalog/compliance-staging-summary.json \
+            catalog/commercial-release-readiness.json \
+            2>/dev/null || true
+          git reset -- \
+            'courses/*/generated/*' \
+            'courses/*/instructor-manuscript.md' \
+            'courses/*/learner-guide.md' \
+            'courses/*/workbook.md' \
+            'courses/*/assessment-bank.json' \
+            'courses/*/answer-key.json' \
+            'courses/*/visual-brief.md' \
+            'courses/*/implementation-and-application-guide.md' \
+            'courses/*/source-register.json' \
+            'courses/*/reference-applicability-matrix.json' \
+            'courses/*/documented-real-world-case-register.json' \
+            'courses/*/course-implementation-strategy.json' \
+            'courses/*/standards-implementation-map.json' \
+            'courses/*/prioritized-recommendations.json' \
+            'courses/*/implementation-guidance.json' \
+            'courses/*/course-production-bible.json' \
+            'courses/*/commercial-production-plan.json' \
+            'courses/*/certificate-package.json' \
+            'courses/*/commercial-course-stage.json' \
+            'courses/*/commercial-release-evidence.json' \
+            'courses/*/media/*' \
+            'courses/*/video/*' \
+            'courses/*/captions/*' \
+            'courses/*/transcripts/*' \
+            'courses/*/accessibility/*' \
+            'courses/*/rights/*' \
+            releases \
+            2>/dev/null || true
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
@@ -375,7 +497,7 @@ jobs:
             --base main \
             --head "${{ steps.branch.outputs.name }}" \
             --title "Academy governed course metadata alignment" \
-            --body "Automated governed build restored or authored and checkpointed the full owner-review learner catalog in protected Academy PostgreSQL, validated the protected learner package, and loaded learner content into LCMS. This PR contains only safe public manifests, metadata, and evidence. Production publication remains separately approval-controlled. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            --body "Automated governed build restored or authored and checkpointed the owner-review learner catalog in protected Academy PostgreSQL, validated detailed course and implementation structures, staged packages at the compliance gate, and loaded protected owner-review content into LCMS. This pull request contains only safe public manifests, metadata, and evidence. Publication, checkout, Hollywood-grade completion claims, and commercial release remain separately owner-controlled. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
 
       - name: Publish non-sensitive audit evidence
         if: always()
@@ -387,6 +509,11 @@ jobs:
             catalog/authoring-checkpoint-restore.json
             catalog/continuous-course-audit.json
             catalog/parallel-authoring-summary.json
+            catalog/worker-pool-contract-verification.json
+            catalog/commercial-course-production-standard-verification.json
+            catalog/commercial-implementation-guidance-readiness.json
+            catalog/compliance-staging-summary.json
+            catalog/commercial-release-readiness.json
             catalog/bulk-build-report.json
             catalog/academy-course-catalog.json
           if-no-files-found: ignore
