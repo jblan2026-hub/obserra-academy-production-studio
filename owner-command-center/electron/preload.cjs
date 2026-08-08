@@ -28,7 +28,7 @@ contextBridge.exposeInMainWorld("obserraOwner", {
   recordAcademyReleaseDecision: (payload) => ipcRenderer.invoke("academy:recordReleaseDecision", payload),
   submitRecordedAcademyReleaseDecision: () => ipcRenderer.invoke("academy:submitRecordedReleaseDecision"),
   updateAcademyCourse: (payload) => ipcRenderer.invoke("academy:updateCourse", payload),
-  runAcademyAction: (payload) => ipcRenderer.invoke("academy:runAction", payload),
+  runAcademyAction: (payload) => ipcRenderer.invoke("academy:runControlledAction", payload),
   previewAcademyCourse: (courseId) => ipcRenderer.invoke("academy:previewCourse", courseId),
   previewAcademyMaterials: (courseId) => ipcRenderer.invoke("academy:previewMaterials", courseId),
   previewAcademyCertificate: (courseId) => ipcRenderer.invoke("academy:previewCertificate", courseId),
