@@ -3,6 +3,8 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import { classificationFromAuthoringExit } from "./authoring-provider-errors.mjs";
+
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
 const concurrency = Math.max(1, Math.min(36, Number(process.env.ACADEMY_AUTHORING_CONCURRENCY || 36)));
@@ -32,8 +34,7 @@ function runCourse(courseId, attempt) {
       "--course",
       courseId,
       "--provider",
-      process.env.ACADEMY_AUTHORING_PROVIDER || "openai",
-      "--force"
+      process.env.ACADEMY_AUTHORING_PROVIDER || "openai"
     ], {
       cwd: root,
       env: process.env,
@@ -68,7 +69,17 @@ async function runWithRetry(courseId) {
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     console.log(`[Academy Studio] Cinematic worker starting ${courseId}, attempt ${attempt}/${maxAttempts}.`);
     last = await runCourse(courseId, attempt);
-    if (last.ok) return last;
+    if (last.ok) return { ...last, classification: { category: "success", retryable: false } };
+    const classification = classificationFromAuthoringExit({
+      exitCode: last.code,
+      timedOut: last.timedOut,
+      signal: last.signal,
+    });
+    last = { ...last, classification };
+    if (!classification.retryable) {
+      console.error(`[Academy Studio] Nonretryable authoring failure for ${courseId}: ${classification.category}.`);
+      return last;
+    }
     if (attempt < maxAttempts) await delay(5000 * (2 ** (attempt - 1)));
   }
   return last;
@@ -76,13 +87,22 @@ async function runWithRetry(courseId) {
 
 const queue = [...courses];
 const results = [];
+let globalHalt = null;
 async function worker(workerId) {
-  while (queue.length > 0) {
+  while (queue.length > 0 && !globalHalt) {
     const courseId = queue.shift();
     if (!courseId) return;
     console.log(`[Academy Studio] Academy course worker ${workerId}/36 assigned ${courseId}.`);
     const result = await runWithRetry(courseId);
     results.push({ workerId, ...result });
+    if (!result.ok && result.classification?.retryable === false) {
+      globalHalt = {
+        courseId,
+        category: result.classification.category,
+        exitCode: result.classification.exitCode,
+      };
+      console.error(`[Academy Studio] Halting remaining authoring queue after nonretryable provider failure: ${globalHalt.category}.`);
+    }
     console.log(`[Academy Studio] Academy course worker ${workerId}/36 ${result.ok ? "completed" : "failed"} ${courseId}.`);
   }
 }
@@ -90,7 +110,7 @@ async function worker(workerId) {
 await Promise.all(Array.from({ length: Math.min(concurrency, courses.length) }, (_, index) => worker(index + 1)));
 const failed = results.filter((result) => !result.ok);
 const summary = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
   objective: "complete-all-61-academy-courses-only",
   portfolioWorkerCount: 36,
@@ -98,11 +118,16 @@ const summary = {
   courseWorkerAllocation: 36,
   discoveredCourses: courses.length,
   concurrency,
+  attempted: results.length,
   completed: results.filter((result) => result.ok).length,
   failed: failed.length,
+  unattempted: courses.length - results.length,
+  halted: Boolean(globalHalt),
+  haltReason: globalHalt,
   results
 };
 fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
 fs.writeFileSync(path.join(root, "catalog", "academy-61-cinematic-authoring-summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
-console.log(`[Academy Studio] Cinematic authoring complete for ${summary.completed}/61 courses.`);
-if (failed.length > 0) process.exit(2);
+console.log(`[Academy Studio] Cinematic authoring completed ${summary.completed}/61 courses; attempted ${summary.attempted}, unattempted ${summary.unattempted}.`);
+if (globalHalt?.exitCode) process.exit(globalHalt.exitCode);
+if (failed.length > 0 || summary.completed !== 61) process.exit(2);
