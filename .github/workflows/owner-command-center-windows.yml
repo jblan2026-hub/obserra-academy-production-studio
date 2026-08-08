@@ -1,6 +1,7 @@
 name: Build Owner Command Center Windows Package
 
 on:
+  workflow_call:
   workflow_dispatch:
   push:
     branches:
@@ -222,4 +223,4 @@ jobs:
           name: Obserra-Owner-AI-Command-Center-Windows-${{ github.sha }}
           path: owner-command-center/release-media/**
           if-no-files-found: error
-          retention-days: 180
+          retention-days: 90
