@@ -23,8 +23,11 @@ const FULL_SCAN_INTERVAL_MS = 15 * 60 * 1000;
 const BOOTSTRAP_FILE = "Obserra-Command-Center-Bootstrap.json";
 let monitorTimer;
 let scanTimer;
+let mainWindow = null;
+let mainWindowShowTimer = null;
 let monitorInFlight = false;
 let scanInFlight = false;
+let backgroundServicesStarted = false;
 let bootstrap = { applied: false, reason: "not-started" };
 
 function assertLocalOnly() {
@@ -45,7 +48,7 @@ function applyBootstrapProfile() {
   const profilePath = bootstrapCandidates().find((candidate) => fs.existsSync(candidate));
   if (!profilePath) return { applied: false, reason: "not-found" };
   const profile = JSON.parse(fs.readFileSync(profilePath, "utf8"));
-  if (profile.schemaVersion !== "1.0") throw new Error("Unsupported Command Center bootstrap schema");
+  if (!["1.0", "2.0"].includes(profile.schemaVersion)) throw new Error("Unsupported Command Center bootstrap schema");
   const hostname = os.hostname().toLowerCase();
   const target = String(profile.targetHostname || "").toLowerCase();
   if (target && target !== "*" && hostname !== target) return { applied: false, reason: "hostname-mismatch", targetHostname: target, hostname };
@@ -56,12 +59,41 @@ function applyBootstrapProfile() {
   return { applied: true, profilePath, targetHostname: target || "*", profileId: profile.profileId || null };
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function windowLoadFailureMarkup(error) {
+  const detail = escapeHtml(error instanceof Error ? error.message : String(error)).slice(0, 1200);
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    html,body{margin:0;height:100%;background:#05070b;color:#f5f7fb;font-family:Segoe UI,Arial,sans-serif}
+    body{display:grid;place-items:center;padding:30px;box-sizing:border-box}.card{max-width:760px;padding:32px;border:1px solid #593d29;border-radius:18px;background:#0a1020;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+    .brand{font-size:12px;letter-spacing:.16em;color:#d9b35f;text-transform:uppercase}.title{font-size:26px;font-weight:750;margin-top:10px}.body{margin-top:14px;color:#c7cfdd;line-height:1.55}.detail{margin-top:18px;padding:14px;border-radius:10px;background:#111827;color:#ffcfb0;font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap}
+  </style></head><body><div class="card"><div class="brand">OBSERRA EXECUTIVE PROTECTION &amp; INTELLIGENCE LLC</div><div class="title">Command Center interface could not load</div><div class="body">The installed application is running, but the local interface failed to load. Restart the application once. If this message returns, retain the startup health record for support.</div><div class="detail">${detail}</div></div></body></html>`;
+}
+
+function showPrimaryWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return false;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+  return true;
+}
+
 function createWindow() {
-  const window = new BrowserWindow({
-    width: 1720,
-    height: 1040,
-    minWidth: 1280,
-    minHeight: 760,
+  if (showPrimaryWindow()) return mainWindow;
+
+  mainWindow = new BrowserWindow({
+    width: 1500,
+    height: 920,
+    minWidth: 1100,
+    minHeight: 700,
+    center: true,
     backgroundColor: "#05070b",
     title: "Obserra Owner AI Command Center",
     show: false,
@@ -74,11 +106,50 @@ function createWindow() {
       devTools: process.env.NODE_ENV !== "production"
     }
   });
+
+  const window = mainWindow;
   window.removeMenu();
-  window.loadFile(path.join(__dirname, "../src/index.html"));
-  window.once("ready-to-show", () => window.show());
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event, url) => { if (!url.startsWith("file://")) event.preventDefault(); });
+  window.once("ready-to-show", () => {
+    if (mainWindowShowTimer) clearTimeout(mainWindowShowTimer);
+    if (!window.isDestroyed()) {
+      window.show();
+      window.focus();
+    }
+  });
+  window.on("closed", () => {
+    if (mainWindowShowTimer) clearTimeout(mainWindowShowTimer);
+    mainWindowShowTimer = null;
+    if (mainWindow === window) mainWindow = null;
+  });
+
+  app.emit("obserra:primary-window-created", window);
+
+  mainWindowShowTimer = setTimeout(() => {
+    if (!window.isDestroyed() && !window.isVisible()) {
+      window.show();
+      window.focus();
+      store.set("startup.windowVisibilityFallback", {
+        appliedAt: new Date().toISOString(),
+        reason: "ready-to-show-timeout",
+      });
+    }
+  }, 5000);
+
+  void window.loadFile(path.join(__dirname, "../src/index.html")).catch(async (error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    store.set("startup.windowLoadFailure", {
+      failedAt: new Date().toISOString(),
+      error: message,
+    });
+    if (!window.isDestroyed()) {
+      await window.loadURL(`data:text/html;charset=UTF-8,${encodeURIComponent(windowLoadFailureMarkup(error))}`);
+      window.show();
+      window.focus();
+    }
+  });
+  return window;
 }
 
 function encryptForDevice(value) {
@@ -215,6 +286,47 @@ async function runFullSecurityScan(trigger = "scheduled-full-scan") {
   }
 }
 
+async function startBackgroundServices() {
+  if (backgroundServicesStarted) return;
+  backgroundServicesStarted = true;
+  store.set("startup.backgroundServices", {
+    state: "starting",
+    startedAt: new Date().toISOString(),
+  });
+
+  if (!monitorTimer) {
+    monitorTimer = setInterval(() => {
+      runMonitoringCycle().catch((error) => ownerAI.remember(`Continuous monitor error: ${error.message || String(error)}`, "system", ["monitor-error"]));
+    }, MONITOR_INTERVAL_MS);
+    monitorTimer.unref?.();
+  }
+  if (!scanTimer) {
+    scanTimer = setInterval(() => {
+      runFullSecurityScan().catch((error) => ownerAI.remember(`Scheduled vulnerability scan error: ${error.message || String(error)}`, "system", ["scan-error"]));
+    }, FULL_SCAN_INTERVAL_MS);
+    scanTimer.unref?.();
+  }
+
+  try {
+    const initialCycle = await runMonitoringCycle("startup-background");
+    store.set("startup", {
+      checkedAt: new Date().toISOString(),
+      bootstrap,
+      monitoringState: "ready",
+      connectors: initialCycle.connectors || [],
+    });
+  } catch (error) {
+    store.set("startup.backgroundServices", {
+      state: "degraded",
+      failedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : String(error),
+    });
+    ownerAI.remember(`Startup monitoring error: ${error.message || String(error)}`, "system", ["monitor-error"]);
+  }
+
+  runFullSecurityScan("startup-full-scan").catch((error) => ownerAI.remember(`Startup vulnerability scan error: ${error.message || String(error)}`, "system", ["scan-error"]));
+}
+
 function authorizeAcademyAction(action, courseId) {
   const scope = courseId ? `academy:${courseId}` : action === "catalog" ? "catalog:academy" : "academy:*";
   securityEnforcement.assertAllowed(scope);
@@ -240,16 +352,17 @@ function decryptRecoveryBundle(bundle, passphrase) {
 }
 
 assertLocalOnly();
-app.whenReady().then(async () => {
+app.whenReady().then(() => {
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
   try { bootstrap = applyBootstrapProfile(); }
   catch (error) { bootstrap = { applied: false, reason: "invalid", error: error instanceof Error ? error.message : String(error) }; }
 
-  const initialCycle = await runMonitoringCycle("startup");
-  store.set("startup", { checkedAt: new Date().toISOString(), bootstrap, connectors: initialCycle.connectors || [] });
-  runFullSecurityScan("startup-full-scan").catch((error) => ownerAI.remember(`Startup vulnerability scan error: ${error.message || String(error)}`, "system", ["scan-error"]));
-  monitorTimer = setInterval(() => { runMonitoringCycle().catch((error) => ownerAI.remember(`Continuous monitor error: ${error.message || String(error)}`, "system", ["monitor-error"])); }, MONITOR_INTERVAL_MS);
-  scanTimer = setInterval(() => { runFullSecurityScan().catch((error) => ownerAI.remember(`Scheduled vulnerability scan error: ${error.message || String(error)}`, "system", ["scan-error"])); }, FULL_SCAN_INTERVAL_MS);
+  store.set("startup", {
+    checkedAt: new Date().toISOString(),
+    bootstrap,
+    monitoringState: "starting",
+    connectors: [],
+  });
 
   ipcMain.handle("system:getSnapshot", async () => ({ hostname: os.hostname(), platform: `${os.type()} ${os.release()}`, cpu: os.cpus()[0]?.model ?? "Unknown CPU", logicalProcessors: os.cpus().length, totalMemoryGb: Math.round(os.totalmem() / 1024 / 1024 / 1024), freeMemoryGb: Math.round(os.freemem() / 1024 / 1024 / 1024), uptimeSeconds: os.uptime(), localOnly: true, windowsEncryption: safeStorage.isEncryptionAvailable(), bootstrap, startupCheckedAt: store.get("startup.checkedAt"), monitorIntervalSeconds: MONITOR_INTERVAL_MS / 1000, fullScanIntervalMinutes: FULL_SCAN_INTERVAL_MS / 60000 }));
   ipcMain.handle("connectors:list", async () => resolvedConnectors(store).map((connector) => ({ ...connector, configured: true, credentialConfigured: !connector.credentialKey || Boolean(store.get(`secrets.${connector.credentialKey}`)), controlEnabled: false, lastStatus: store.get(`connectors.${connector.id}.lastStatus`) || null })));
@@ -343,7 +456,15 @@ app.whenReady().then(async () => {
   });
 
   createWindow();
-  app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+  setTimeout(() => {
+    void startBackgroundServices();
+  }, 50);
+  app.on("activate", () => { if (!showPrimaryWindow()) createWindow(); });
+  app.on("second-instance", () => { showPrimaryWindow(); });
 });
-app.on("before-quit", () => { if (monitorTimer) clearInterval(monitorTimer); if (scanTimer) clearInterval(scanTimer); });
+app.on("before-quit", () => {
+  if (mainWindowShowTimer) clearTimeout(mainWindowShowTimer);
+  if (monitorTimer) clearInterval(monitorTimer);
+  if (scanTimer) clearInterval(scanTimer);
+});
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
