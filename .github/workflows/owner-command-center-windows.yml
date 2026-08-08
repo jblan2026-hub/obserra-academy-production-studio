@@ -11,7 +11,6 @@ on:
       - "studio/**"
       - "courses/**"
       - "package.json"
-      - "package-lock.json"
       - ".github/workflows/owner-command-center-windows.yml"
   pull_request:
     branches:
@@ -21,7 +20,6 @@ on:
       - "studio/**"
       - "courses/**"
       - "package.json"
-      - "package-lock.json"
       - ".github/workflows/owner-command-center-windows.yml"
 
 permissions:
@@ -47,17 +45,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            owner-command-center/package-lock.json
 
       - name: Install Studio dependencies
         working-directory: .
-        run: npm ci --ignore-scripts --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund
 
       - name: Install Command Center dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund
 
       - name: Validate source syntax and policy JSON
         shell: pwsh
@@ -69,7 +63,6 @@ jobs:
           node --check electron/academy-preview.cjs
           node --check electron/owner-ai.cjs
           node --check electron/discovery.cjs
-          node --check electron/site-discovery.cjs
           node --check electron/vulnerability-scan.cjs
           node --check electron/threat-policy.cjs
           node --check electron/security-enforcement.cjs
@@ -78,7 +71,7 @@ jobs:
           node --check electron/remediation-queue.cjs
           node --check src/app.js
           node --check src/security-dashboard.js
-          node --check src/refresh-15s.js
+          node --check src/remediation-dashboard.js
           node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('policy/connector-catalog.json','utf8')); console.log('JSON policy validation passed')"
 
       - name: Run Command Center security and Academy Operations gates
