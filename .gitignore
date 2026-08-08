@@ -2,17 +2,48 @@ node_modules/
 .env
 .env.*
 !.env.example
+
+# Protected AI authoring and course-production outputs
 courses/*/generated/
+courses/*/implementation-and-application-guide.md
+courses/*/source-register.json
+courses/*/reference-applicability-matrix.json
+courses/*/documented-real-world-case-register.json
+courses/*/course-implementation-strategy.json
+courses/*/standards-implementation-map.json
+courses/*/prioritized-recommendations.json
+courses/*/implementation-guidance.json
+courses/*/course-production-bible.json
+courses/*/commercial-production-plan.json
+courses/*/certificate-package.json
+courses/*/commercial-course-stage.json
+courses/*/commercial-release-evidence.json
+courses/*/media/
+courses/*/video-jobs/
+courses/*/captions/
+courses/*/transcripts/
+courses/*/accessibility/
+courses/*/rights/
+
+# Protected Academy evidence and learner catalogs
 catalog/academy-learner-course-catalog.json
 catalog/learner-catalog-readiness.json
 catalog/parallel-authoring-summary.json
 catalog/authoring-provider-preflight.json
 catalog/authoring-checkpoint-restore.json
-releases/*/FINAL/*.mp4
-releases/*/FINAL/*.mov
-releases/*/FINAL/*.wav
-releases/*/FINAL/*.mp3
+catalog/worker-pool-contract-verification.json
+catalog/commercial-course-production-standard-verification.json
+catalog/commercial-implementation-guidance-readiness.json
+catalog/commercial-implementation-materialization.json
+catalog/authoritative-source-resolution-queue.json
+catalog/compliance-staging-summary.json
+catalog/commercial-release-readiness.json
+
+# Staged and final commercial course packages
+releases/*/STAGED/
+releases/*/FINAL/
+
 .DS_Store
 Thumbs.db
 
-# Provider funding evidence refreshed 2026 08 07. Runtime preflight remains authoritative.
+# Provider funding evidence refreshed 2026-08-07. Runtime preflight remains authoritative.
