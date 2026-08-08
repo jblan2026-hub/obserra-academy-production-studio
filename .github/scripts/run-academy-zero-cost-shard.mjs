@@ -13,7 +13,10 @@ const coursesRoot = path.join(root, "courses");
 const shardIndex = Number(process.env.ACADEMY_SHARD_INDEX);
 const shardCount = Number(process.env.ACADEMY_SHARD_COUNT || 16);
 const maxAttempts = Math.max(1, Math.min(2, Number(process.env.ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS || 2)));
-const PIPELINE_REVISION = "2026.08.08.3";
+const PIPELINE_REVISION = "2026.08.08.4";
+const researchScript = String(process.env.ACADEMY_RESEARCH_PROVIDER || "local").trim().toLowerCase() === "local"
+  ? "studio/research-course-authoritative-sources-local.mjs"
+  : "studio/research-course-authoritative-sources.mjs";
 
 if (!Number.isInteger(shardIndex) || shardIndex < 0 || shardIndex >= shardCount) {
   throw new Error(`Invalid ACADEMY_SHARD_INDEX=${process.env.ACADEMY_SHARD_INDEX}; expected 0..${shardCount - 1}.`);
@@ -136,8 +139,8 @@ for (const [position, courseId] of selected.entries()) {
   let researchRegenerated = false;
   if (!state.researchValid) {
     const research = await withRetry(
-      () => runNode(["studio/research-course-authoritative-sources.mjs", "--course", courseId], `${courseId} research`),
-      `${courseId} local primary-source research`,
+      () => runNode([researchScript, "--course", courseId], `${courseId} research`),
+      `${courseId} governed zero-cost primary-source research`,
     );
     if (!research.ok) {
       results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "research", passed: false, error: research.error });
