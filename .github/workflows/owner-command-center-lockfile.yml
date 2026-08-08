@@ -1,12 +1,14 @@
-name: Generate Owner Command Center Lockfile
+name: Verify Owner Command Center Lockfile
 
 on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - agent/academy-36-worker-course-surge
     paths:
       - "owner-command-center/package.json"
+      - "owner-command-center/package-lock.json"
       - ".github/workflows/owner-command-center-lockfile.yml"
   pull_request:
     paths:
@@ -15,64 +17,31 @@ on:
       - ".github/workflows/owner-command-center-lockfile.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: owner-command-center-lockfile-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  generate-and-validate:
-    name: Generate and validate npm dependency lock
+  verify-lockfile:
+    name: Verify deterministic npm dependency lock
     runs-on: windows-2025
     timeout-minutes: 30
     defaults:
       run:
         working-directory: owner-command-center
     steps:
-      - name: Checkout governed branch head
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
 
       - name: Configure Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Generate lockfile without lifecycle execution
+      - name: Recompute dependency lock without lifecycle execution
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-
-      - name: Prove clean install from generated lockfile
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Validate lockfile identity and direct dependency coverage
-        shell: pwsh
-        run: |
-          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); const l=JSON.parse(fs.readFileSync('package-lock.json','utf8')); if(l.name!==p.name||l.version!==p.version) throw new Error('Lockfile identity mismatch'); if(Number(l.lockfileVersion)<3) throw new Error('npm lockfileVersion 3 or later is required'); const root=l.packages?.['']; if(!root) throw new Error('Lockfile root package is missing'); for(const group of ['dependencies','devDependencies']) for(const name of Object.keys(p[group]||{})) if(!(name in (root[group]||{}))) throw new Error('Lockfile root is missing '+group+' entry '+name); console.log('Command Center lockfile identity and direct dependency coverage passed.');"
-
-      - name: Commit validated lockfile to governed branch
-        if: >-
-          (github.event_name == 'push' && github.ref_name == 'agent/academy-36-worker-course-surge') ||
-          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/academy-36-worker-course-surge')
-        shell: pwsh
-        env:
-          TARGET_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
-        run: |
-          $PSNativeCommandUseErrorActionPreference = $false
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git diff --cached --quiet
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "Command Center lockfile is already current."
-            exit 0
-          }
-          git commit -m "Lock Command Center dependencies"
-          if ($LASTEXITCODE -ne 0) { throw "Unable to commit the validated Command Center lockfile." }
-          git push origin "HEAD:$env:TARGET_BRANCH"
-          if ($LASTEXITCODE -ne 0) { throw "Unable to push the validated Command Center lockfile." }
 
       - name: Require committed lockfile to remain current
         shell: pwsh
@@ -81,10 +50,18 @@ jobs:
           if ($status) {
             Write-Host $status
             git diff -- package-lock.json
-            throw "owner-command-center/package-lock.json remains missing or stale after governed generation."
+            throw "owner-command-center/package-lock.json is missing or stale. Regenerate and commit the governed dependency lock before release."
           }
 
-      - name: Upload validated lockfile
+      - name: Prove clean install from committed lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Validate lockfile identity and direct dependency coverage
+        shell: pwsh
+        run: |
+          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); const l=JSON.parse(fs.readFileSync('package-lock.json','utf8')); if(l.name!==p.name||l.version!==p.version) throw new Error('Lockfile identity mismatch'); if(Number(l.lockfileVersion)<3) throw new Error('npm lockfileVersion 3 or later is required'); const root=l.packages?.['']; if(!root) throw new Error('Lockfile root package is missing'); for(const group of ['dependencies','devDependencies']) for(const name of Object.keys(p[group]||{})) if(!(name in (root[group]||{}))) throw new Error('Lockfile root is missing '+group+' entry '+name); console.log('Command Center lockfile identity and direct dependency coverage passed.');"
+
+      - name: Upload verified lockfile evidence
         uses: actions/upload-artifact@v4
         with:
           name: owner-command-center-package-lock-${{ github.sha }}
