@@ -12,10 +12,13 @@ const checkOnly = process.argv.includes("--check");
 const START = "<!-- AUTO-CONTROL-TABLE:START -->";
 const END = "<!-- AUTO-CONTROL-TABLE:END -->";
 
+function normalizeText(value) {
+  return String(value ?? "").replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+}
+
 function cell(value) {
-  return String(value ?? "")
+  return normalizeText(value)
     .replaceAll("|", "\\|")
-    .replaceAll("\r", " ")
     .replaceAll("\n", " ")
     .trim();
 }
@@ -45,7 +48,8 @@ function renderTable() {
 }
 
 if (!fs.existsSync(registerPath)) throw new Error(`Audit register is missing: ${manifest.documentation}`);
-const original = fs.readFileSync(registerPath, "utf8");
+const originalRaw = fs.readFileSync(registerPath, "utf8");
+const original = normalizeText(originalRaw);
 const start = original.indexOf(START);
 const end = original.indexOf(END);
 if (start < 0 || end < 0 || end <= start) {
@@ -57,7 +61,7 @@ const next = `${original.slice(0, start)}${generated}${original.slice(end + END.
 
 if (checkOnly) {
   if (next !== original) {
-    throw new Error(`Control documentation drift detected. Run: npm run docs:sync`);
+    throw new Error("Control documentation drift detected. Run: npm run docs:sync");
   }
   console.log(`Control documentation is synchronized for ${manifest.controls.length} Academy controls.`);
 } else {
