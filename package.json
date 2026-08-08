@@ -45,17 +45,19 @@
     "test:500x-workload": "node studio/verify-500x-workload.mjs",
     "test:1000x-remediation": "node studio/verify-1000x-remediation-workload.mjs",
     "test:2000x-resilience": "node studio/verify-2000x-cross-project-resilience.mjs",
-    "verify:public": "npm run verify:worker-contract && npm run test && npm run audit:courses && npm run validate && npm run build:all && npm run catalog && npm run collect:sources && npm run db:validate",
-    "verify:protected": "npm run verify:worker-contract && npm run verify:public && npm run db:generate && npm run validate:learner-catalog && npm run stage:courses && npm run load:courses:check",
+    "verify:public": "npm run verify:worker-contract && npm run test && npm run apply:course-policy && npm run audit:courses && node studio/validate.mjs && npm run build:all && npm run catalog && npm run collect:sources && npm run db:validate",
+    "verify:protected": "npm run verify:public && npm run db:generate && npm run validate:learner-catalog && npm run stage:courses && npm run load:courses:check",
     "verify:commercial-release": "npm run verify:protected && npm run collect:sources:release && npm run validate:commercial-release",
     "verify": "npm run verify:public",
-    "verify:70x": "npm run verify:worker-contract && npm run verify && npm run test:70x-extension",
-    "verify:500x": "npm run verify:worker-contract && npm run verify:70x && npm run test:500x-workload",
-    "verify:1000x": "npm run verify:worker-contract && npm run verify:500x && npm run test:1000x-remediation",
-    "verify:2000x": "npm run verify:worker-contract && npm run verify:1000x && npm run test:2000x-resilience",
-    "ci": "npm run verify:worker-contract && npm run verify:2000x && npm run build"
+    "verify:70x": "npm run verify && npm run test:70x-extension",
+    "verify:500x": "npm run verify:70x && npm run test:500x-workload",
+    "verify:1000x": "npm run verify:500x && npm run test:1000x-remediation",
+    "verify:2000x": "npm run verify:1000x && npm run test:2000x-resilience",
+    "ci": "npm run verify:2000x && npm run build"
   },
-  "prisma": { "seed": "tsx prisma/seed.ts" },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@clerk/nextjs": "^6.31.0",
     "@prisma/client": "^6.16.0",
@@ -71,5 +73,7 @@
     "tsx": "^4.20.0",
     "typescript": "^5.7.0"
   },
-  "engines": { "node": ">=22 <25" }
+  "engines": {
+    "node": ">=22 <25"
+  }
 }
