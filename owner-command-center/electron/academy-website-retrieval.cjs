@@ -5,6 +5,7 @@ const { ownerSafe, ownerSafeError, maskReference } = require("./academy-data-pro
 
 const COURSE_ID = /^[a-z0-9][a-z0-9-]{2,159}$/;
 const CERTIFICATE_ID = /^OBS-[A-Z0-9]{6,150}-[0-9A-F]{8}$/;
+const COURSE_VERSION = /^\d+\.\d+\.\d+$/;
 const REQUEST_TIMEOUT_MS = 15000;
 const MAX_RESPONSE_BYTES = 512 * 1024;
 
@@ -109,6 +110,16 @@ function createAcademyWebsiteRetrieval({ store, safeStorage } = {}) {
       });
     }
     const certificate = result.body;
+    if (!COURSE_ID.test(String(certificate.courseId || "")) || !COURSE_VERSION.test(String(certificate.courseVersion || ""))) {
+      return ownerSafe({
+        ok: false,
+        state: "certificate-contract-mismatch",
+        certificateReference: maskReference(certificateId),
+        status: result.status,
+        verification: result.verification,
+        requestId: result.requestId,
+      });
+    }
     return ownerSafe({
       ok: true,
       state: "verified-success",
@@ -119,6 +130,7 @@ function createAcademyWebsiteRetrieval({ store, safeStorage } = {}) {
         learnerName: certificate.learnerName,
         courseId: certificate.courseId,
         courseTitle: certificate.courseTitle,
+        courseVersion: certificate.courseVersion,
         completedAt: certificate.completedAt,
         trainingHours: certificate.trainingHours,
         signerName: certificate.signerName,
@@ -135,4 +147,4 @@ function createAcademyWebsiteRetrieval({ store, safeStorage } = {}) {
   return { retrieveCourse, retrieveCertificate };
 }
 
-module.exports = { createAcademyWebsiteRetrieval, COURSE_ID, CERTIFICATE_ID };
+module.exports = { createAcademyWebsiteRetrieval, COURSE_ID, CERTIFICATE_ID, COURSE_VERSION };
