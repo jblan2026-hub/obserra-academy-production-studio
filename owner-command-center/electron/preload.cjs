@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("obserraOwner", {
   getSystemSnapshot: () => ipcRenderer.invoke("system:getSnapshot"),
+  getMissionSnapshot: () => ipcRenderer.invoke("mission:getSnapshot"),
   getEndpointSnapshot: () => ipcRenderer.invoke("endpoint:getSnapshot"),
   refreshEndpointSnapshot: () => ipcRenderer.invoke("endpoint:refresh"),
   enrollEndpoint: (payload) => ipcRenderer.invoke("endpoint:enroll", payload),
@@ -10,7 +11,15 @@ contextBridge.exposeInMainWorld("obserraOwner", {
   probeConnector: (id) => ipcRenderer.invoke("connectors:probe", id),
   probeAllConnectors: () => ipcRenderer.invoke("connectors:probeAll"),
   configureConnector: (payload) => ipcRenderer.invoke("connectors:configure", payload),
+  getWorkerControlSnapshot: (payload = {}) => ipcRenderer.invoke("workers:getSnapshot", payload),
+  issueWorkerCommand: (payload) => ipcRenderer.invoke("workers:command", payload),
+  getWebMonitorSnapshot: (payload = {}) => ipcRenderer.invoke("web-monitor:getSnapshot", payload),
+  getNetworkSnapshot: () => ipcRenderer.invoke("network:getSnapshot"),
   getAcademySnapshot: () => ipcRenderer.invoke("academy:getSnapshot"),
+  getAcademyReviewSnapshot: () => ipcRenderer.invoke("academy-review:getSnapshot"),
+  synchronizeAcademyReview: () => ipcRenderer.invoke("academy-review:synchronize"),
+  getAcademyReviewCourse: (courseId) => ipcRenderer.invoke("academy-review:getCourse", courseId),
+  recordAcademyCourseDecision: (payload) => ipcRenderer.invoke("academy-review:recordDecision", payload),
   getAcademyProductionEvidence: () => ipcRenderer.invoke("academy:getProductionEvidence"),
   getAcademyGithubEvidence: () => ipcRenderer.invoke("academy:getGithubEvidence"),
   syncAcademyGithubEvidence: () => ipcRenderer.invoke("academy:syncGithubEvidence"),
