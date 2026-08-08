@@ -14,8 +14,9 @@
     "verify:github-evidence": "node scripts/verify-academy-github-evidence.mjs",
     "verify:remote-cache": "node scripts/verify-academy-remote-evidence-cache.mjs",
     "verify:academy-control": "node scripts/verify-academy-course-control.mjs",
+    "verify:review-dashboard": "node scripts/verify-local-academy-review-dashboard.mjs",
     "verify:live-purchase": "node scripts/verify-live-academy-purchase.mjs",
-    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-endpoint-enrollment.mjs && node scripts/verify-academy-production-evidence.mjs && node scripts/verify-academy-release-approval.mjs && node scripts/verify-academy-github-evidence.mjs && node scripts/verify-academy-remote-evidence-cache.mjs && node scripts/verify-academy-course-control.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
+    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-endpoint-enrollment.mjs && node scripts/verify-academy-production-evidence.mjs && node scripts/verify-academy-release-approval.mjs && node scripts/verify-academy-github-evidence.mjs && node scripts/verify-academy-remote-evidence-cache.mjs && node scripts/verify-academy-course-control.mjs && node scripts/verify-local-academy-review-dashboard.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
     "package:windows": "electron-builder --win nsis portable",
     "package:media": "powershell -ExecutionPolicy Bypass -File scripts/build-removable-media-package.ps1"
   },
