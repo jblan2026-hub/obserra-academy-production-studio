@@ -1,6 +1,12 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
+
+import {
+  AUTHORING_POLICY_VERSION,
+  validateHollywoodEnvelope,
+} from "../../studio/academy-hollywood-checkpoints.mjs";
 
 const root = process.cwd();
 const coursesRoot = path.join(root, "courses");
@@ -27,6 +33,11 @@ const selected = courseIds.filter((_courseId, index) => index % shardCount === s
 if (!selected.length) throw new Error(`Shard ${shardIndex}/${shardCount} received no courses.`);
 
 function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+function stableHash(value) { return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex"); }
+function readJsonIfPresent(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  try { return JSON.parse(fs.readFileSync(filePath, "utf8")); } catch { return null; }
+}
 function runNode(args, label) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, args, { cwd: root, env: process.env, stdio: "inherit" });
@@ -45,9 +56,7 @@ async function withRetry(factory, label) {
   return last;
 }
 function readGate(courseId) {
-  const filePath = path.join(coursesRoot, courseId, "generated", "quality", "deterministic-local-course-gate.json");
-  if (!fs.existsSync(filePath)) return null;
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  return readJsonIfPresent(path.join(coursesRoot, courseId, "generated", "quality", "deterministic-local-course-gate.json"));
 }
 function writeRemediationContext(courseId, gate) {
   const filePath = path.join(coursesRoot, courseId, "course-qa-local-remediation.json");
@@ -63,27 +72,98 @@ function writeRemediationContext(courseId, gate) {
   return filePath;
 }
 
+function courseState(courseId) {
+  const courseRoot = path.join(coursesRoot, courseId);
+  const manifest = readJsonIfPresent(path.join(courseRoot, "course-manifest.json"));
+  const research = readJsonIfPresent(path.join(courseRoot, "generated", "research", "authoritative-source-research.json"));
+  const envelope = readJsonIfPresent(path.join(courseRoot, "generated", "authoring", "course-package.json"));
+  const review = readJsonIfPresent(path.join(courseRoot, "generated", "quality", "independent-course-quality-review.json"));
+
+  let packageValid = false;
+  if (manifest && envelope) {
+    try {
+      validateHollywoodEnvelope({ courseId, envelope, manifest });
+      packageValid = envelope.provider === "local" && envelope.authoringPolicyVersion === AUTHORING_POLICY_VERSION;
+    } catch {
+      packageValid = false;
+    }
+  }
+
+  const researchValid = Boolean(
+    manifest &&
+    research?.courseId === courseId &&
+    research?.provider === "local" &&
+    research?.passed === true &&
+    research?.manifestHash === stableHash(manifest) &&
+    Array.isArray(research?.unresolvedTopics) &&
+    research.unresolvedTopics.length === 0
+  );
+
+  const scores = Object.values(review?.review?.scores || {});
+  const reviewValid = Boolean(
+    review?.courseId === courseId &&
+    review?.provider === "local" &&
+    review?.passed === true &&
+    review?.review?.passed === true &&
+    scores.length === 10 &&
+    scores.every((score) => Number.isInteger(score) && score >= 90 && score <= 100) &&
+    Array.isArray(review?.review?.criticalFindings) &&
+    review.review.criticalFindings.length === 0 &&
+    Array.isArray(review?.review?.requiredCorrections) &&
+    review.review.requiredCorrections.length === 0
+  );
+
+  return { manifest, research, envelope, review, researchValid, packageValid, reviewValid };
+}
+
 const results = [];
 for (const [position, courseId] of selected.entries()) {
   const startedAt = new Date().toISOString();
   console.log(`[Academy Studio] Shard ${shardIndex + 1}/${shardCount}, course ${position + 1}/${selected.length}: ${courseId}.`);
 
-  const research = await withRetry(
-    () => runNode(["studio/research-course-authoritative-sources.mjs", "--course", courseId], `${courseId} research`),
-    `${courseId} local primary-source research`,
-  );
-  if (!research.ok) {
-    results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "research", passed: false, error: research.error });
-    break;
+  let state = courseState(courseId);
+  if (state.researchValid && state.packageValid && state.reviewValid) {
+    const deterministicReuse = await runNode([".github/scripts/validate-zero-cost-course.mjs", courseId], `${courseId} restored deterministic gate`);
+    if (deterministicReuse.ok) {
+      console.log(`[Academy Studio] Reused fully validated protected checkpoint for ${courseId}; no model inference was required.`);
+      results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "reused-protected-checkpoint", passed: true, reused: true, remediated: false });
+      continue;
+    }
+    console.warn(`[Academy Studio] Restored evidence for ${courseId} did not pass the current deterministic gate and will be repaired locally.`);
   }
 
-  const author = await withRetry(
-    () => runNode(["studio/author-course-hollywood-with-checkpoint.mjs", "--course", courseId, "--provider", "local"], `${courseId} authoring`),
-    `${courseId} local authoring and protected checkpoint`,
-  );
-  if (!author.ok) {
-    results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "authoring", passed: false, error: author.error });
-    break;
+  let researchRegenerated = false;
+  if (!state.researchValid) {
+    const research = await withRetry(
+      () => runNode(["studio/research-course-authoritative-sources.mjs", "--course", courseId], `${courseId} research`),
+      `${courseId} local primary-source research`,
+    );
+    if (!research.ok) {
+      results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "research", passed: false, error: research.error });
+      break;
+    }
+    researchRegenerated = true;
+    state = courseState(courseId);
+  } else {
+    console.log(`[Academy Studio] Reused current local primary-source research for ${courseId}.`);
+  }
+
+  let authorRegenerated = false;
+  if (!state.packageValid || researchRegenerated) {
+    const authorArgs = ["studio/author-course-hollywood-with-checkpoint.mjs", "--course", courseId, "--provider", "local"];
+    if (state.envelope || researchRegenerated) authorArgs.push("--force");
+    const author = await withRetry(
+      () => runNode(authorArgs, `${courseId} authoring`),
+      `${courseId} local authoring and protected checkpoint`,
+    );
+    if (!author.ok) {
+      results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "authoring", passed: false, error: author.error });
+      break;
+    }
+    authorRegenerated = true;
+    state = courseState(courseId);
+  } else {
+    console.log(`[Academy Studio] Reused current governed course package for ${courseId}.`);
   }
 
   let deterministic = await runNode([".github/scripts/validate-zero-cost-course.mjs", courseId], `${courseId} deterministic gate`);
@@ -101,6 +181,7 @@ for (const [position, courseId] of selected.entries()) {
       break;
     }
     remediated = true;
+    authorRegenerated = true;
     deterministic = await runNode([".github/scripts/validate-zero-cost-course.mjs", courseId], `${courseId} post-remediation deterministic gate`);
   }
   if (!deterministic.ok) {
@@ -109,13 +190,18 @@ for (const [position, courseId] of selected.entries()) {
     break;
   }
 
-  const review = await withRetry(
-    () => runNode(["studio/review-course-quality.mjs", "--course", courseId], `${courseId} review`),
-    `${courseId} local independent review`,
-  );
-  if (!review.ok) {
-    results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "review", passed: false, remediated, error: review.error });
-    break;
+  state = courseState(courseId);
+  if (!state.reviewValid || authorRegenerated) {
+    const review = await withRetry(
+      () => runNode(["studio/review-course-quality.mjs", "--course", courseId], `${courseId} review`),
+      `${courseId} local independent review`,
+    );
+    if (!review.ok) {
+      results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "review", passed: false, remediated, error: review.error });
+      break;
+    }
+  } else {
+    console.log(`[Academy Studio] Reused current independent local quality review for ${courseId}.`);
   }
 
   const refreshCheckpoint = await withRetry(
@@ -127,18 +213,19 @@ for (const [position, courseId] of selected.entries()) {
     break;
   }
 
-  results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "complete", passed: true, remediated });
+  results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "complete", passed: true, reused: false, remediated });
 }
 
 const passed = results.filter((item) => item.passed).length;
 const report = {
-  schemaVersion: "1.1",
+  schemaVersion: "1.2",
   generatedAt: new Date().toISOString(),
   shardIndex,
   shardCount,
   expectedPortfolioCourses: 61,
   selectedCourses: selected,
   completedCourses: passed,
+  reusedCourses: results.filter((item) => item.reused).length,
   remediatedCourses: results.filter((item) => item.remediated).length,
   failedCourses: results.filter((item) => !item.passed).length,
   estimatedCommercialModelApiCostUsd: 0,
@@ -147,5 +234,5 @@ const report = {
 };
 fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
 fs.writeFileSync(path.join(root, "catalog", `academy-zero-cost-shard-${String(shardIndex).padStart(2, "0")}.json`), `${JSON.stringify(report, null, 2)}\n`);
-console.log(`[Academy Studio] Zero-cost shard ${shardIndex + 1}/${shardCount}: ${passed}/${selected.length} course(s) fully checkpointed, ${report.remediatedCourses} remediated.`);
+console.log(`[Academy Studio] Zero-cost shard ${shardIndex + 1}/${shardCount}: ${passed}/${selected.length} course(s) fully checkpointed, ${report.reusedCourses} reused, ${report.remediatedCourses} remediated.`);
 if (passed !== selected.length) process.exit(2);
