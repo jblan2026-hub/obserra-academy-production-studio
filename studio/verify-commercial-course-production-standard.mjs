@@ -79,7 +79,8 @@ const supplementPath = "studio/enrich-commercial-implementation-guidance.mjs";
 const wrapperPath = "studio/author-course-with-checkpoint.mjs";
 const batchPath = "studio/author-all-courses.mjs";
 const catalogPath = "studio/generate-catalog.mjs";
-const validatorPath = "studio/validate-learner-catalog.mjs";
+const baseValidatorPath = "studio/validate-learner-catalog.mjs";
+const implementationValidatorPath = "studio/validate-commercial-implementation-guidance.mjs";
 const packagePath = "package.json";
 
 for (const relativePath of [
@@ -87,7 +88,8 @@ for (const relativePath of [
   wrapperPath,
   batchPath,
   catalogPath,
-  validatorPath,
+  baseValidatorPath,
+  implementationValidatorPath,
   packagePath,
 ]) {
   record(`required-file-${relativePath}`, fs.existsSync(path.join(root, relativePath)));
@@ -137,8 +139,16 @@ includesAll("learner-catalog-implementation-projection", catalog, [
   "evidenceAndMetricsPlan",
 ]);
 
-const validator = read(validatorPath);
-includesAll("learner-readiness-implementation-gate", validator, [
+const baseValidator = read(baseValidatorPath);
+includesAll("base-learner-readiness-gate-preserved", baseValidator, [
+  "requiredAuthoringPolicyVersion = \"2026.08.07.3\"",
+  "lesson-narrative-below-",
+  "learner-catalog-worker-contract-mismatch",
+  "learner-catalog-production-standard-mismatch",
+]);
+
+const implementationValidator = read(implementationValidatorPath);
+includesAll("learner-readiness-implementation-gate", implementationValidator, [
   "missing-documented-real-world-case-register",
   "missing-course-implementation-strategy",
   "missing-standards-implementation-map",
@@ -167,10 +177,16 @@ record(
     .includes("verify:course-production-standard"),
   packageJson.scripts?.["verify:worker-contract"] ?? null,
 );
+record(
+  "learner-catalog-gate-includes-implementation-validator",
+  String(packageJson.scripts?.["validate:learner-catalog"] ?? "")
+    .includes("validate-commercial-implementation-guidance.mjs"),
+  packageJson.scripts?.["validate:learner-catalog"] ?? null,
+);
 
 const failures = checks.filter((check) => !check.passed);
 const report = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   verifiedAt: new Date().toISOString(),
   productionStandardId: commercialProductionStandard.standardId,
   productionStandardHash: commercialProductionStandardHash(),
