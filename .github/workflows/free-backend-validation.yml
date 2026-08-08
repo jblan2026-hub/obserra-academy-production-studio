@@ -9,6 +9,9 @@ on:
       - "lib/**"
       - "studio/run-free-ai-worker.ts"
       - "studio/verify-free-backend.mjs"
+      - "studio/verify-academy-zero-cost-pipeline.mjs"
+      - "studio/local-ollama-responses-proxy.mjs"
+      - "studio/render-all-61-local-media.mjs"
       - "prisma/**"
       - "package.json"
       - "tsconfig.backend.json"
@@ -16,6 +19,8 @@ on:
       - "docker-compose.free-backend.yml"
       - ".dockerignore"
       - ".env.example"
+      - ".github/workflows/academy-61-content-checkpoint.yml"
+      - ".github/workflows/academy-61-course-completion-only.yml"
       - ".github/workflows/free-backend-validation.yml"
   workflow_dispatch:
 
@@ -59,6 +64,9 @@ jobs:
 
       - name: Verify free-first backend contract
         run: npm run verify:free-backend
+
+      - name: Verify 61-course zero-cost pipeline contract
+        run: node studio/verify-academy-zero-cost-pipeline.mjs
 
       - name: Generate Prisma Client explicitly
         run: npx prisma generate
