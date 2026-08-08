@@ -1,52 +1,50 @@
 # Obserra Academy Command Center Auditable Implementation Register
 
-Status: Active implementation register
-Owner: OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC
-Scope: Academy Command Center reset, Academy website retrieval, payment-security controls, privacy boundaries, pricing alignment, owner review, publication, paid-access verification, certificate retrieval, credential encryption, production-storage encryption, and immutable green-path baselines.
+Status: Active implementation register  
+Owner: OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC  
+Scope: Academy Command Center reset, website retrieval, payment security, privacy, pricing, review/publication, certificate integrity, credential encryption, storage encryption, immutable green paths, course identity, and course versioning.
 
-## Purpose
+## Authority and purpose
 
-This register is the repository source of truth for material Academy Command Center controls and implementation decisions. Each control or capability is tied to concrete source files and verification evidence. A feature is not considered production-ready merely because it is documented here. Production readiness requires the corresponding implementation and verification evidence to pass.
+`policy/academy-command-center-control-manifest.json` is the machine-readable source of truth for the control inventory. This document is the human-readable audit record. The control table below is generated from the manifest by `owner-command-center/scripts/sync-control-documentation.mjs`. `npm run docs:check` fails if this committed document differs from what the manifest generates.
+
+Production readiness requires implementation evidence and passing verification. Documentation alone does not establish a green control.
 
 ## Audit principles
 
 1. Fail closed when identity, payment, publication, certificate, connector, encryption, or control state cannot be verified.
 2. Minimize customer, learner, and payment data at every boundary.
-3. Do not collect, store, process, render, or log primary card numbers, CVC, raw payment-method objects, provider secrets, session cookies, passwords, or unnecessary customer/student PII.
-4. Use Stripe-hosted Checkout for card capture and server-side verification for fulfillment.
+3. Never collect, store, render, or log PAN, CVC, raw payment-method objects, credentials, passwords, session cookies, or unnecessary customer/student PII.
+4. Use Stripe-hosted payment collection and server-side payment/entitlement verification.
 5. Require HTTPS for website and commerce connector traffic.
-6. Preserve explicit owner authority for review, approval, publication, and green-path re-baseline decisions.
-7. Record technical evidence separately from compliance attestations. Engineering controls support compliance but do not constitute an external compliance determination.
-8. Keep the active 61-course production worker checkout isolated from Command Center development and control-plane changes.
-9. Once a path is verified green and frozen, any drift must fail standard verification until an explicit owner-approved re-baseline is committed.
-10. Protect `C:\ObserraAcademyProduction` with full-volume encryption and protect application secrets separately with Windows credential-backed encryption.
+6. Preserve explicit owner authority for approval, publication, exceptions, and green-path re-baselining.
+7. Keep technical control evidence separate from external compliance attestations.
+8. Keep active course-production workers isolated from Command Center development.
+9. Freeze verified green paths by SHA-256 and fail on subsequent drift.
+10. Protect `C:\ObserraAcademyProduction` with full-volume encryption while encrypting application secrets separately.
+11. Use one canonical course identity across Studio, website, checkout, learner experience, and certificates.
+12. Start current courses at semantic version `1.0.0`; future released changes require an explicit version increment rather than historical overwrite.
 
-## Control and capability register
+## Generated control register
 
-| ID | Control / Capability | Requirement | Implementation | Verification / Evidence | Status |
-|---|---|---|---|---|---|
-| ACC-001 | Owner endpoint enrollment | Privileged owner operations require enrolled endpoint and Windows credential protection. | `owner-command-center/electron/endpoint-enrollment.cjs` | `owner-command-center/scripts/verify-endpoint-enrollment.mjs` | Implemented |
-| ACC-002 | Renderer privacy boundary | Remove secrets, authorization data, payment data, direct customer/student contact data, and sensitive references before renderer delivery. | `owner-command-center/electron/academy-data-protection.cjs`, `academy-course-control-resolver.cjs` | `verify-academy-data-protection.mjs`, `verify-payment-control-behavior.mjs` | Implemented |
-| ACC-003 | Payment reference masking | Full Stripe and certificate references must not be displayed or persisted in owner-facing evidence unless explicitly required for a controlled runtime operation. | `academy-data-protection.cjs`, `academy-secure-purchase-verifier.cjs`, `academy-website-retrieval.cjs` | Behavioral privacy tests | Implemented |
-| ACC-004 | Stripe-hosted card capture | Obserra must not host PAN/CVC collection fields. Card capture uses Stripe-hosted Checkout. | `policy/academy-payment-security.json`, `policy/academy-pci-dss-v4.0.1-profile.json` | `verify-payment-control-baseline.mjs`, `verify-payment-control-behavior.mjs` | Required / gated |
-| ACC-005 | HTTPS payment and website retrieval | Commerce and website connector traffic must use HTTPS. HTTP payment/retrieval routes are blocked. | Payment security policies; `academy-website-retrieval.cjs` | Payment control baseline and behavioral tests | Implemented / gated |
-| ACC-006 | Webhook and server-side fulfillment | Client success redirect is not proof of payment. Fulfillment requires server-side verification and idempotent entitlement handling. | Payment security policies and Academy website commerce implementation | Payment control verification plus live purchase verification | Required / gated |
-| ACC-007 | Secure purchase verification | Accept canonical Stripe Checkout Session or PaymentIntent reference, verify Stripe state, course binding, Clerk entitlement, and commerce health. | `academy-secure-purchase-verifier.cjs` | `verify-live-academy-purchase.mjs`; real-purchase runtime validation | Implemented; live validation pending owner endpoint run |
-| ACC-008 | Minimum necessary payment audit evidence | Purchase verification ledger retains masked reference, course, amount/currency, outcome, provider request IDs, and state only. Raw Stripe/Clerk customer payload persistence is prohibited. | `academy-secure-purchase-verifier.cjs` | Data-protection and behavioral tests | Implemented |
-| ACC-009 | All Sales Are Final disclosure | Display before payment, require buyer acknowledgement, and repeat on confirmation/receipt where supported. Include exception for remedies required by applicable law. | `policy/academy-commerce-policy.json` | `verify-academy-commerce-policy.mjs` | Implemented as policy contract; website enforcement must remain gated |
-| ACC-010 | Academy owner review lifecycle | Generated course moves through review, required-review decisions, release approval, explicit publication, and independent readback. | Academy course-control modules and reset UI | Academy course-control/review-dashboard verifiers | Implemented / reset in progress |
-| ACC-011 | Optional review semantics | `required=false` reviews must not create false publication blockers. Required reviews remain mandatory. | Academy lifecycle control adapter/control logic | Review-dashboard/control tests | Implementation hardening in progress |
-| ACC-012 | Website published-course retrieval | Command Center retrieves buyer-safe published course metadata from live Academy website over HTTPS. Protected learner content is not exposed through the public endpoint. | Website: `/api/academy/course/[courseId]`; Command Center: `academy-website-retrieval.cjs`, `academy-website-retrieval-ipc.cjs` | `verify-academy-website-retrieval.mjs`; website route regression test; production route readback | Implemented; deployment/readback pending |
-| ACC-013 | Website certificate retrieval/verification | Command Center retrieves verification-safe certificate evidence from website API by certificate ID. | Website: `/api/academy/certificate/verify?certificateId=...`; Command Center: `academy-website-retrieval.cjs`, `academy-website-retrieval-ipc.cjs` | Website certificate verification tests; `verify-academy-website-retrieval.mjs` | Implemented connector; UI integration in progress |
-| ACC-014 | Certificate privacy | Public verification may expose only verification-necessary fields and must exclude assessment score and unnecessary learner data. | Website certificate verification route | `test/academy-certificate-verification.test.mjs` | Implemented |
-| ACC-015 | Certificate verification resilience | Validate ID before lookup; rate limit by client/instance; bound concurrent lookups; fail closed if backing identity service is unavailable; no-store errors. | Website certificate verification route | Website certificate verification tests | Implemented |
-| ACC-016 | Academy-only Command Center | Reset broad owner UI to a focused Academy review, approval, publication, paid-access, website retrieval, and certificate workflow. | `owner-command-center/src/index.html`, `academy-reset-ui.js`, reset CSS | Local review-dashboard verifier and Windows package validation | In progress |
-| ACC-017 | Product pricing source of truth | Public Studio catalog and website must resolve to one governed price per course level. Legacy manifest price fields cannot override the public governed tier. | `policy/academy-pricing-policy.json`, `studio/generate-catalog.mjs`, website Studio catalog merge | Pricing consistency verifier and website parity test | Studio implementation complete; website fallback parity pending |
-| ACC-018 | Market-aligned launch pricing | Launch tiers are Foundation $99; Professional $149; Advanced $199; Executive Intensive $249; CISO Masterclass $299. | `policy/academy-pricing-policy.json` and generated catalog | Market comparison record plus repository consistency test | Governed policy implemented |
-| ACC-019 | Active production isolation | Command Center development must not stop, switch, or overlap the active 61-course generation checkout. | Separate branches/checkouts and local launcher architecture | Operator procedure and branch separation evidence | Implemented operational boundary |
-| ACC-020 | Standard verification chain | Privacy, commerce, payment behavior, credential encryption, website retrieval, review/control, endpoint, audit-manifest, green-lock, and packaging verification run under standard Command Center verification. | `owner-command-center/package.json` | `npm run verify` | Implemented; CI evidence pending latest reset commit |
-| ACC-021 | Immutable green-path baseline | A path that has passed its required verification suite may be frozen by SHA-256. Any drift fails standard verification. Re-baseline requires explicit owner approval, reason, and new verification evidence. | `policy/academy-green-path-locks.json`, `owner-command-center/scripts/lock-green-path.mjs` | `owner-command-center/scripts/verify-green-path-locks.mjs` | Enabled; no path frozen until green evidence exists |
-| ACC-022 | Credential, secret, and production-storage encryption | Application password persistence is prohibited; secrets use Windows credential-backed encryption; production workspace requires BitLocker/full-volume protection; recovery material must never be logged or committed. | `policy/academy-credential-and-encryption-security.json`, `owner-command-center/electron/main.cjs`, `endpoint-enrollment.cjs`, `scripts/Test-ObserraAcademyStorageEncryption.ps1` | `verify-credential-encryption-controls.mjs`; runtime BitLocker status evidence | Implemented; local BitLocker runtime evidence pending |
+<!-- AUTO-CONTROL-TABLE:START -->
+| ID | Control / Capability | Implementation | Verification / Evidence | Status |
+|---|---|---|---|---|
+| ACC-001 | Owner endpoint enrollment | `owner-command-center/electron/endpoint-enrollment.cjs` | `owner-command-center/scripts/verify-endpoint-enrollment.mjs` | Required / gated |
+| ACC-002 | Renderer privacy boundary | `owner-command-center/electron/academy-data-protection.cjs`, `owner-command-center/electron/academy-course-control-resolver.cjs` | `owner-command-center/scripts/verify-academy-data-protection.mjs`, `owner-command-center/scripts/verify-payment-control-behavior.mjs` | Required / gated |
+| ACC-004 | Stripe-hosted payment security | `policy/academy-payment-security.json`, `policy/academy-pci-dss-v4.0.1-profile.json` | `owner-command-center/scripts/verify-payment-control-baseline.mjs`, `owner-command-center/scripts/verify-payment-control-behavior.mjs`, `owner-command-center/scripts/verify-academy-commerce-policy.mjs` | Required / gated |
+| ACC-007 | Secure purchase verification | `owner-command-center/electron/academy-secure-purchase-verifier.cjs` | `owner-command-center/scripts/verify-live-academy-purchase.mjs` | Required / gated |
+| ACC-009 | All Sales Are Final disclosure | `policy/academy-commerce-policy.json` | `owner-command-center/scripts/verify-academy-commerce-policy.mjs` | Required / gated |
+| ACC-012 | Website published-course retrieval | `owner-command-center/electron/academy-website-retrieval.cjs`, `owner-command-center/electron/academy-website-retrieval-ipc.cjs`; External: `jblan2026-hub/obserra-website:app/api/academy/course/[courseId]/route.ts` | `owner-command-center/scripts/verify-academy-website-retrieval.mjs` | Required / gated |
+| ACC-013 | Website certificate retrieval | `owner-command-center/electron/academy-website-retrieval.cjs`, `owner-command-center/electron/academy-website-retrieval-ipc.cjs`; External: `jblan2026-hub/obserra-website:app/api/academy/certificate/verify/route.ts` | `owner-command-center/scripts/verify-academy-website-retrieval.mjs` | Required / gated |
+| ACC-016 | Academy-only Command Center | `owner-command-center/src/index.html`, `owner-command-center/src/academy-reset-ui.js`, `owner-command-center/src/academy-reset.css` | `owner-command-center/scripts/verify-local-academy-review-dashboard.mjs` | Required / gated |
+| ACC-017 | Product pricing source of truth | `policy/academy-pricing-policy.json`, `studio/generate-catalog.mjs`; External: `jblan2026-hub/obserra-website:app/academy/courseData.ts` | External/governed dependency | website-parity-implemented-validation-pending |
+| ACC-020 | Standard verification chain | `owner-command-center/package.json` | `owner-command-center/scripts/verify-payment-control-baseline.mjs`, `owner-command-center/scripts/verify-payment-control-behavior.mjs`, `owner-command-center/scripts/verify-credential-encryption-controls.mjs`, `owner-command-center/scripts/verify-academy-website-retrieval.mjs`, `owner-command-center/scripts/sync-control-documentation.mjs`, `owner-command-center/scripts/verify-control-manifest.mjs`, `owner-command-center/scripts/verify-green-path-locks.mjs` | Required / gated |
+| ACC-021 | Immutable green-path baseline | `policy/academy-green-path-locks.json`, `owner-command-center/scripts/lock-green-path.mjs` | `owner-command-center/scripts/verify-green-path-locks.mjs` | enabled |
+| ACC-022 | Credential, secret, and production-storage encryption | `policy/academy-credential-and-encryption-security.json`, `owner-command-center/electron/main.cjs`, `owner-command-center/electron/endpoint-enrollment.cjs`, `scripts/Test-ObserraAcademyStorageEncryption.ps1` | `owner-command-center/scripts/verify-credential-encryption-controls.mjs` | Required / gated |
+| ACC-023 | Automatic control-documentation synchronization | `owner-command-center/scripts/sync-control-documentation.mjs`, `docs/ACADEMY-COMMAND-CENTER-AUDIT-REGISTER.md` | `owner-command-center/scripts/sync-control-documentation.mjs`, `owner-command-center/scripts/verify-control-manifest.mjs` | enabled |
+| ACC-024 | Canonical course identity, versioning, and certificate alignment | `policy/academy-course-versioning.json`, `policy/academy-course-identity-and-certificate-naming.json`, `studio/initialize-course-versions.mjs`, `studio/verify-course-versioning.mjs`, `studio/generate-catalog.mjs`; External: `jblan2026-hub/obserra-website:lib/certificate-signing.ts; app/academy/certificate/[courseId]/page.tsx; app/api/academy/certificate/verify/route.ts; app/api/academy/checkout/route.ts` | `studio/verify-course-versioning.mjs` | implemented-validation-pending |
+<!-- AUTO-CONTROL-TABLE:END -->
 
 ## Website connector contract
 
@@ -54,59 +52,40 @@ This register is the repository source of truth for material Academy Command Cen
 
 `GET https://www.obserrallc.com/api/academy/course/<course-id>`
 
-The response is intended for machine-readable owner verification of the published website course representation. It must return only public/buyer-safe data such as course identity, title, description, curriculum metadata, duration, price, public completion requirements, and release information. It must not expose generated protected learner content, assessment answers, instructor-only material, customer identities, learner progress, payment data, or credentials.
+The endpoint may return only public/buyer-safe course identity and curriculum metadata. It must not expose protected learner content, assessment answers, instructor-only material, customer identities, learner progress, payment data, or credentials.
 
 ### Certificate verification retrieval
 
 `GET https://www.obserrallc.com/api/academy/certificate/verify?certificateId=<certificate-id>`
 
-The response must remain verification-focused. The current website route returns certificate validity, certificate identifier, learner display name, course identity/title, completion date, training hours, signer/issuer metadata, signature algorithm, and public key fingerprint. Assessment score is intentionally excluded from the public payload.
+The verification payload is limited to verification-necessary fields. Newly issued certificates bind canonical `courseId`, `courseTitle`, and `courseVersion` in the signed claim. Assessment scores remain excluded from the public API.
 
-## Payment and credential security control objectives
+## Course identity and version governance
 
-The Academy payment implementation is engineered to keep Obserra outside direct primary-card-data handling. Controls include HTTPS/TLS, HSTS, secure cookies, Stripe-hosted card capture, webhook signature verification, server-side payment validation, entitlement readback, idempotent fulfillment, encrypted owner secrets, redacted logs/evidence, minimum-necessary PII, dependency/supply-chain security checks, and fail-closed publication/payment behavior.
+The stable machine identifier is the lowercase course slug. The human display title is the canonical title from the governed course manifest and does not contain the version. Version is a separate SemVer field displayed as `v1.0.0`, `v1.1.0`, and so forth.
 
-Passwords are not an Obserra application storage primitive. Authentication is delegated to the identity provider. Plaintext password storage, reversible password encryption, and unsalted/general-purpose SHA-256 password hashing are prohibited. If direct password storage were ever deliberately introduced, it would require a salted adaptive password KDF such as Argon2id or scrypt and a separate security review.
+All current Academy courses begin at `1.0.0`. A released course must not be silently overwritten. Material content changes require a new semantic version according to `policy/academy-course-versioning.json`. Newly signed certificates retain the title and version that existed when completion occurred, preserving historical integrity after later course revisions.
 
-The production workspace `C:\ObserraAcademyProduction` is required to reside on a BitLocker-protected volume. Application credentials remain separately encrypted with Windows credential-backed encryption. BitLocker recovery keys and other recovery material are excluded from logs, repository evidence, and Command Center output.
-
-Formal PCI or other compliance validation is an external governance activity and is not asserted by this engineering register.
+The canonical credential name is **Certificate of Course Completion**. The website certificate, public verification API, checkout metadata, catalog, and Command Center retrieval must agree on course ID, title, and version.
 
 ## Pricing governance
 
-Pricing is a governed product attribute and must not be independently hardcoded across the Studio, website, Stripe, or Command Center. The intended sequence is:
+The governed launch tiers are Foundation $99, Professional $149, Advanced $199, Executive Intensive $249, and CISO Masterclass $299. Studio catalog generation is authoritative. The website fallback is resilience-only and must match those values. Checkout must use the governed course title, version, and resolved course price.
 
-1. Define tier pricing in `policy/academy-pricing-policy.json`.
-2. Generate the Academy public catalog from that governed policy.
-3. Synchronize the website Studio catalog from the approved catalog.
-4. Resolve website presentation and Checkout creation from the synchronized price.
-5. Verify Stripe price/session amount against the selected course before granting entitlement.
-6. Block release when policy/catalog/site/checkout prices disagree.
+## Payment and credential security objectives
 
-The website fallback table is a resilience mechanism, not an independent pricing authority. Its values must match the approved tier policy and must not override synchronized Studio course pricing.
+Obserra is engineered not to directly handle primary card data. Payment controls include HTTPS/TLS, HSTS, secure cookies, Stripe-hosted card capture, verified webhook/server-side payment evidence, idempotent entitlement handling, encrypted owner secrets, redacted evidence, minimum-necessary PII, and fail-closed behavior.
+
+Passwords are not an Obserra application storage primitive. Plaintext passwords, reversible password encryption, and general-purpose SHA-256 password storage are prohibited. Application secrets are encrypted with Windows credential-backed protection. The production workspace requires BitLocker/full-volume protection. Recovery keys are never committed or captured in audit evidence.
 
 ## Green-path freeze rule
 
-A control path is eligible to freeze only after its required verification suite is green. The freeze record contains the protected file list, SHA-256 digest for each protected file, verifier/evidence reference, source commit, timestamp, and owner-approval reference. Normal verification recomputes every digest and fails on drift. A silent hash refresh is prohibited. A legitimate change requires an explicit owner-approved re-baseline and a new green verification result before the updated path can be frozen again.
+A control path becomes eligible to freeze only after its required tests are green. The lock record contains the protected file set, SHA-256 hashes, verifier/evidence reference, source commit, timestamp, and owner-approval reference. Verification recomputes hashes and fails on drift. Legitimate modification requires an explicit owner-approved re-baseline and new green verification evidence.
 
 ## Evidence expectations
 
-For each production release retain, where applicable:
-
-- Commit SHA and pull request.
-- CI verification status and failing/passing job evidence.
-- Windows packaging artifact hash.
-- `npm run verify` result.
-- Payment-control baseline and behavioral-test result.
-- Credential/encryption-control verification result.
-- BitLocker protection status for the production volume, excluding recovery material.
-- Website course-route and certificate-route readback result.
-- Owner publication decision and independent publication readback.
-- Live purchase verification result using masked transaction references only.
-- Catalog/policy/site/checkout price-consistency verification.
-- Green-path lock manifest and SHA-256 drift verification.
-- Any exception or owner-approved deviation, including rationale, owner identity, timestamp, scope, expiration/review date, and rollback/remediation plan.
+For a production release retain, as applicable: commit SHA and PR; CI results; package hashes; `npm run verify`; payment/security test evidence; credential/encryption evidence; BitLocker protection status without recovery material; website course/certificate readback; owner publication decision; masked live-purchase verification; pricing parity evidence; version/title/certificate parity evidence; documentation drift result; and green-path lock records.
 
 ## Change-control rule
 
-Any change that weakens a control in this register must be explicit, reviewable, tested, and recorded. Silent removal of a control, test, redaction rule, HTTPS restriction, server-side verification step, owner confirmation, encryption requirement, immutable lock, or audit evidence requirement is prohibited.
+Silent weakening of a control is prohibited. Changes affecting security, identity, payment, pricing, publication, course naming/versioning, certificate claims, or a frozen path require reviewable repository changes and passing verification before release.
