@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: academy-61-course-completion-only
@@ -29,63 +30,59 @@ env:
   OBSERRA_PORTFOLIO_WORKER_COUNT: "36"
   OBSERRA_APPLICATION_WORKER_COUNT: "0"
   ACADEMY_COURSE_WORKER_COUNT: "36"
-  ACADEMY_AUTHORING_CONCURRENCY: "36"
-  ACADEMY_RESEARCH_CONCURRENCY: "36"
-  ACADEMY_REVIEW_CONCURRENCY: "36"
   ACADEMY_WORKER_MODE: interchangeable-course-production
   ACADEMY_EXPECTED_SURGE_COURSES: "61"
   ACADEMY_EXPECTED_REVIEW_COURSES: "61"
   ACADEMY_SURGE_EXCLUDED_COURSE_IDS: __none__
   ACADEMY_MINIMUM_LESSON_WORDS: "1200"
   ACADEMY_MINIMUM_EXACT_SOURCES_PER_COURSE: "2"
-  ACADEMY_AUTHORING_PROVIDER: openai
-  ACADEMY_AUTHORING_MAX_ATTEMPTS: "3"
-  ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: "2700000"
-  ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: "1800000"
+  ACADEMY_EXECUTION_MODE: local-only-zero-commercial-api-cost
+  ACADEMY_RESEARCH_CONCURRENCY: "1"
+  ACADEMY_AUTHORING_CONCURRENCY: "1"
+  ACADEMY_REVIEW_CONCURRENCY: "1"
+  ACADEMY_LOCAL_CANARY_COUNT: "1"
+  ACADEMY_AUTHORING_MAX_ATTEMPTS: "2"
+  ACADEMY_RESEARCH_MAX_ATTEMPTS: "2"
+  ACADEMY_REVIEW_MAX_ATTEMPTS: "2"
+  ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: "5400000"
+  ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: "3600000"
   ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: "true"
-  OPENAI_AUTHORING_MODEL: gpt-5
-  OPENAI_RESEARCH_MODEL: gpt-5
-  OPENAI_REVIEW_MODEL: gpt-5
-  OPENAI_RESEARCH_REASONING_EFFORT: medium
-  OPENAI_REVIEW_REASONING_EFFORT: high
+  ACADEMY_FREE_SOURCE_MAX_BYTES: "8388608"
+  ACADEMY_FREE_SOURCE_TIMEOUT_MS: "30000"
+  ACADEMY_FREE_SOURCE_EXCERPT_CHARACTERS: "12000"
+  ACADEMY_AUTHORING_PROVIDER: openai
+  ACADEMY_RESEARCH_PROVIDER: openai
+  ACADEMY_REVIEW_PROVIDER: openai
+  OPENAI_API_URL: http://127.0.0.1:11435/v1/responses
+  OPENAI_API_KEY: ollama-local-no-secret
+  OPENAI_AUTHORING_MODEL: qwen2.5:7b-instruct
+  OPENAI_RESEARCH_MODEL: qwen2.5:7b-instruct
+  OPENAI_REVIEW_MODEL: qwen2.5:7b-instruct
   OPENAI_RESEARCH_MAX_OUTPUT_TOKENS: "20000"
   OPENAI_REVIEW_MAX_OUTPUT_TOKENS: "16000"
-  ACADEMY_VIDEO_PROVIDER: ${{ vars.ACADEMY_VIDEO_PROVIDER || 'synthesia' }}
-  ACADEMY_CINEMATIC_TEMPLATE_APPROVED: ${{ vars.ACADEMY_CINEMATIC_TEMPLATE_APPROVED || 'false' }}
-  ACADEMY_MEDIA_SUBMISSION_REQUIRED: "true"
-  ACADEMY_MEDIA_RECONCILIATION_REQUIRED: "true"
-  ACADEMY_MEDIA_SUBMISSION_CONCURRENCY: "36"
-  ACADEMY_MEDIA_MAX_SCRIPT_CHARS: "12000"
-  ACADEMY_MEDIA_REQUEST_TIMEOUT_MS: "120000"
-  ACADEMY_MEDIA_TRANSFER_TIMEOUT_MS: "1800000"
-  ACADEMY_MEDIA_MAX_DOWNLOAD_BYTES: "2000000000"
-  ACADEMY_MEDIA_BUCKET: academy-course-media
-  ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
-  ACADEMY_SUPABASE_REGION: us-east-1
-  SUPABASE_URL: https://nwxnyqlyzyufgoadtqxs.supabase.co
+  LOCAL_AI_BASE_URL: http://127.0.0.1:11434
+  LOCAL_AI_MODEL: qwen2.5:7b-instruct
+  LOCAL_AI_TIMEOUT_MS: "3600000"
+  ACADEMY_LOCAL_MODEL_CONTEXT: "32768"
+  ACADEMY_LOCAL_CONTEXT_MAX_CHARS: "100000"
+  OLLAMA_NO_CLOUD: "1"
+  OLLAMA_KEEP_ALIVE: "30m"
+  STUDIO_ALLOW_PAID_AI: "false"
+  ACADEMY_LOCAL_TTS_MODEL: en_US-joe-medium
+  ACADEMY_LOCAL_TTS_DATA_DIR: /tmp/academy-piper-voices
   STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
   STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
+  ACADEMY_CHECKPOINT_GATEWAY_URL: https://nwxnyqlyzyufgoadtqxs.supabase.co/functions/v1/academy-checkpoint-gateway
   ACADEMY_PRIVATE_BACKUP_REPOSITORY: jblan2026-hub/ObserraAI
   ACADEMY_PRIVATE_BACKUP_BRANCH: academy-backups
   ACADEMY_PRIVATE_BACKUP_ROOT: private-backups/academy/61-course-completion
 
 jobs:
   complete-all-courses:
-    name: Finish, review, materialize, verify, and privately back up all 61 courses
+    name: Local-only finish, review, render, verify, and privately back up all 61 courses
     runs-on: ubuntu-24.04
-    timeout-minutes: 720
+    timeout-minutes: 360
     env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
-      OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
-      DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
-      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      SYNTHESIA_API_KEY: ${{ secrets.SYNTHESIA_API_KEY }}
-      SYNTHESIA_TEMPLATE_ID: ${{ secrets.SYNTHESIA_TEMPLATE_ID }}
-      SYNTHESIA_TEST_MODE: "false"
-      HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
-      HEYGEN_AVATAR_ID: ${{ secrets.HEYGEN_AVATAR_ID }}
-      HEYGEN_VOICE_ID: ${{ secrets.HEYGEN_VOICE_ID }}
       ACADEMY_PRIVATE_BACKUP_TOKEN: ${{ secrets.ACADEMY_PRIVATE_BACKUP_TOKEN || secrets.OBSERRA_GITHUB_TOKEN || secrets.GH_PAT }}
     steps:
       - name: Checkout course production source
@@ -98,103 +95,124 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install dependencies
+      - name: Install Node dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Install required media and repository tooling
+      - name: Install local media, Python, and repository tooling
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ffmpeg git-lfs
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ffmpeg git-lfs python3 python3-venv curl ca-certificates
           git lfs install --local
+          python3 -m venv .academy-tools
+          .academy-tools/bin/python -m pip install --disable-pip-version-check --no-cache-dir "piper-tts==1.5.0"
+          echo "${GITHUB_WORKSPACE}/.academy-tools/bin" >> "$GITHUB_PATH"
 
-      - name: Verify media toolchain
+      - name: Install pinned Ollama local runtime
+        shell: bash
         run: |
-          ffmpeg -version
-          ffprobe -version
+          set -euo pipefail
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=0.30.8 sh
+          ollama --version
+
+      - name: Start Ollama in local-only mode and pull Apache-2.0 model
+        shell: bash
+        run: |
+          set -euo pipefail
+          export OLLAMA_NO_CLOUD=1
+          nohup ollama serve > /tmp/academy-ollama.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null
+          ollama pull "$LOCAL_AI_MODEL"
+          ollama list
+
+      - name: Download local Piper voice model
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ACADEMY_LOCAL_TTS_DATA_DIR"
+          python3 -m piper.download_voices "$ACADEMY_LOCAL_TTS_MODEL" --data-dir "$ACADEMY_LOCAL_TTS_DATA_DIR"
+          find "$ACADEMY_LOCAL_TTS_DATA_DIR" -maxdepth 1 -type f -print
+
+      - name: Start zero-cost Responses compatibility proxy
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup node studio/local-ollama-responses-proxy.mjs > /tmp/academy-local-proxy.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:11435/health >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:11435/health
+
+      - name: Verify local toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
+          python3 -c "import piper; print('Piper import OK')"
           git lfs version
           gh --version
+          test "$OPENAI_API_URL" = "http://127.0.0.1:11435/v1/responses"
+          test "$OPENAI_API_KEY" = "ollama-local-no-secret"
+          test "$STUDIO_ALLOW_PAID_AI" = "false"
+          test "$OLLAMA_NO_CLOUD" = "1"
 
-      - name: Normalize protected credentials
+      - name: Require private backup credential before protected generation
         shell: bash
         run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const out = process.env.GITHUB_ENV;
-          function trim(value) {
-            const v = String(value ?? '').trim();
-            const quoted = (v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"));
-            return quoted ? v.slice(1, -1).trim() : v;
-          }
-          function append(name, raw) {
-            const value = trim(raw);
-            if (!value) return false;
-            if (/\r|\n/.test(value)) throw new Error(`${name} contains an unexpected newline.`);
-            fs.appendFileSync(out, `${name}=${value}\n`);
-            return true;
-          }
-          let db = trim(process.env.DATABASE_URL);
-          const assignment = db.match(/^(?:ACADEMY_DATABASE_URL|DATABASE_URL)\s*=\s*(.+)$/is);
-          if (assignment) db = trim(assignment[1]);
-          if (db && !/^postgres(?:ql)?:\/\//i.test(db)) {
-            const ref = process.env.ACADEMY_SUPABASE_PROJECT_REF;
-            const region = process.env.ACADEMY_SUPABASE_REGION;
-            db = `postgresql://${encodeURIComponent(`postgres.${ref}`)}:${encodeURIComponent(db)}@aws-0-${region}.pooler.supabase.com:5432/postgres?schema=public&sslmode=require&connect_timeout=30`;
-          }
-          if (db) fs.appendFileSync(out, `DATABASE_URL=${new URL(db).toString()}\n`);
-          const required = {
-            OPENAI_API_KEY: append('OPENAI_API_KEY', process.env.OPENAI_API_KEY),
-            SUPABASE_SECRET_KEY: append('SUPABASE_SECRET_KEY', process.env.SUPABASE_SECRET_KEY),
-            ACADEMY_PRIVATE_BACKUP_TOKEN: append('ACADEMY_PRIVATE_BACKUP_TOKEN', process.env.ACADEMY_PRIVATE_BACKUP_TOKEN),
-          };
-          append('OPENAI_ORGANIZATION', process.env.OPENAI_ORGANIZATION);
-          append('OPENAI_PROJECT', process.env.OPENAI_PROJECT);
-          append('SYNTHESIA_API_KEY', process.env.SYNTHESIA_API_KEY);
-          append('SYNTHESIA_TEMPLATE_ID', process.env.SYNTHESIA_TEMPLATE_ID);
-          append('HEYGEN_API_KEY', process.env.HEYGEN_API_KEY);
-          append('HEYGEN_AVATAR_ID', process.env.HEYGEN_AVATAR_ID);
-          append('HEYGEN_VOICE_ID', process.env.HEYGEN_VOICE_ID);
-          if (!required.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is required.');
-          if (!required.SUPABASE_SECRET_KEY) throw new Error('SUPABASE_SECRET_KEY is required for final media archival.');
-          if (!required.ACADEMY_PRIVATE_BACKUP_TOKEN) throw new Error('A private GitHub backup token is required. Public repository backup is prohibited.');
-          console.log(`[Academy Studio] Protected credentials normalized. database=${Boolean(db)} openai=${required.OPENAI_API_KEY} mediaStorage=${required.SUPABASE_SECRET_KEY} privateBackup=${required.ACADEMY_PRIVATE_BACKUP_TOKEN}`);
-          NODE
-
-      - name: Fail closed unless GitHub backup target is private
-        shell: bash
-        run: |
-          export GH_TOKEN="${ACADEMY_PRIVATE_BACKUP_TOKEN}"
-          visibility="$(gh repo view "${ACADEMY_PRIVATE_BACKUP_REPOSITORY}" --json visibility --jq '.visibility')"
-          if [ "${visibility}" != "PRIVATE" ]; then
-            echo "Backup target must be PRIVATE. Refusing to generate protected Academy material for a public GitHub target."
+          set -euo pipefail
+          if [ -z "${ACADEMY_PRIVATE_BACKUP_TOKEN:-}" ]; then
+            echo "A private GitHub backup token is required. Public-repository protected output is prohibited."
             exit 2
           fi
+          export GH_TOKEN="$ACADEMY_PRIVATE_BACKUP_TOKEN"
+          visibility="$(gh repo view "$ACADEMY_PRIVATE_BACKUP_REPOSITORY" --json visibility --jq '.visibility')"
+          test "$visibility" = "PRIVATE"
           echo "[Academy Studio] Private backup target verified: ${ACADEMY_PRIVATE_BACKUP_REPOSITORY}/${ACADEMY_PRIVATE_BACKUP_BRANCH}"
 
       - name: Verify all 36 workers are assigned to Academy only
         run: npm run verify:academy-worker-contract
 
-      - name: Generate Prisma client
-        run: npm run db:generate
-
-      - name: Bootstrap protected Academy database and checkpoints
-        run: |
-          npm run db:bootstrap:protected
-          npm run db:bootstrap:hollywood-checkpoints
-          npm run db:bootstrap:hollywood-media-checkpoints
+      - name: Preflight protected OIDC checkpoint gateway
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
 
       - name: Apply governed course policy
         run: npm run apply:course-policy
 
-      - name: Research current primary sources and documented cases for all 61 courses
+      - name: Restore matching protected course checkpoints
+        run: node studio/restore-academy-hollywood-checkpoints.mjs
+
+      - name: Reject stale restored course packages
+        run: node studio/prune-stale-restored-course-packages.mjs
+
+      - name: Download canonical authoritative sources without model API cost
+        run: node studio/fetch-free-authoritative-source-cache.mjs
+
+      - name: Build deterministic source context from authoritative registry and cache
+        run: node studio/build-free-course-source-context.mjs
+
+      - name: Research all missing current evidence through local Ollama only
         run: node studio/research-all-61-courses.mjs
+
+      - name: Normalize local research provenance
+        run: node studio/normalize-local-ollama-evidence.mjs
 
       - name: Merge researched primary sources into governed runtime registry
         run: node studio/merge-61-course-research-registry.mjs
 
-      - name: Author all 61 premium cinematic course packages with 36 workers
+      - name: Author and checkpoint all 61 course packages through local Ollama only
         run: node studio/author-all-61-cinematic-parallel.mjs
+
+      - name: Normalize local authoring provenance
+        run: node studio/normalize-local-ollama-evidence.mjs
 
       - name: Materialize all learner, instructor, assessment, accessibility, rights, and certificate assets
         run: node studio/materialize-hollywood-course-assets.mjs
@@ -202,41 +220,36 @@ jobs:
       - name: Validate all 61 structural course packages and exact source mappings
         run: node studio/validate-academy-hollywood-surge.mjs
 
-      - name: Independently review factuality, depth, cases, lessons, recommendations, assessments, and video content
+      - name: Independently review all courses through local Ollama only
         run: node studio/review-all-61-courses.mjs
 
-      - name: Require approved cinematic provider template
-        run: |
-          if [ "${ACADEMY_CINEMATIC_TEMPLATE_APPROVED}" != "true" ]; then
-            echo "ACADEMY_CINEMATIC_TEMPLATE_APPROVED must be true for final course video production."
-            exit 1
-          fi
+      - name: Normalize local independent-review provenance
+        run: node studio/normalize-local-ollama-evidence.mjs
 
-      - name: Submit cinematic media for every module in all 61 courses
-        run: node studio/submit-all-61-media-jobs.mjs
-
-      - name: Poll, retrieve, assemble, archive, and register final videos
-        shell: bash
-        run: |
-          set +e
-          passed=0
-          for attempt in $(seq 1 72); do
-            echo "[Academy Studio] Final media reconciliation attempt ${attempt}/72"
-            node studio/reconcile-hollywood-media-results.mjs
-            status=$?
-            if [ "$status" -eq 0 ]; then
-              passed=1
-              break
-            fi
-            sleep 300
-          done
-          if [ "$passed" -ne 1 ]; then
-            echo "Final media did not fully reconcile within the governed polling window."
-            exit 2
-          fi
+      - name: Render final 1080p module media locally with Piper and FFmpeg
+        run: node studio/render-all-61-local-media.mjs
 
       - name: Verify all 61 course content, materials, sources, and every final module video
         run: node studio/verify-all-61-course-completion.mjs
+
+      - name: Assert zero commercial model and media API use
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$OPENAI_API_URL" = "http://127.0.0.1:11435/v1/responses"
+          test "$OPENAI_API_KEY" = "ollama-local-no-secret"
+          test "$STUDIO_ALLOW_PAID_AI" = "false"
+          test "$OLLAMA_NO_CLOUD" = "1"
+          test -f catalog/academy-local-ollama-evidence-summary.json
+          test -f catalog/academy-61-local-media-render-summary.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const model = JSON.parse(fs.readFileSync('catalog/academy-local-ollama-evidence-summary.json','utf8'));
+          const media = JSON.parse(fs.readFileSync('catalog/academy-61-local-media-render-summary.json','utf8'));
+          if (Number(model.estimatedApiCostUsd) !== 0 || model.externalPaidApiUsed !== false) throw new Error('Model API evidence is not zero-cost.');
+          if (Number(media.estimatedApiCostUsd) !== 0 || media.externalPaidMediaProviderUsed !== false) throw new Error('Media API evidence is not zero-cost.');
+          console.log('Zero commercial model/media API use verified from generated evidence.');
+          NODE
 
       - name: Back up all finished materials, videos, certificates, and evidence to private GitHub
         shell: bash
@@ -248,14 +261,16 @@ jobs:
           {
             echo "## Academy 61 Course Completion Only"
             echo "- Objective: finish all 61 courses and required materials only"
-            echo "- Total logical workers: 36"
+            echo "- Model generation: local Ollama only; commercial model API cost target: $0"
+            echo "- Media generation: local Piper + FFmpeg only; commercial media API cost target: $0"
+            echo "- Ollama cloud features: disabled"
+            echo "- Total logical Academy workers: 36"
             echo "- Application workers: 0"
-            echo "- Course workers: 36"
             echo "- Course count required: 61"
             echo "- Unresolved factual references allowed: no"
             echo "- Independent content review minimum: 90/100 in every dimension"
             echo "- Final module videos: playable decode, 1080p minimum, governed audio, captions, transcript, audio description, rights linkage"
-            echo "- Protected course outputs are not uploaded as artifacts to this public repository"
+            echo "- Protected outputs are not uploaded as public-repository workflow artifacts"
             echo "- Required private GitHub backup: ${ACADEMY_PRIVATE_BACKUP_REPOSITORY}/${ACADEMY_PRIVATE_BACKUP_BRANCH}/${ACADEMY_PRIVATE_BACKUP_ROOT}"
-            echo "- Completion claim is valid only if the final 61-course evidence verifier and private backup both pass"
+            echo "- Completion claim is valid only if final 61-course evidence verification and private backup both pass"
           } >> "$GITHUB_STEP_SUMMARY"
