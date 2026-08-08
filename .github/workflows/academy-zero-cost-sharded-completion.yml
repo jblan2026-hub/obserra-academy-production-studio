@@ -10,6 +10,7 @@ on:
       - ".github/workflows/academy-zero-cost-sharded-completion.yml"
       - ".github/scripts/run-academy-zero-cost-shard.mjs"
       - ".github/scripts/validate-zero-cost-course.mjs"
+      - "studio/local-ollama-keepalive-proxy.mjs"
       - "studio/research-course-authoritative-sources.mjs"
       - "studio/author-course-hollywood.mjs"
       - "studio/author-course-hollywood-with-checkpoint.mjs"
@@ -56,7 +57,7 @@ env:
   OPENAI_API_KEY: ""
   ANTHROPIC_API_KEY: ""
   STUDIO_ALLOW_PAID_AI: "false"
-  LOCAL_AI_BASE_URL: http://127.0.0.1:11434
+  LOCAL_AI_BASE_URL: http://127.0.0.1:11436
   LOCAL_AI_MODEL: qwen2.5:7b-instruct
   LOCAL_RESEARCH_MODEL: qwen2.5:7b-instruct
   LOCAL_REVIEW_MODEL: qwen2.5:7b-instruct
@@ -71,6 +72,10 @@ env:
   ACADEMY_FREE_SOURCE_MAX_BYTES: "8388608"
   ACADEMY_FREE_SOURCE_TIMEOUT_MS: "30000"
   ACADEMY_FREE_SOURCE_EXCERPT_CHARACTERS: "12000"
+  ACADEMY_OLLAMA_PROXY_PORT: "11436"
+  ACADEMY_OLLAMA_UPSTREAM_PORT: "11434"
+  ACADEMY_OLLAMA_PROXY_TIMEOUT_MS: "3600000"
+  ACADEMY_OLLAMA_PROXY_KEEPALIVE_MS: "15000"
   OLLAMA_NO_CLOUD: "1"
   OLLAMA_KEEP_ALIVE: "30m"
   STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
@@ -129,6 +134,17 @@ jobs:
           ollama pull "$LOCAL_AI_MODEL"
           ollama list
 
+      - name: Start long-running local Ollama keepalive transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup node studio/local-ollama-keepalive-proxy.mjs > /tmp/academy-ollama-proxy.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:11436/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:11436/health
+
       - name: Assert commercial model providers are disabled
         shell: bash
         run: |
@@ -140,6 +156,7 @@ jobs:
           test -z "$ANTHROPIC_API_KEY"
           test "$STUDIO_ALLOW_PAID_AI" = "false"
           test "$OLLAMA_NO_CLOUD" = "1"
+          test "$LOCAL_AI_BASE_URL" = "http://127.0.0.1:11436"
 
       - name: Preflight protected checkpoint gateway
         run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
@@ -161,6 +178,15 @@ jobs:
 
       - name: Research, author, independently review, and checkpoint this shard
         run: node .github/scripts/run-academy-zero-cost-shard.mjs
+
+      - name: Emit local inference diagnostics on shard failure
+        if: failure()
+        shell: bash
+        run: |
+          echo "--- Ollama log tail ---"
+          tail -n 120 /tmp/academy-ollama.log || true
+          echo "--- keepalive proxy log tail ---"
+          tail -n 120 /tmp/academy-ollama-proxy.log || true
 
   finalize-content:
     name: Restore and validate all 61 protected course checkpoints
