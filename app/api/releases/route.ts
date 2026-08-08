@@ -1,7 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { recordAuditEvent } from "@/lib/audit-service";
+import { authenticateStudioRequest } from "@/lib/studio-auth";
 import { requireOrganization } from "@/lib/organization-service";
 
 export const dynamic = "force-dynamic";
@@ -11,12 +11,12 @@ export async function GET(request: Request) {
 
   try {
     if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
-    const session = await auth();
-    if (!session.isAuthenticated || !session.orgId) {
-      return NextResponse.json({ error: "An authenticated organization session is required", correlationId }, { status: 401 });
+    const authentication = await authenticateStudioRequest(request);
+    if (!authentication.principal) {
+      return NextResponse.json({ error: authentication.reason ?? "Authentication required", correlationId }, { status: 401 });
     }
-
-    const organization = await requireOrganization(session.orgId);
+    const principal = authentication.principal;
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const releases = await prisma.release.findMany({
       where: { course: { organizationId: organization.id } },
       orderBy: { createdAt: "desc" },
@@ -26,16 +26,16 @@ export async function GET(request: Request) {
 
     await recordAuditEvent({
       organizationId: organization.id,
-      actorId: session.userId ?? undefined,
-      actorType: "user",
+      actorId: principal.actorId,
+      actorType: principal.actorType,
       action: "release.list",
       resourceType: "Release",
       correlationId,
       outcome: "success",
-      metadata: { count: releases.length },
+      metadata: { count: releases.length, identityProvider: principal.identityProvider },
     });
 
-    return NextResponse.json({ correlationId, organizationId: session.orgId, releases });
+    return NextResponse.json({ correlationId, organizationId: principal.organizationId, releases });
   } catch (error) {
     return NextResponse.json({
       correlationId,
