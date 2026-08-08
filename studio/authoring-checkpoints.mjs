@@ -3,13 +3,22 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  commercialProductionStandard,
+  commercialProductionStandardHash,
+  contractHash,
+  taskContract,
+  workerPoolContract,
+} from "./worker-pool-contract.mjs";
+
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
 const catalogRoot = path.join(root, "catalog");
 
-export const AUTHORING_POLICY_VERSION = "2026.08.07.2";
+export const AUTHORING_POLICY_VERSION = "2026.08.07.3";
 const COURSE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{1,120}$/;
 const CHECKPOINT_REQUIRED_VALUES = new Set(["1", "true", "yes", "on"]);
+const governedTask = taskContract("protected-authoring");
 
 export function stableHash(value) {
   return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -71,6 +80,14 @@ async function createPrismaClient() {
   return new PrismaClient();
 }
 
+function assertStringArrayEqual(actual, expected, message) {
+  if (!Array.isArray(actual)
+      || actual.length !== expected.length
+      || expected.some((value) => !actual.includes(value))) {
+    throw new Error(message);
+  }
+}
+
 export function validateAuthoringEnvelope({ courseId, envelope, manifest }) {
   const normalizedCourseId = validatedCourseId(courseId);
   if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)) {
@@ -78,7 +95,7 @@ export function validateAuthoringEnvelope({ courseId, envelope, manifest }) {
   }
 
   const expectedManifestHash = authoringSourceHash(manifest);
-  if (envelope.schemaVersion !== "1.2") throw new Error(`Authoring checkpoint for ${normalizedCourseId} uses an unsupported schema.`);
+  if (envelope.schemaVersion !== "1.3") throw new Error(`Authoring checkpoint for ${normalizedCourseId} uses an unsupported schema.`);
   if (envelope.courseId !== normalizedCourseId) throw new Error(`Authoring checkpoint course identity mismatch for ${normalizedCourseId}.`);
   if (envelope.authoringPolicyVersion !== AUTHORING_POLICY_VERSION) {
     throw new Error(`Authoring checkpoint policy mismatch for ${normalizedCourseId}.`);
@@ -89,14 +106,39 @@ export function validateAuthoringEnvelope({ courseId, envelope, manifest }) {
   if (envelope.reviewStatus !== "draft-ai-generated") {
     throw new Error(`Authoring checkpoint review status is invalid for ${normalizedCourseId}.`);
   }
+  if (envelope.commercialQualityStatus !== commercialProductionStandard.claimPolicy.interimLabel) {
+    throw new Error(`Authoring checkpoint commercial quality status is invalid for ${normalizedCourseId}.`);
+  }
   if (!envelope.content || typeof envelope.content !== "object" || Array.isArray(envelope.content)) {
     throw new Error(`Authoring checkpoint content is missing for ${normalizedCourseId}.`);
+  }
+
+  if (envelope.workerContract?.contractId !== workerPoolContract.contractId
+      || envelope.workerContract?.contractHash !== contractHash()
+      || envelope.workerContract?.taskType !== governedTask.taskType
+      || envelope.workerContract?.role !== governedTask.role
+      || envelope.workerContract?.workstream !== governedTask.workstream) {
+    throw new Error(`Authoring checkpoint worker contract mismatch for ${normalizedCourseId}.`);
+  }
+  assertStringArrayEqual(
+    envelope.workerContract?.appliedRules,
+    governedTask.appliedRules,
+    `Authoring checkpoint applied rule mismatch for ${normalizedCourseId}.`,
+  );
+
+  if (envelope.productionStandard?.standardId !== commercialProductionStandard.standardId
+      || envelope.productionStandard?.standardHash !== commercialProductionStandardHash()
+      || envelope.productionStandard?.qualityTier !== commercialProductionStandard.qualityTier
+      || envelope.productionStandard?.qualityClaimAllowed !== false) {
+    throw new Error(`Authoring checkpoint production standard mismatch for ${normalizedCourseId}.`);
   }
 
   return {
     courseId: normalizedCourseId,
     expectedManifestHash,
     packageHash: authoringPackageHash(envelope),
+    contractHash: contractHash(),
+    productionStandardHash: commercialProductionStandardHash(),
   };
 }
 
@@ -135,7 +177,13 @@ export async function persistAuthoringCheckpoint({ courseId, envelope, manifest 
       payload,
       envelope.reviewStatus,
     );
-    return { stored: true, courseId: identity.courseId, packageHash: identity.packageHash };
+    return {
+      stored: true,
+      courseId: identity.courseId,
+      packageHash: identity.packageHash,
+      contractHash: identity.contractHash,
+      productionStandardHash: identity.productionStandardHash,
+    };
   } finally {
     await prisma.$disconnect();
   }
@@ -159,12 +207,15 @@ export async function restoreAuthoringCheckpoints() {
   const prisma = await createPrismaClient();
   if (!prisma) {
     const summary = {
-      schemaVersion: "1.0",
+      schemaVersion: "1.1",
       checkedAt: new Date().toISOString(),
       restored: 0,
       evaluated: 0,
       skipped: true,
       reason: "database-not-configured",
+      authoringPolicyVersion: AUTHORING_POLICY_VERSION,
+      contractHash: contractHash(),
+      productionStandardHash: commercialProductionStandardHash(),
     };
     fs.mkdirSync(catalogRoot, { recursive: true });
     fs.writeFileSync(path.join(catalogRoot, "authoring-checkpoint-restore.json"), `${JSON.stringify(summary, null, 2)}\n`);
@@ -219,14 +270,19 @@ export async function restoreAuthoringCheckpoints() {
   }
 
   const summary = {
-    schemaVersion: "1.0",
+    schemaVersion: "1.1",
     checkedAt: new Date().toISOString(),
     authoringPolicyVersion: AUTHORING_POLICY_VERSION,
+    contractId: workerPoolContract.contractId,
+    contractHash: contractHash(),
+    productionStandardId: commercialProductionStandard.standardId,
+    productionStandardHash: commercialProductionStandardHash(),
+    qualityTier: commercialProductionStandard.qualityTier,
     evaluated,
     restored: restoredCourseIds.length,
     restoredCourseIds,
     skipped: false,
-    claimBoundary: "Restoration proves matching encrypted-database checkpoint retrieval and package integrity only. It does not establish review approval or publication readiness.",
+    claimBoundary: "Restoration proves matching protected-database checkpoint retrieval, worker-contract integrity, production-standard integrity, and package integrity only. It does not establish source verification, media completion, review approval, commercial acceptance, or publication readiness.",
   };
   fs.mkdirSync(catalogRoot, { recursive: true });
   fs.writeFileSync(path.join(catalogRoot, "authoring-checkpoint-restore.json"), `${JSON.stringify(summary, null, 2)}\n`);
