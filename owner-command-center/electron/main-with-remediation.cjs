@@ -5,6 +5,7 @@ const Store = require("electron-store");
 const { createRemediationQueue } = require("./remediation-queue.cjs");
 
 const APP_USER_MODEL_ID = "com.obserra.ownercommandcenter";
+const SENSITIVE_FIELD = /(?:authorization|bearer|credential|secret|password|api[-_]?key|access[-_]?token|refresh[-_]?token)/i;
 const hasSingleInstanceLock = app.requestSingleInstanceLock({
   application: "Obserra Owner AI Command Center",
   appId: APP_USER_MODEL_ID,
@@ -12,6 +13,32 @@ const hasSingleInstanceLock = app.requestSingleInstanceLock({
 
 function runtimeEvidencePath() {
   return path.join(app.getPath("userData"), "runtime-evidence.jsonl");
+}
+
+function redactRuntimeText(value) {
+  return String(value ?? "")
+    .slice(0, 2000)
+    .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [REDACTED]")
+    .replace(/\bsk-[A-Za-z0-9_-]{12,}\b/g, "[REDACTED_API_KEY]")
+    .replace(/(postgres(?:ql)?:\/\/[^:\s/]+:)[^@\s/]+@/gi, "$1[REDACTED]@")
+    .replace(/([?&](?:token|key|secret|password|credential)=)[^&\s]+/gi, "$1[REDACTED]")
+    .replace(/\b[A-Za-z0-9_-]{80,}\b/g, "[REDACTED_LONG_VALUE]");
+}
+
+function sanitizeRuntimeDetail(value, fieldName = "") {
+  if (SENSITIVE_FIELD.test(fieldName)) return "[REDACTED]";
+  if (value === null || value === undefined) return value;
+  if (typeof value === "string") return redactRuntimeText(value);
+  if (["number", "boolean"].includes(typeof value)) return value;
+  if (Array.isArray(value)) return value.slice(0, 25).map((item) => sanitizeRuntimeDetail(item));
+  if (typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .slice(0, 50)
+        .map(([key, item]) => [key, sanitizeRuntimeDetail(item, key)]),
+    );
+  }
+  return redactRuntimeText(value);
 }
 
 function writeRuntimeEvidence(event, detail = {}) {
@@ -23,10 +50,10 @@ function writeRuntimeEvidence(event, detail = {}) {
       `${JSON.stringify({
         schemaVersion: "1.0",
         recordedAt: new Date().toISOString(),
-        event,
+        event: redactRuntimeText(event),
         pid: process.pid,
         platform: process.platform,
-        ...detail,
+        ...sanitizeRuntimeDetail(detail),
       })}\n`,
       { encoding: "utf8", mode: 0o600 },
     );
