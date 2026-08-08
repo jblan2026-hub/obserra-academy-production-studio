@@ -1,16 +1,7 @@
 name: Academy 61 Course Content Checkpoint
-run-name: 61-course protected content • ${{ github.ref_name }} • ${{ github.sha }}
+run-name: manual 61-course protected content fallback • ${{ github.ref_name }} • ${{ github.sha }}
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "courses/**"
-      - "sources/**"
-      - "studio/**"
-      - "package.json"
-      - ".github/workflows/academy-61-content-checkpoint.yml"
   workflow_dispatch:
 
 permissions:
@@ -18,7 +9,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: academy-61-content-checkpoint
+  group: academy-61-content-checkpoint-manual
   cancel-in-progress: false
 
 env:
@@ -71,7 +62,7 @@ env:
 
 jobs:
   checkpoint-all-course-content:
-    name: Local-only research, author, review, and checkpoint all 61 courses
+    name: Manual local-only research, author, review, and checkpoint fallback
     runs-on: ubuntu-24.04
     timeout-minutes: 720
     steps:
