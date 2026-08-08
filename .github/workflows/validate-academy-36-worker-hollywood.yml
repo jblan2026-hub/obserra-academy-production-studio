@@ -1,0 +1,184 @@
+name: Validate Academy 36 Worker Cinematic Source
+run-name: Validate Academy 36-worker source • ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/validate-academy-36-worker-hollywood.yml"
+      - "docs/validation/ACADEMY-36-WORKER-HOLLYWOOD.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-academy-36-worker-hollywood-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ACADEMY_SOURCE_REF: 6e4bcdd3d2e36d0b7ecda0ed3c60e1a77a20aab7
+  OBSERRA_PORTFOLIO_WORKER_COUNT: 36
+  OBSERRA_APPLICATION_WORKER_COUNT: 0
+  ACADEMY_COURSE_WORKER_COUNT: 36
+  ACADEMY_AUTHORING_CONCURRENCY: 36
+  ACADEMY_WORKER_MODE: interchangeable-course-production
+  ACADEMY_EXPECTED_SURGE_COURSES: 60
+  ACADEMY_SURGE_EXCLUDED_COURSE_IDS: pmp-exam-prep-business-application
+  ACADEMY_EXPECTED_REVIEW_COURSES: 61
+
+jobs:
+  source-contract:
+    name: Exact 60-course source, worker, evidence, and media contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact Academy source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.ACADEMY_SOURCE_REF }}
+          fetch-depth: 1
+
+      - name: Confirm exact source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ACADEMY_SOURCE_REF"
+          echo "Validated source: $ACADEMY_SOURCE_REF"
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Parse governed workflow YAML
+        shell: bash
+        run: ruby -e 'require "yaml"; YAML.load_file(".github/workflows/academy-36-worker-hollywood-production.yml"); puts "workflow YAML parsed"'
+
+      - name: Install repository dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Validate all new production source syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            studio/academy-course-portfolio.mjs \
+            studio/academy-worker-contract.mjs \
+            studio/academy-hollywood-checkpoints.mjs \
+            studio/academy-media-checkpoints.mjs \
+            studio/audit-hollywood-course-readiness.mjs \
+            studio/author-course-hollywood.mjs \
+            studio/author-course-hollywood-with-checkpoint.mjs \
+            studio/author-courses-hollywood-parallel.mjs \
+            studio/bootstrap-academy-hollywood-checkpoints.mjs \
+            studio/bootstrap-academy-media-checkpoints.mjs \
+            studio/checkpoint-academy-media-jobs.mjs \
+            studio/generate-hollywood-learner-catalog.mjs \
+            studio/load-academy-hollywood-surge-to-lcms.mjs \
+            studio/materialize-hollywood-course-assets.mjs \
+            studio/preflight-academy-hollywood-provider.mjs \
+            studio/prepare-hollywood-source-context.mjs \
+            studio/reconcile-hollywood-media-results.mjs \
+            studio/restore-academy-hollywood-checkpoints.mjs \
+            studio/restore-academy-media-checkpoints.mjs \
+            studio/stage-courses-for-release-approval.mjs \
+            studio/submit-hollywood-media-jobs.mjs \
+            studio/validate-academy-hollywood-surge.mjs \
+            studio/validate-hollywood-course-contract.mjs \
+            studio/verify-academy-worker-contract.mjs \
+            studio/verify-hollywood-final-media.mjs; do
+            node --check "$file"
+          done
+
+      - name: Verify complete Academy source contract
+        run: npm run verify:academy-worker-contract
+
+      - name: Prepare authoritative source context and audit exact portfolio
+        run: |
+          npm run prepare:sources:hollywood
+          npm run audit:hollywood
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('catalog/academy-hollywood-course-audit.json', 'utf8'));
+          if (report.totals?.selectedForSurge !== 60) throw new Error(`Expected 60 selected courses; found ${report.totals?.selectedForSurge}`);
+          if (report.portfolio?.excludedCourseIds?.length !== 1 || report.portfolio.excludedCourseIds[0] !== 'pmp-exam-prep-business-application') {
+            throw new Error('The PMP course is not isolated under its separate contract.');
+          }
+          if (report.totals?.discoveredManifests !== 61) throw new Error(`Expected 61 governed manifests; found ${report.totals?.discoveredManifests}`);
+          NODE
+
+      - name: Run repository tests and Prisma contract checks
+        run: |
+          npm test
+          npm run db:generate
+          npm run db:validate
+
+      - name: Verify current Command Center remains preserved
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const commandCenter = JSON.parse(fs.readFileSync('owner-command-center/package.json', 'utf8'));
+          if (commandCenter.version !== '0.3.3') throw new Error(`Expected Command Center 0.3.3; found ${commandCenter.version}`);
+          const verify = String(commandCenter.scripts?.verify || '');
+          for (const name of ['verify-academy-github-evidence.mjs', 'verify-academy-release-approval.mjs']) {
+            if (!verify.includes(name)) throw new Error(`Current Command Center verification is missing ${name}`);
+          }
+          NODE
+          grep -F 'const GATE_SCHEMA_VERSION = "1.1"' owner-command-center/electron/academy-release-approval.cjs
+          grep -F 'createHmac("sha256"' owner-command-center/electron/academy-release-approval.cjs
+          grep -F 'DEFAULT_WORKFLOW = "academy-36-worker-hollywood-production.yml"' owner-command-center/electron/academy-github-evidence.cjs
+          grep -F 'learner-catalog-readiness.json' owner-command-center/electron/academy-github-evidence.cjs
+          grep -F 'ownerDecisionMatchesGate' owner-command-center/electron/academy-production-evidence.cjs
+
+      - name: Verify streamed media integrity and bounded transfers
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'async function sha256File' studio/reconcile-hollywood-media-results.mjs
+          grep -F 'fs.createReadStream(filePath)' studio/reconcile-hollywood-media-results.mjs
+          grep -F 'streamingSha256: true' studio/reconcile-hollywood-media-results.mjs
+          grep -F 'mediaTransferTimeoutMs' studio/reconcile-hollywood-media-results.mjs
+          grep -F 'new Transform' studio/reconcile-hollywood-media-results.mjs
+          if grep -F 'stableHash(fs.readFileSync(destination))' studio/reconcile-hollywood-media-results.mjs; then
+            echo "Large download hashing still loads the complete file into memory."
+            exit 1
+          fi
+          if grep -F 'stableHash(fs.readFileSync(localPath))' studio/reconcile-hollywood-media-results.mjs; then
+            echo "Large upload hashing still loads the complete file into memory."
+            exit 1
+          fi
+
+      - name: Verify no protected credentials or generated learner content are committed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-files 'courses/*/generated/*' | grep -q .; then
+            echo "Protected generated course content is tracked."
+            exit 1
+          fi
+          if git ls-files 'catalog/academy-learner-course-catalog.json' | grep -q .; then
+            echo "Protected learner catalog is tracked."
+            exit 1
+          fi
+          if grep -RInE --exclude-dir=node_modules --exclude='*.md' '(sk_live_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY)' .; then
+            echo "Embedded production credential material detected."
+            exit 1
+          fi
+
+  claim-boundary:
+    name: Validation claim boundary
+    runs-on: ubuntu-latest
+    needs:
+      - source-contract
+    steps:
+      - run: |
+          echo "Exact 36-worker source contract: PASSED"
+          echo "Exact standard Academy surge portfolio: 60 courses"
+          echo "Complete governed owner-review portfolio: 61 courses including PMP"
+          echo "Current Command Center 0.3.3: PRESERVED"
+          echo "Protected provider execution: NOT PROVEN BY THIS VALIDATION"
+          echo "Protected database authentication: NOT PROVEN BY THIS VALIDATION"
+          echo "Course publication and checkout authority: NOT GRANTED"
