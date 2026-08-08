@@ -74,13 +74,15 @@ function publicCourse(manifest) {
       passingScore: manifest.completion.passingScore,
       certificateIssued: manifest.completion.certificateIssued,
       credentialType: "certificate-of-course-completion-only",
-      credentialDisclaimer: "This completion record is not certification, licensure, accreditation, compliance validation, regulatory approval, or professional qualification.",
+      credentialDisclaimer:
+        "This completion record is not certification, licensure, accreditation, compliance validation, regulatory approval, or professional qualification.",
     },
     certificate: {
       issuer: officialBrand.legalName,
       templateId: "obserra-academy-course-completion-v1",
       title: "Certificate of Course Completion",
-      certificateIdPattern: `OBS-${manifest.course.id.toUpperCase().replace(/[^A-Z0-9]+/g, "")}-{UNIQUE}`,
+      certificateIdPattern:
+        `OBS-${manifest.course.id.toUpperCase().replace(/[^A-Z0-9]+/g, "")}-{UNIQUE}`,
       verificationRequired: true,
       transcriptRetained: true,
       isProfessionalCertification: false,
@@ -96,13 +98,19 @@ function publicCourse(manifest) {
 
 function learnerCourse(manifest, authored) {
   const authoredContent = authored?.content ?? {};
-  const authoredModules = new Map((authoredContent.modules ?? []).map((module) => [module.id, module]));
-  const workbook = new Map((authoredContent.learnerWorkbook ?? []).map((entry) => [entry.moduleId, entry]));
+  const authoredModules = new Map(
+    (authoredContent.modules ?? []).map((module) => [module.id, module]),
+  );
+  const workbook = new Map(
+    (authoredContent.learnerWorkbook ?? []).map((entry) => [entry.moduleId, entry]),
+  );
 
   return {
     ...publicCourse(manifest),
     publication: {
-      approved: manifest.release?.publishToAcademy === true && ["approved", "published"].includes(manifest.release?.status),
+      approved:
+        manifest.release?.publishToAcademy === true
+        && ["approved", "published"].includes(manifest.release?.status),
       status: manifest.release?.status ?? "draft",
     },
     access: {
@@ -115,8 +123,13 @@ function learnerCourse(manifest, authored) {
     learnerExperience: {
       courseSummary: authoredContent.courseSummary ?? null,
       courseProductionBible: authoredContent.courseProductionBible ?? null,
+      courseImplementationStrategy: authoredContent.courseImplementationStrategy ?? null,
       sourceRegister: authoredContent.sourceRegister ?? [],
       referenceApplicabilityMatrix: authoredContent.referenceApplicabilityMatrix ?? [],
+      documentedRealWorldCaseRegister:
+        authoredContent.documentedRealWorldCaseRegister ?? [],
+      standardsImplementationMap: authoredContent.standardsImplementationMap ?? [],
+      prioritizedRecommendations: authoredContent.prioritizedRecommendations ?? [],
       frameworkAlignment: authoredContent.frameworkAlignment ?? [],
       assessmentBlueprint: authoredContent.assessmentBlueprint ?? null,
       modules: manifest.course.modules.map((module, index) => {
@@ -136,8 +149,14 @@ function learnerCourse(manifest, authored) {
           keyConcepts: lesson.keyConcepts ?? [],
           executiveExample: lesson.executiveExample ?? null,
           operationalExample: lesson.operationalExample ?? null,
+          documentedRealWorldCases: lesson.documentedRealWorldCases ?? [],
           scenario: lesson.scenario ?? null,
           exercise: lesson.exercise ?? null,
+          implementationPlaybook: lesson.implementationPlaybook ?? null,
+          recommendations: lesson.recommendations ?? [],
+          standardImplementationGuidance:
+            lesson.standardImplementationGuidance ?? [],
+          evidenceAndMetricsPlan: lesson.evidenceAndMetricsPlan ?? null,
           knowledgeChecks: lesson.knowledgeChecks ?? [],
           creativeTreatment: lesson.creativeTreatment ?? null,
           productionPlan: lesson.productionPlan ?? null,
@@ -158,6 +177,12 @@ function learnerCourse(manifest, authored) {
       envelopeSchemaVersion: authored?.schemaVersion ?? null,
       reviewStatus: authored?.reviewStatus ?? "missing",
       commercialQualityStatus: authored?.commercialQualityStatus ?? "missing",
+      implementationGuidanceStatus:
+        authored?.implementationGuidanceStatus ?? "missing",
+      implementationGuidanceGeneratedAt:
+        authored?.implementationGuidanceGeneratedAt ?? null,
+      implementationGuidanceProvider:
+        authored?.implementationGuidanceProvider ?? null,
       provider: authored?.provider ?? null,
       model: authored?.model ?? null,
       authoringPolicyVersion: authored?.authoringPolicyVersion ?? null,
@@ -187,7 +212,9 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true })) {
   const manifest = readJson(manifestPath);
   assertBrandAndTags(manifest, manifestPath);
 
-  const publicationApproved = manifest.release.publishToAcademy === true && ["approved", "published"].includes(manifest.release.status);
+  const publicationApproved =
+    manifest.release.publishToAcademy === true
+    && ["approved", "published"].includes(manifest.release.status);
   const ownerReviewEligible = manifest.release?.status !== "archived";
   const authored = authoredPackage(courseDir);
 
@@ -206,46 +233,79 @@ const shared = {
   disclaimer: officialBrand.disclaimer,
 };
 
-fs.writeFileSync(publicCatalogPath, `${JSON.stringify({ schemaVersion: "1.4", ...shared, courses: publicCourses }, null, 2)}\n`);
-fs.writeFileSync(learnerCatalogPath, `${JSON.stringify({
-  schemaVersion: "1.3",
-  ...shared,
-  workerContract: {
-    contractId: workerPoolContract.contractId,
-    contractHash: contractHash(),
-    assignmentMode: workerPoolContract.assignmentMode,
-  },
-  productionStandard: {
-    standardId: commercialProductionStandard.standardId,
-    standardHash: commercialProductionStandardHash(),
-    qualityTier: commercialProductionStandard.qualityTier,
-    qualityClaimAllowedOnlyAfterAcceptance:
-      commercialProductionStandard.claimPolicy.qualityClaimAllowedOnlyAfterAcceptance,
-  },
-  accessClassification: "protected-owner-review-and-learner-content",
-  ownerReviewSupported: true,
-  productionPublicationIndependent: true,
-  courses: learnerCourses,
-}, null, 2)}\n`);
+fs.writeFileSync(
+  publicCatalogPath,
+  `${JSON.stringify({
+    schemaVersion: "1.4",
+    ...shared,
+    courses: publicCourses,
+  }, null, 2)}\n`,
+);
+fs.writeFileSync(
+  learnerCatalogPath,
+  `${JSON.stringify({
+    schemaVersion: "1.3",
+    ...shared,
+    workerContract: {
+      contractId: workerPoolContract.contractId,
+      contractHash: contractHash(),
+      assignmentMode: workerPoolContract.assignmentMode,
+    },
+    productionStandard: {
+      standardId: commercialProductionStandard.standardId,
+      standardHash: commercialProductionStandardHash(),
+      qualityTier: commercialProductionStandard.qualityTier,
+      qualityClaimAllowedOnlyAfterAcceptance:
+        commercialProductionStandard.claimPolicy
+          .qualityClaimAllowedOnlyAfterAcceptance,
+    },
+    accessClassification: "protected-owner-review-and-learner-content",
+    ownerReviewSupported: true,
+    productionPublicationIndependent: true,
+    courses: learnerCourses,
+  }, null, 2)}\n`,
+);
 
-const learnerReady = learnerCourses.filter((course) =>
-  course.authoring.available
-  && course.authoring.envelopeSchemaVersion === "1.3"
-  && course.authoring.productionStandard?.standardId === commercialProductionStandard.standardId
-  && course.learnerExperience.courseProductionBible
-  && course.learnerExperience.assessmentBlueprint
-  && Array.isArray(course.learnerExperience.sourceRegister)
-  && course.learnerExperience.sourceRegister.length > 0
-  && Array.isArray(course.learnerExperience.referenceApplicabilityMatrix)
-  && course.learnerExperience.referenceApplicabilityMatrix.length > 0
-  && course.learnerExperience.modules.every((module) =>
-    module.lessonNarrative
-    && module.claimRegister.length >= 6
-    && module.knowledgeChecks.length >= 5
-    && module.creativeTreatment
-    && module.productionPlan
-    && module.videoScript
-  ),
-).length;
-console.log(`[Academy Studio] Generated governed public catalog with ${publicCourses.length} publication-approved course(s).`);
-console.log(`[Academy Studio] Generated protected detailed cinematic owner-review catalog with ${learnerCourses.length} course(s), ${learnerReady} structurally learner-content-ready under production standard ${commercialProductionStandard.standardId}.`);
+const learnerReady = learnerCourses.filter((course) => {
+  const experience = course.learnerExperience;
+  return course.authoring.available
+    && course.authoring.envelopeSchemaVersion === "1.3"
+    && course.authoring.authoringPolicyVersion === "2026.08.07.3"
+    && course.authoring.implementationGuidanceStatus
+      === "draft-ai-generated-verification-required"
+    && course.authoring.productionStandard?.standardId
+      === commercialProductionStandard.standardId
+    && experience.courseProductionBible
+    && experience.courseImplementationStrategy
+    && experience.assessmentBlueprint
+    && Array.isArray(experience.sourceRegister)
+    && experience.sourceRegister.length > 0
+    && Array.isArray(experience.referenceApplicabilityMatrix)
+    && experience.referenceApplicabilityMatrix.length > 0
+    && Array.isArray(experience.documentedRealWorldCaseRegister)
+    && experience.documentedRealWorldCaseRegister.length > 0
+    && Array.isArray(experience.standardsImplementationMap)
+    && experience.standardsImplementationMap.length > 0
+    && Array.isArray(experience.prioritizedRecommendations)
+    && experience.prioritizedRecommendations.length >= 3
+    && experience.modules.every((module) =>
+      module.lessonNarrative
+      && module.claimRegister.length >= 6
+      && module.knowledgeChecks.length >= 5
+      && module.creativeTreatment
+      && module.productionPlan
+      && module.videoScript
+      && module.documentedRealWorldCases.length > 0
+      && module.implementationPlaybook
+      && module.recommendations.length >= 3
+      && module.standardImplementationGuidance.length > 0
+      && module.evidenceAndMetricsPlan
+    );
+}).length;
+
+console.log(
+  `[Academy Studio] Generated governed public catalog with ${publicCourses.length} publication-approved course(s).`,
+);
+console.log(
+  `[Academy Studio] Generated protected commercial cinematic owner-review catalog with ${learnerCourses.length} course(s), ${learnerReady} structurally learner-content-ready with sourced cases and implementation guidance under production standard ${commercialProductionStandard.standardId}.`,
+);
