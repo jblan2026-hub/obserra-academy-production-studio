@@ -14,8 +14,8 @@ const resolver = read("electron/academy-course-control-resolver.cjs");
 const preload = read("electron/preload.cjs");
 const main = read("electron/main-with-remediation.cjs");
 const html = read("src/index.html");
-const ui = read("src/academy-control-ui.js");
-const styles = read("src/styles.css");
+const ui = read("src/academy-reset-ui.js");
+const styles = read("src/academy-reset.css");
 const studioWorkflow = readRepository(".github/workflows/studio-console.yml");
 
 assert.match(control, /createAcademyCourseControl/);
@@ -66,13 +66,14 @@ for (const method of [
   "runAcademyControlledAction",
   "listAcademyPurchases",
   "verifyAcademyPurchase",
+  "retrieveWebsiteAcademyCourse",
+  "retrieveWebsiteAcademyCertificate",
   "getAcademyCommerceHealth",
   "getAcademyPublicationJobs",
   "getAcademyStudioJobs",
   "getAcademyControlLedger",
-]) {
-  assert.match(preload, new RegExp(method));
-}
+]) assert.match(preload, new RegExp(method));
+
 assert.match(preload, /runAcademyAction: \(payload\) => ipcRenderer\.invoke\("academy:runControlledAction", payload\)/);
 
 for (const channel of [
@@ -86,9 +87,7 @@ for (const channel of [
   "academy:getPublicationJobs",
   "academy:getStudioJobs",
   "academy:getControlLedger",
-]) {
-  assert.match(main, new RegExp(channel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-}
+]) assert.match(main, new RegExp(channel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 assert.match(main, /createAcademyCourseControlResolver/);
 
 for (const operation of [
@@ -99,23 +98,38 @@ for (const operation of [
   "validate_all",
   "build_course_release",
   "publish_approved_catalog",
-]) {
-  assert.match(studioWorkflow, new RegExp(operation));
-}
+]) assert.match(studioWorkflow, new RegExp(operation));
 assert.match(studioWorkflow, /npm run author:course -- --course/);
 assert.match(studioWorkflow, /npm run author:course -- --course .* --force/);
 assert.match(studioWorkflow, /npm run author:all/);
 assert.match(studioWorkflow, /commit_generated_changes/);
 
-assert.match(html, /ACADEMY COURSE LIFECYCLE COMMAND/);
-assert.match(html, /Control every course, review, release, publication, purchase, and entitlement/);
-assert.match(html, /academy-control-ui\.js/);
-assert.match(ui, /Verify paid access end to end/);
-assert.match(ui, /Verified Success requires Stripe paid state, Clerk entitlement readback/);
-assert.match(ui, /Unpublishing or retiring removes the course from new public purchase access/);
-assert.match(ui, /providerError/);
-assert.match(ui, /JSON\.stringify\(technical, null, 2\)/);
-assert.match(styles, /academyControlPanel/);
-assert.match(styles, /academyControlAudit\.error/);
+assert.match(html, /Academy Command Center/);
+assert.match(html, /Private owner review, release, and publication control plane/);
+assert.match(html, /61-course release queue/);
+assert.match(html, /Redacted by default/);
+assert.match(html, /academy-reset-ui\.js/);
+assert.match(html, /connect-src 'none'/);
 
-console.log("Academy course-control contract verification passed: local and installed-anywhere GitHub control, lifecycle, review, publication, Stripe payment, Clerk entitlement, raw errors, and provider readback are wired without hardcoded success.");
+assert.match(ui, /Preview course/);
+assert.match(ui, /Preview materials/);
+assert.match(ui, /Preview certificate/);
+assert.match(ui, /Load published website course/);
+assert.match(ui, /Load certificate verification/);
+assert.match(ui, /Verify paid access/);
+assert.match(ui, /Approval does not publish/);
+assert.match(ui, /PUBLISH \$\{course\.id\}/);
+assert.match(ui, /UNPUBLISH \$\{course\.id\}/);
+assert.match(ui, /retrieveWebsiteAcademyCourse/);
+assert.match(ui, /retrieveWebsiteAcademyCertificate/);
+assert.match(ui, /verifyAcademyPurchase/);
+assert.match(ui, /transitionAcademyCourse/);
+assert.match(ui, /updateAcademyReview/);
+assert.doesNotMatch(ui, /providerError|rawBody|technical\s*=|JSON\.stringify\(technical/);
+
+assert.match(styles, /courseList/);
+assert.match(styles, /detailPanel/);
+assert.match(styles, /evidencePanel/);
+assert.match(styles, /statusPill/);
+
+console.log("Academy course-control contract verification passed: local and GitHub control, lifecycle, review, publication, Stripe payment, Clerk entitlement, website readback, and owner-safe evidence are wired without hardcoded success or legacy raw-provider rendering.");
