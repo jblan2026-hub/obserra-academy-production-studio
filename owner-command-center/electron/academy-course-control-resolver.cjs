@@ -1,8 +1,6 @@
 const academyStudio = require("./academy-studio.cjs");
+const { ownerSafe, ownerSafeError } = require("./academy-data-protection.cjs");
 
-// The lifecycle controller was introduced after the original local Studio snapshot
-// contract. Keep the legacy Studio UI unchanged while presenting the richer shapes
-// expected by the lifecycle controller during module initialization.
 const originalGetStudioSnapshot = academyStudio.getStudioSnapshot;
 const originalRunStudioAction = academyStudio.runStudioAction;
 
@@ -24,8 +22,6 @@ async function lifecycleRunStudioAction(action, courseId) {
   const result = await originalRunStudioAction(action, courseId);
   return {
     ...result,
-    // academy-course-control.cjs predates the current runStudioAction result name.
-    // Preserve both fields so the lifecycle controller can fail closed correctly.
     code: result?.exitCode ?? null,
   };
 }
@@ -59,40 +55,53 @@ function createAcademyCourseControlResolver({ store, safeStorage, app } = {}) {
     return useLocal() ? local : remote;
   }
 
+  async function safeInvoke(operation) {
+    try {
+      return ownerSafe(await operation());
+    } catch (error) {
+      throw new Error(ownerSafeError(error));
+    }
+  }
+
   async function snapshot() {
-    const selected = active();
-    const value = await selected.snapshot();
-    return {
-      ...value,
-      controlMode: useLocal() ? "local-studio-workspace" : "github-remote-control",
-      installedAnywhereReady: useLocal() || value?.available === true,
-    };
+    return safeInvoke(async () => {
+      const value = await active().snapshot();
+      return {
+        ...value,
+        controlMode: useLocal() ? "local-studio-workspace" : "github-remote-control",
+        installedAnywhereReady: useLocal() || value?.available === true,
+        privacyBoundary:
+          "Owner UI receives redacted, minimum-necessary operational metadata. Secrets, cookies, tokens, card data, payment-method details, and direct customer/student contact data are removed before renderer delivery.",
+      };
+    });
   }
 
   async function runCourseAction(payload) {
-    if (!useLocal()) return remote.runCourseAction(payload);
-    const action = String(payload?.action || "").trim();
-    const courseId = payload?.courseId || null;
-    const result = await runStudioAction(action, courseId);
-    return {
-      ok: result.ok === true,
-      state: result.ok === true ? "verified-success" : "failed",
-      mode: "local-studio-workspace",
-      result,
-    };
+    return safeInvoke(async () => {
+      if (!useLocal()) return remote.runCourseAction(payload);
+      const action = String(payload?.action || "").trim();
+      const courseId = payload?.courseId || null;
+      const result = await runStudioAction(action, courseId);
+      return {
+        ok: result.ok === true,
+        state: result.ok === true ? "verified-success" : "failed",
+        mode: "local-studio-workspace",
+        result,
+      };
+    });
   }
 
   return {
     snapshot,
-    updateReview: (payload) => active().updateReview(payload),
-    transitionCourse: (payload) => active().transitionCourse(payload),
+    updateReview: (payload) => safeInvoke(() => active().updateReview(payload)),
+    transitionCourse: (payload) => safeInvoke(() => active().transitionCourse(payload)),
     runCourseAction,
-    listPurchases: (payload) => active().listPurchases(payload),
-    verifyPurchase: (payload) => active().verifyPurchase(payload),
-    commerceHealth: (options) => active().commerceHealth(options),
-    publicationJobs: () => active().publicationJobs(),
-    studioJobs: () => (typeof active().studioJobs === "function" ? active().studioJobs() : {}),
-    ledger: (limit) => active().ledger(limit),
+    listPurchases: (payload) => safeInvoke(() => active().listPurchases(payload)),
+    verifyPurchase: (payload) => safeInvoke(() => active().verifyPurchase(payload)),
+    commerceHealth: (options) => safeInvoke(() => active().commerceHealth(options)),
+    publicationJobs: () => ownerSafe(active().publicationJobs()),
+    studioJobs: () => ownerSafe(typeof active().studioJobs === "function" ? active().studioJobs() : {}),
+    ledger: (limit) => ownerSafe(active().ledger(limit)),
     mode: () => (useLocal() ? "local-studio-workspace" : "github-remote-control"),
   };
 }
