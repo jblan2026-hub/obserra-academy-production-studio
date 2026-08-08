@@ -55,16 +55,25 @@ Copy-Item (Join-Path $root "HIGH-AVAILABILITY.md") (Join-Path $destinationPath "
 
 $workerContractPath = Join-Path $repositoryRoot "policy\elastic-worker-pool-contract.json"
 $productionStandardPath = Join-Path $repositoryRoot "policy\commercial-cinematic-course-production-standard.json"
+$packageLockPath = Join-Path $root "package-lock.json"
+$dependencyLockFileName = "Obserra-Command-Center-Dependency-Lock.json"
 $workerContract = Read-JsonFile -Path $workerContractPath
 $productionStandard = Read-JsonFile -Path $productionStandardPath
+$packageLock = Read-JsonFile -Path $packageLockPath
 Copy-Item $workerContractPath (Join-Path $destinationPath "Obserra-Worker-Pool-Contract.json")
 Copy-Item $productionStandardPath (Join-Path $destinationPath "Obserra-Commercial-Course-Production-Standard.json")
+Copy-Item $packageLockPath (Join-Path $destinationPath $dependencyLockFileName)
 
 $packageJson = Read-JsonFile -Path (Join-Path $root "package.json")
+if ([string]$packageLock.name -ne [string]$packageJson.name -or [string]$packageLock.version -ne [string]$packageJson.version) {
+    throw "Command Center package-lock identity does not match package.json."
+}
+$dependencyLockSha256 = Get-Sha256Hex -Path $packageLockPath
+$dependencyLockPackageCount = @($packageLock.packages.PSObject.Properties).Count
 $installerSignature = Get-AuthenticodeSignature -FilePath $installer.FullName
 $portableSignature = Get-AuthenticodeSignature -FilePath $portable.FullName
 $release = [ordered]@{
-    schemaVersion = "1.0"
+    schemaVersion = "1.1"
     productName = [string]$packageJson.build.productName
     appId = [string]$packageJson.build.appId
     version = [string]$packageJson.version
@@ -74,6 +83,13 @@ $release = [ordered]@{
     totalLogicalWorkers = [int]$workerContract.totalLogicalWorkers
     productionStandardId = [string]$productionStandard.standardId
     qualityTier = [string]$productionStandard.qualityTier
+    dependencyLock = [ordered]@{
+        file = $dependencyLockFileName
+        packageManager = [string]$packageJson.packageManager
+        lockfileVersion = [int]$packageLock.lockfileVersion
+        packageCount = [int]$dependencyLockPackageCount
+        sha256 = $dependencyLockSha256
+    }
     defaultParallelAllocation = [ordered]@{
         academyWorkers = 28
         commandCenterWorkers = 8
@@ -104,6 +120,7 @@ $bootstrap = [ordered]@{
     academyStudioRootHint = $AcademyStudioRootHint
     workerContractId = [string]$workerContract.contractId
     productionStandardId = [string]$productionStandard.standardId
+    dependencyLockSha256 = $dependencyLockSha256
     connectors = @(
         @{ id = "lcms"; url = "https://www.obserrallc.com" },
         @{ id = "academy"; url = "https://www.obserrallc.com" },
@@ -143,6 +160,18 @@ if (-not $SkipHostnameCheck -and $target -and $target -ne "*" -and $hostname -ne
     throw "Installed profile targets '$target', but this endpoint is '$hostname'."
 }
 
+$dependencyLockPath = Join-Path $here ([string]$release.dependencyLock.file)
+if (-not (Test-Path $dependencyLockPath -PathType Leaf)) {
+    throw "Dependency lock evidence is missing: $dependencyLockPath"
+}
+$dependencyLockSha256 = (Get-FileHash -Algorithm SHA256 -Path $dependencyLockPath).Hash
+if ($dependencyLockSha256 -ne [string]$release.dependencyLock.sha256) {
+    throw "Dependency lock evidence does not match the governed release descriptor."
+}
+if ([string]$profile.dependencyLockSha256 -ne $dependencyLockSha256) {
+    throw "Installed bootstrap dependency-lock identity does not match the governed release."
+}
+
 $executable = $null
 if ($Portable) {
     $portableRoot = Join-Path $localRoot "Portable"
@@ -178,7 +207,7 @@ if (-not [string]::IsNullOrWhiteSpace($effectiveStudioRoot)) {
 }
 
 $health = [ordered]@{
-    schemaVersion = "1.0"
+    schemaVersion = "1.1"
     verifiedAt = (Get-Date).ToUniversalTime().ToString("o")
     hostname = $hostname
     targetHostname = $target
@@ -193,6 +222,11 @@ $health = [ordered]@{
     workerContractId = [string]$release.workerContractId
     productionStandardId = [string]$release.productionStandardId
     qualityTier = [string]$release.qualityTier
+    packageManager = [string]$release.dependencyLock.packageManager
+    dependencyLockFile = [string]$release.dependencyLock.file
+    dependencyLockSha256 = $dependencyLockSha256
+    dependencyLockPackageCount = [int]$release.dependencyLock.packageCount
+    dependencyLockVerified = $true
     localOnly = $true
     ready = $true
     productionDistributionSigningReady = ($signature.Status -eq "Valid")
@@ -203,6 +237,7 @@ Write-Host "[Obserra] Endpoint verification passed."
 Write-Host "Executable: $executablePath"
 Write-Host "Authenticode: $($signature.Status)"
 Write-Host "Academy Studio ready: $studioReady"
+Write-Host "Dependency lock verified: $dependencyLockSha256"
 Write-Host "Evidence: $healthPath"
 '@
 $testScriptPath = Join-Path $destinationPath "Test-Obserra-Command-Center-Installation.ps1"
@@ -228,6 +263,11 @@ foreach ($required in @($bootstrap, $manifestPath, $releasePath, $testScript)) {
 }
 
 $profile = Get-Content $bootstrap -Raw | ConvertFrom-Json
+$release = Get-Content $releasePath -Raw | ConvertFrom-Json
+$dependencyLockPath = Join-Path $here ([string]$release.dependencyLock.file)
+if (-not (Test-Path $dependencyLockPath -PathType Leaf)) {
+    throw "Required dependency lock evidence is missing: $dependencyLockPath"
+}
 $target = [string]$profile.targetHostname
 if (-not $SkipHostnameCheck -and $target -and $target -ne "*" -and $env:COMPUTERNAME.ToLowerInvariant() -ne $target.ToLowerInvariant()) {
     throw "This package targets Windows machine '$target', but it is running on '$env:COMPUTERNAME'. Use -SkipHostnameCheck only after intentional owner review."
@@ -241,12 +281,20 @@ foreach ($entry in $manifest) {
     if ($actual -ne $entry.SHA256) { throw "SHA-256 verification failed for $($entry.File)" }
     if ([long]$entry.Bytes -ne (Get-Item $filePath).Length) { throw "File-size verification failed for $($entry.File)" }
 }
+$dependencyLockSha256 = (Get-FileHash -Algorithm SHA256 -Path $dependencyLockPath).Hash
+if ($dependencyLockSha256 -ne [string]$release.dependencyLock.sha256) {
+    throw "Dependency lock evidence does not match the governed release descriptor."
+}
+if ([string]$profile.dependencyLockSha256 -ne $dependencyLockSha256) {
+    throw "Bootstrap dependency-lock identity does not match the governed release."
+}
 
 $localRoot = Join-Path $env:LOCALAPPDATA "Obserra\OwnerCommandCenter"
 New-Item -ItemType Directory -Force -Path $localRoot | Out-Null
 $installedBootstrap = Join-Path $localRoot "Obserra-Command-Center-Bootstrap.json"
 Copy-Item $bootstrap $installedBootstrap -Force
 Copy-Item $releasePath (Join-Path $localRoot "Obserra-Command-Center-Release.json") -Force
+Copy-Item $dependencyLockPath (Join-Path $localRoot ([string]$release.dependencyLock.file)) -Force
 Copy-Item (Join-Path $here "Obserra-Worker-Pool-Contract.json") (Join-Path $localRoot "Obserra-Worker-Pool-Contract.json") -Force
 Copy-Item (Join-Path $here "Obserra-Commercial-Course-Production-Standard.json") (Join-Path $localRoot "Obserra-Commercial-Course-Production-Standard.json") -Force
 [Environment]::SetEnvironmentVariable("OBSERRA_COMMAND_CENTER_BOOTSTRAP", $installedBootstrap, "User")
@@ -305,7 +353,7 @@ if ($resolvedStudioRoot) { $testArguments.StudioRoot = $resolvedStudioRoot }
 
 $healthPath = Join-Path $localRoot "endpoint-health.json"
 $installationRecord = [ordered]@{
-    schemaVersion = "1.0"
+    schemaVersion = "1.1"
     installedAt = (Get-Date).ToUniversalTime().ToString("o")
     hostname = $env:COMPUTERNAME.ToLowerInvariant()
     targetHostname = $target
@@ -315,6 +363,8 @@ $installationRecord = [ordered]@{
     endpointHealthPath = $healthPath
     packageManifestSha256 = (Get-FileHash -Algorithm SHA256 -Path $manifestPath).Hash
     releaseDescriptorSha256 = (Get-FileHash -Algorithm SHA256 -Path $releasePath).Hash
+    dependencyLockSha256 = $dependencyLockSha256
+    dependencyLockPackageCount = [int]$release.dependencyLock.packageCount
     ownerAuthorized = $true
 }
 $installationRecord | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $localRoot "installation-record.json") -Encoding UTF8
@@ -340,6 +390,7 @@ if (-not $NoLaunch) {
 
 Write-Host "[Obserra] Command Center package verified, installed, post-install tested, and recorded for $env:COMPUTERNAME."
 Write-Host "[Obserra] Academy Studio root: $resolvedStudioRoot"
+Write-Host "[Obserra] Dependency lock: $dependencyLockSha256"
 Write-Host "[Obserra] Installation evidence: $(Join-Path $localRoot 'installation-record.json')"
 '@
 Set-Content (Join-Path $destinationPath "Install-Obserra-Command-Center.ps1") $installScript -Encoding UTF8
@@ -356,5 +407,6 @@ $hashes | ConvertTo-Json -Depth 3 | Set-Content (Join-Path $destinationPath "SHA
 $hashes | ForEach-Object { "{0}  {1}" -f $_.SHA256, $_.File } | Set-Content (Join-Path $destinationPath "SHA256SUMS.txt") -Encoding ASCII
 
 Write-Host "[Obserra] Removable-media package created at $destinationPath for machine $TargetHostname"
+Write-Host "[Obserra] Dependency lock SHA-256: $dependencyLockSha256"
 Write-Host "[Obserra] Installer Authenticode status: $($installerSignature.Status)"
 Write-Host "[Obserra] Portable Authenticode status: $($portableSignature.Status)"
