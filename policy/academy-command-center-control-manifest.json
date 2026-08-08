@@ -88,9 +88,7 @@
     {
       "id": "ACC-017",
       "name": "Product pricing source of truth",
-      "implementation": [
-        "studio/generate-catalog.mjs"
-      ],
+      "implementation": ["studio/generate-catalog.mjs"],
       "verification": [],
       "required": true,
       "status": "pricing-normalization-in-progress"
@@ -101,9 +99,23 @@
       "implementation": ["owner-command-center/package.json"],
       "verification": [
         "owner-command-center/scripts/verify-payment-control-baseline.mjs",
-        "owner-command-center/scripts/verify-payment-control-behavior.mjs"
+        "owner-command-center/scripts/verify-payment-control-behavior.mjs",
+        "owner-command-center/scripts/verify-control-manifest.mjs",
+        "owner-command-center/scripts/verify-green-path-locks.mjs"
       ],
       "required": true
+    },
+    {
+      "id": "ACC-021",
+      "name": "Immutable green-path baseline",
+      "implementation": [
+        "policy/academy-green-path-locks.json",
+        "owner-command-center/scripts/lock-green-path.mjs"
+      ],
+      "verification": ["owner-command-center/scripts/verify-green-path-locks.mjs"],
+      "required": true,
+      "state": "enabled",
+      "rule": "After required verification is green, freeze the control's implementation and verification files by SHA-256. Drift fails standard verification until an explicit owner-approved re-baseline is committed."
     }
   ]
 }
