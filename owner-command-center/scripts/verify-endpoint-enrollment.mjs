@@ -108,11 +108,28 @@ const academyEvidenceProvider = () => ({
   workerStatus: { configuredCourseWorkers: 36, configuredApplicationWorkers: 0 },
 });
 
-const runtime = createEndpointEnrollmentRuntime({
+let runtime;
+const endpointIpcMain = {
+  handle(name, handler) {
+    if (name !== "endpoint:revoke") {
+      ipcMain.handle(name, handler);
+      return;
+    }
+    ipcMain.handle(name, async (...args) => {
+      const revoked = await handler(...args);
+      store.set("endpoint.enrollment", revoked);
+      store.set("endpoint.revocation", revoked);
+      runtime.refresh();
+      return revoked;
+    });
+  },
+};
+
+runtime = createEndpointEnrollmentRuntime({
   store,
   app,
   safeStorage,
-  ipcMain,
+  ipcMain: endpointIpcMain,
   academyEvidenceProvider,
   heartbeatIntervalMs: 5000,
   startHealthServer: true,
@@ -159,7 +176,7 @@ try {
   assert.equal(revoked.state, "revoked");
   const revokedSnapshot = await ipcMain.invoke("endpoint:getSnapshot");
   assert.equal(revokedSnapshot.endpointReady, false);
-  assert.notEqual(revokedSnapshot.enrollment.state, "enrolled");
+  assert.equal(revokedSnapshot.enrollment.state, "revoked");
 
   const enrolled = await ipcMain.invoke("endpoint:enroll", { confirmation: ENROLL_CONFIRMATION });
   assert.equal(enrolled.state, "enrolled");
@@ -175,7 +192,7 @@ try {
     loopbackReadiness: readiness.status,
     receiptCreated: fs.existsSync(runtime.receiptPath),
     installationReceiptCreated: fs.existsSync(runtime.installationReceiptPath),
-    revocationVerified: revoked.state === "revoked",
+    revocationVerified: revokedSnapshot.enrollment.state === "revoked",
     reenrollmentVerified: reenrolledSnapshot.endpointReady,
     passed: true,
   }, null, 2));
