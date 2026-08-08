@@ -4,6 +4,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  checkpointGatewayConfigured,
+  checkpointTransportName,
+  fetchCheckpointThroughGateway,
+  persistCheckpointThroughGateway,
+} from "./checkpoint-gateway.mjs";
+import {
   commercialProductionStandard,
   commercialProductionStandardHash,
   contractHash,
@@ -55,7 +61,7 @@ function validatedCourseId(value) {
 function validatedDatabaseUrl() {
   const raw = String(process.env.DATABASE_URL ?? "").trim();
   if (!raw) {
-    if (checkpointsRequired()) throw new Error("DATABASE_URL is required for protected authoring checkpoints.");
+    if (checkpointsRequired()) throw new Error("DATABASE_URL is required when the protected OIDC checkpoint gateway is not configured.");
     return null;
   }
 
@@ -143,11 +149,30 @@ export function validateAuthoringEnvelope({ courseId, envelope, manifest }) {
 }
 
 export async function persistAuthoringCheckpoint({ courseId, envelope, manifest }) {
+  const identity = validateAuthoringEnvelope({ courseId, envelope, manifest });
+  const organizationKey = normalizedOrganizationKey();
+
+  if (checkpointGatewayConfigured()) {
+    const gatewayResult = await persistCheckpointThroughGateway({
+      organizationKey,
+      courseSlug: identity.courseId,
+      sourceManifestHash: identity.expectedManifestHash,
+      authoringPolicyVersion: AUTHORING_POLICY_VERSION,
+      provider: String(envelope.provider ?? "unknown").slice(0, 100),
+      model: String(envelope.model ?? "unknown").slice(0, 200),
+      packageHash: identity.packageHash,
+      envelope,
+    });
+    return {
+      ...gatewayResult,
+      contractHash: identity.contractHash,
+      productionStandardHash: identity.productionStandardHash,
+    };
+  }
+
   const prisma = await createPrismaClient();
   if (!prisma) return { stored: false, reason: "database-not-configured" };
 
-  const identity = validateAuthoringEnvelope({ courseId, envelope, manifest });
-  const organizationKey = normalizedOrganizationKey();
   const id = crypto.randomUUID();
   const payload = JSON.stringify(envelope);
 
@@ -183,6 +208,7 @@ export async function persistAuthoringCheckpoint({ courseId, envelope, manifest 
       packageHash: identity.packageHash,
       contractHash: identity.contractHash,
       productionStandardHash: identity.productionStandardHash,
+      transport: "direct-postgresql",
     };
   } finally {
     await prisma.$disconnect();
@@ -203,39 +229,61 @@ function atomicWritePrivateJson(filePath, value) {
   fs.renameSync(temporaryPath, filePath);
 }
 
-export async function restoreAuthoringCheckpoints() {
-  const prisma = await createPrismaClient();
-  if (!prisma) {
-    const summary = {
-      schemaVersion: "1.1",
-      checkedAt: new Date().toISOString(),
-      restored: 0,
-      evaluated: 0,
-      skipped: true,
-      reason: "database-not-configured",
-      authoringPolicyVersion: AUTHORING_POLICY_VERSION,
-      contractHash: contractHash(),
-      productionStandardHash: commercialProductionStandardHash(),
-    };
-    fs.mkdirSync(catalogRoot, { recursive: true });
-    fs.writeFileSync(path.join(catalogRoot, "authoring-checkpoint-restore.json"), `${JSON.stringify(summary, null, 2)}\n`);
-    return summary;
+function courseManifestEntries() {
+  return fs.readdirSync(coursesRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && COURSE_ID_PATTERN.test(entry.name))
+    .sort((left, right) => left.name.localeCompare(right.name))
+    .map((entry) => ({
+      courseId: entry.name,
+      manifestPath: path.join(coursesRoot, entry.name, "course-manifest.json"),
+    }))
+    .filter((entry) => fs.existsSync(entry.manifestPath));
+}
+
+async function restoreGatewayCheckpoints(entries, organizationKey) {
+  const restoredCourseIds = [];
+  const queue = [...entries];
+  const concurrency = Math.min(8, queue.length);
+
+  async function worker() {
+    while (queue.length > 0) {
+      const entry = queue.shift();
+      if (!entry) return;
+      const manifest = readJson(entry.manifestPath);
+      const sourceManifestHash = authoringSourceHash(manifest);
+      const checkpoint = await fetchCheckpointThroughGateway({
+        organizationKey,
+        courseSlug: entry.courseId,
+        sourceManifestHash,
+        authoringPolicyVersion: AUTHORING_POLICY_VERSION,
+      });
+      if (!checkpoint) continue;
+
+      const envelope = checkpoint.package;
+      const identity = validateAuthoringEnvelope({ courseId: entry.courseId, envelope, manifest });
+      if (checkpoint.packageHash !== identity.packageHash) {
+        throw new Error(`Stored authoring checkpoint hash mismatch for ${entry.courseId}.`);
+      }
+      atomicWritePrivateJson(
+        path.join(coursesRoot, entry.courseId, "generated", "authoring", "course-package.json"),
+        envelope,
+      );
+      restoredCourseIds.push(entry.courseId);
+    }
   }
 
-  const organizationKey = normalizedOrganizationKey();
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  return restoredCourseIds.sort();
+}
+
+async function restoreDatabaseCheckpoints(entries, organizationKey) {
+  const prisma = await createPrismaClient();
+  if (!prisma) return null;
   const restoredCourseIds = [];
-  let evaluated = 0;
 
   try {
-    const entries = fs.readdirSync(coursesRoot, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && COURSE_ID_PATTERN.test(entry.name))
-      .sort((left, right) => left.name.localeCompare(right.name));
-
     for (const entry of entries) {
-      const manifestPath = path.join(coursesRoot, entry.name, "course-manifest.json");
-      if (!fs.existsSync(manifestPath)) continue;
-      evaluated += 1;
-      const manifest = readJson(manifestPath);
+      const manifest = readJson(entry.manifestPath);
       const sourceManifestHash = authoringSourceHash(manifest);
       const rows = await prisma.$queryRawUnsafe(
         `SELECT "package", "packageHash"
@@ -247,30 +295,58 @@ export async function restoreAuthoringCheckpoints() {
          ORDER BY "updatedAt" DESC
          LIMIT 1`,
         organizationKey,
-        entry.name,
+        entry.courseId,
         sourceManifestHash,
         AUTHORING_POLICY_VERSION,
       );
       if (!Array.isArray(rows) || rows.length === 0) continue;
 
       const envelope = rows[0].package;
-      const identity = validateAuthoringEnvelope({ courseId: entry.name, envelope, manifest });
+      const identity = validateAuthoringEnvelope({ courseId: entry.courseId, envelope, manifest });
       if (rows[0].packageHash !== identity.packageHash) {
-        throw new Error(`Stored authoring checkpoint hash mismatch for ${entry.name}.`);
+        throw new Error(`Stored authoring checkpoint hash mismatch for ${entry.courseId}.`);
       }
 
       atomicWritePrivateJson(
-        path.join(coursesRoot, entry.name, "generated", "authoring", "course-package.json"),
+        path.join(coursesRoot, entry.courseId, "generated", "authoring", "course-package.json"),
         envelope,
       );
-      restoredCourseIds.push(entry.name);
+      restoredCourseIds.push(entry.courseId);
     }
   } finally {
     await prisma.$disconnect();
   }
+  return restoredCourseIds;
+}
+
+export async function restoreAuthoringCheckpoints() {
+  const organizationKey = normalizedOrganizationKey();
+  const entries = courseManifestEntries();
+  const transport = checkpointTransportName();
+  const restoredCourseIds = checkpointGatewayConfigured()
+    ? await restoreGatewayCheckpoints(entries, organizationKey)
+    : await restoreDatabaseCheckpoints(entries, organizationKey);
+
+  if (restoredCourseIds === null) {
+    const summary = {
+      schemaVersion: "1.2",
+      checkedAt: new Date().toISOString(),
+      restored: 0,
+      evaluated: 0,
+      skipped: true,
+      reason: "checkpoint-transport-not-configured",
+      transport,
+      authoringPolicyVersion: AUTHORING_POLICY_VERSION,
+      contractHash: contractHash(),
+      productionStandardHash: commercialProductionStandardHash(),
+    };
+    fs.mkdirSync(catalogRoot, { recursive: true });
+    fs.writeFileSync(path.join(catalogRoot, "authoring-checkpoint-restore.json"), `${JSON.stringify(summary, null, 2)}\n`);
+    return summary;
+  }
 
   const summary = {
-    schemaVersion: "1.1",
+    schemaVersion: "1.2",
     checkedAt: new Date().toISOString(),
     authoringPolicyVersion: AUTHORING_POLICY_VERSION,
     contractId: workerPoolContract.contractId,
@@ -278,11 +354,12 @@ export async function restoreAuthoringCheckpoints() {
     productionStandardId: commercialProductionStandard.standardId,
     productionStandardHash: commercialProductionStandardHash(),
     qualityTier: commercialProductionStandard.qualityTier,
-    evaluated,
+    transport,
+    evaluated: entries.length,
     restored: restoredCourseIds.length,
     restoredCourseIds,
     skipped: false,
-    claimBoundary: "Restoration proves matching protected-database checkpoint retrieval, worker-contract integrity, production-standard integrity, and package integrity only. It does not establish source verification, media completion, review approval, commercial acceptance, or publication readiness.",
+    claimBoundary: "Restoration proves matching protected checkpoint retrieval, GitHub workflow identity where OIDC is used, worker-contract integrity, production-standard integrity, and package integrity only. It does not establish source verification, media completion, review approval, commercial acceptance, or publication readiness.",
   };
   fs.mkdirSync(catalogRoot, { recursive: true });
   fs.writeFileSync(path.join(catalogRoot, "authoring-checkpoint-restore.json"), `${JSON.stringify(summary, null, 2)}\n`);
