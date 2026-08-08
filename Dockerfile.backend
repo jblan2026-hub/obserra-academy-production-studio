@@ -31,12 +31,12 @@ RUN npm install --omit=dev --ignore-scripts --no-audit --no-fund
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/next.config.* ./
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/studio ./studio
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/next-env.d.ts ./next-env.d.ts
 RUN npx prisma generate
+RUN mkdir -p /app/.academy-private-storage && chown -R node:node /app/.academy-private-storage
 USER node
 EXPOSE 3000
 CMD ["npm", "start"]
