@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const packagePath = path.join(root, "package.json");
 const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8"));
+const packageLockPath = path.join(root, "package-lock.json");
+const packageLock = JSON.parse(fs.readFileSync(packageLockPath, "utf8"));
 const targets = packageJson?.build?.win?.target ?? [];
 const targetNames = targets.map((target) => typeof target === "string" ? target : target.target);
 
@@ -20,6 +22,11 @@ if (packageJson?.build?.win?.requestedExecutionLevel !== "asInvoker") throw new 
 if (!String(packageJson?.build?.portable?.artifactName ?? "").includes("Portable")) throw new Error("Portable artifact must be clearly labeled");
 if (packageJson?.build?.asar !== true) throw new Error("Packaged application files must remain inside ASAR where supported");
 if (!String(packageJson?.scripts?.["package:windows"] ?? "").includes("--publish never")) throw new Error("Local Windows packaging must not auto-publish artifacts");
+if (packageJson?.packageManager !== "npm@10.9.8") throw new Error("Command Center package manager must remain pinned to npm 10.9.8");
+if (packageLock?.lockfileVersion !== 3) throw new Error("Command Center dependency evidence requires npm lockfileVersion 3");
+if (packageLock?.name !== packageJson.name || packageLock?.version !== packageJson.version) {
+  throw new Error("Command Center package-lock identity does not match package.json");
+}
 
 const mediaScriptPath = path.join(root, "scripts", "build-removable-media-package.ps1");
 const mediaScript = fs.readFileSync(mediaScriptPath, "utf8");
@@ -36,8 +43,11 @@ const requiredConnectorIds = [
   "localAi",
 ];
 
-if (!/schemaVersion\s*=\s*"1\.0"/.test(mediaScript)) {
-  throw new Error("Removable-media bootstrap and release records must use governed schema version 1.0");
+if (!mediaScript.includes('schemaVersion = "1.0"')) {
+  throw new Error("Removable-media bootstrap must use governed schema version 1.0");
+}
+if (!mediaScript.includes('schemaVersion = "1.1"')) {
+  throw new Error("Release, installation, and endpoint-health evidence must use governed schema version 1.1");
 }
 if (!/TargetHostname\s*=\s*"obserra"/.test(mediaScript)) {
   throw new Error("Default removable-media target must remain machine 'obserra'");
@@ -56,6 +66,13 @@ for (const requiredTerm of [
   "Obserra-Command-Center-Release.json",
   "Obserra-Worker-Pool-Contract.json",
   "Obserra-Commercial-Course-Production-Standard.json",
+  "Obserra-Command-Center-Dependency-Lock.json",
+  "package-lock.json",
+  "dependencyLockSha256",
+  "dependencyLockPackageCount",
+  "dependencyLockVerified",
+  "packageManager",
+  "lockfileVersion",
   "endpoint-health.json",
   "installation-record.json",
   "StudioRoot",
@@ -84,5 +101,5 @@ if (!mediaScript.includes("ownerEndpointInstallationMayProceedAfterHashVerificat
 }
 
 console.log(
-  `[Owner Command Center] Installer configuration verified: controlled post-install launch, one-click per-user NSIS, portable target, persistent bootstrap and Studio root, post-install health evidence, hash verification, explicit code-signing state, and ${requiredConnectorIds.length} governed connectors.`,
+  `[Owner Command Center] Installer configuration verified: controlled post-install launch, deterministic npm lock evidence, one-click per-user NSIS, portable target, persistent bootstrap and Studio root, post-install health evidence, hash verification, explicit code-signing state, and ${requiredConnectorIds.length} governed connectors.`,
 );
