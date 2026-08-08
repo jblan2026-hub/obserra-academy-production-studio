@@ -2,12 +2,21 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { AUTHORING_POLICY_VERSION } from "./authoring-checkpoints.mjs";
 import { officialBrand } from "./brand-policy.mjs";
+import {
+  commercialProductionStandard,
+  commercialProductionStandardHash,
+  contractHash,
+  taskContract,
+  workerPoolContract,
+} from "./worker-pool-contract.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
 const catalogRoot = path.join(root, "catalog");
-const AUTHORING_POLICY_VERSION = "2026.08.07.2";
+const governedTask = taskContract("protected-authoring");
 const requiredGeneratedFiles = [
   "instructor-manuscript.md",
   "learner-guide.md",
@@ -21,6 +30,11 @@ const authoringFindings = [
   "stale-ai-course-package",
   "untraceable-ai-course-package",
   "outdated-ai-authoring-policy",
+  "unsupported-ai-authoring-envelope",
+  "worker-contract-mismatch",
+  "production-standard-mismatch",
+  "missing-detailed-reference-structure",
+  "missing-commercial-production-structure",
 ];
 
 function readJson(filePath) {
@@ -42,6 +56,12 @@ function parseDurationMinutes(value) {
   if (hours || minutes) return Math.round(Number(hours?.[1] ?? 0) * 60 + Number(minutes?.[1] ?? 0));
   const numeric = Number(normalized);
   return Number.isFinite(numeric) ? Math.round(numeric) : NaN;
+}
+
+function sameMembers(left, right) {
+  return Array.isArray(left)
+    && left.length === right.length
+    && right.every((value) => left.includes(value));
 }
 
 function writeOutput(name, value) {
@@ -107,13 +127,45 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
   const manifestHash = authoringSourceHash(manifest);
   let packageManifestHash = null;
   let packageAuthoringPolicyVersion = null;
+  let packageEnvelopeSchemaVersion = null;
+  let packageContractHash = null;
+  let packageProductionStandardHash = null;
   if (!authoringMissing) {
     const authored = readJson(authoringPath);
     packageManifestHash = authored.sourceManifestHash ?? authored.manifestHash ?? null;
     packageAuthoringPolicyVersion = authored.authoringPolicyVersion ?? null;
+    packageEnvelopeSchemaVersion = authored.schemaVersion ?? null;
+    packageContractHash = authored.workerContract?.contractHash ?? null;
+    packageProductionStandardHash = authored.productionStandard?.standardHash ?? null;
     if (!packageManifestHash) courseFindings.push("untraceable-ai-course-package");
     else if (packageManifestHash !== manifestHash) courseFindings.push("stale-ai-course-package");
     if (packageAuthoringPolicyVersion !== AUTHORING_POLICY_VERSION) courseFindings.push("outdated-ai-authoring-policy");
+    if (packageEnvelopeSchemaVersion !== "1.3") courseFindings.push("unsupported-ai-authoring-envelope");
+    if (authored.workerContract?.contractId !== workerPoolContract.contractId
+        || packageContractHash !== contractHash()
+        || authored.workerContract?.taskType !== governedTask.taskType
+        || authored.workerContract?.role !== governedTask.role
+        || authored.workerContract?.workstream !== governedTask.workstream
+        || !sameMembers(authored.workerContract?.appliedRules, governedTask.appliedRules)) {
+      courseFindings.push("worker-contract-mismatch");
+    }
+    if (authored.productionStandard?.standardId !== commercialProductionStandard.standardId
+        || packageProductionStandardHash !== commercialProductionStandardHash()
+        || authored.productionStandard?.qualityTier !== commercialProductionStandard.qualityTier
+        || authored.productionStandard?.qualityClaimAllowed !== false
+        || authored.commercialQualityStatus !== commercialProductionStandard.claimPolicy.interimLabel) {
+      courseFindings.push("production-standard-mismatch");
+    }
+    if (!Array.isArray(authored.content?.sourceRegister)
+        || !Array.isArray(authored.content?.referenceApplicabilityMatrix)
+        || !Array.isArray(authored.content?.modules)
+        || authored.content.modules.some((module) => !Array.isArray(module?.claimRegister))) {
+      courseFindings.push("missing-detailed-reference-structure");
+    }
+    if (!authored.content?.courseProductionBible
+        || authored.content.modules?.some((module) => !module?.creativeTreatment || !module?.productionPlan || !module?.videoScript)) {
+      courseFindings.push("missing-commercial-production-structure");
+    }
   }
 
   const publicationApproved = manifest.release?.publishToAcademy === true && ["approved", "published"].includes(manifest.release?.status);
@@ -129,9 +181,17 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
     accountedMinutes,
     advertisedMinutes,
     authoringPolicyVersion: AUTHORING_POLICY_VERSION,
+    contractId: workerPoolContract.contractId,
+    contractHash: contractHash(),
+    productionStandardId: commercialProductionStandard.standardId,
+    productionStandardHash: commercialProductionStandardHash(),
+    qualityTier: commercialProductionStandard.qualityTier,
     manifestHash,
     packageManifestHash,
     packageAuthoringPolicyVersion,
+    packageEnvelopeSchemaVersion,
+    packageContractHash,
+    packageProductionStandardHash,
     authoringMissing,
     findings: courseFindings,
   });
@@ -158,15 +218,21 @@ const blockingFindings = findings.filter(({ finding }) => !nonBlockingFindings.h
 
 fs.mkdirSync(catalogRoot, { recursive: true });
 const report = {
-  schemaVersion: "1.3",
+  schemaVersion: "1.4",
   generatedAt: new Date().toISOString(),
   policy: {
     authoringPolicyVersion: AUTHORING_POLICY_VERSION,
+    contractId: workerPoolContract.contractId,
+    contractHash: contractHash(),
+    productionStandardId: commercialProductionStandard.standardId,
+    productionStandardHash: commercialProductionStandardHash(),
+    qualityTier: commercialProductionStandard.qualityTier,
     lessonCount: "manifest-defined-per-course",
     duration: "module-durations-plus-final-assessment-duration-must-equal-advertised-course-duration",
-    authoring: "all owner-review-eligible missing, stale, untraceable, or older-policy packages trigger AI authoring",
+    authoring: "all owner-review-eligible missing, stale, untraceable, older-policy, contract-mismatched, standard-mismatched, shallow-reference, or incomplete-production packages trigger AI authoring",
+    detail: "every instructional module requires detailed narrative, claim-level references, applicability, production bible, creative treatment, storyboard, shot list, audio direction, cinematic script, assessments, and learner materials",
     build: "all owner-review-eligible missing or stale assets trigger governed build",
-    publication: "only explicitly approved or published courses can enter the public catalog",
+    publication: "only explicitly approved or published courses can enter the public catalog after commercial acceptance",
     directProductionPublish: false,
   },
   totals: {
@@ -188,7 +254,7 @@ writeOutput("blocking_findings", String(blockingFindings.length));
 writeOutput("owner_review_courses", String(ownerReviewCourses.length));
 writeOutput("publication_approved_courses", String(publicationApprovedCourses.length));
 
-console.log(`[Academy Studio] Audited ${courses.length} course manifests under authoring policy ${AUTHORING_POLICY_VERSION}, including ${ownerReviewCourses.length} owner-review-eligible and ${publicationApprovedCourses.length} publication-approved course(s).`);
+console.log(`[Academy Studio] Audited ${courses.length} course manifests under detailed cinematic authoring policy ${AUTHORING_POLICY_VERSION}, including ${ownerReviewCourses.length} owner-review-eligible and ${publicationApprovedCourses.length} publication-approved course(s).`);
 console.log(`[Academy Studio] AI authoring required: ${authoringRequired}. Governed build required: ${buildRequired}. Blocking findings: ${blockingFindings.length}.`);
 if (blockingFindings.length > 0) {
   for (const item of blockingFindings.slice(0, 100)) console.error(`[Academy Studio] ${item.courseId}: ${item.finding}`);

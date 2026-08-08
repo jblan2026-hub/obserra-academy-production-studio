@@ -1,15 +1,24 @@
 {
   "name": "obserra-owner-ai-command-center",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Owner-only local AI command center for the Obserra ecosystem.",
+  "author": {
+    "name": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC"
+  },
+  "license": "UNLICENSED",
+  "packageManager": "npm@10.9.8",
+  "engines": {
+    "node": ">=22 <23",
+    "npm": ">=10 <11"
+  },
   "main": "electron/main-with-remediation.cjs",
   "type": "module",
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
-    "package:windows": "electron-builder --win nsis portable",
+    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-runtime-governance.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs && node scripts/verify-production-readiness.mjs",
+    "package:windows": "electron-builder --win nsis portable --publish never",
     "package:media": "powershell -ExecutionPolicy Bypass -File scripts/build-removable-media-package.ps1"
   },
   "dependencies": {
@@ -22,13 +31,36 @@
   "build": {
     "appId": "com.obserra.ownercommandcenter",
     "productName": "Obserra Owner AI Command Center",
+    "copyright": "Copyright © 2026 OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
     "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}",
-    "directories": {"output": "dist"},
-    "files": ["electron/**/*","src/**/*","scripts/**/*","HIGH-AVAILABILITY.md","INSTALL-AND-RECOVERY.md","package.json"],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "scripts/**/*",
+      "HIGH-AVAILABILITY.md",
+      "INSTALL-AND-RECOVERY.md",
+      "package.json"
+    ],
     "asar": true,
     "compression": "maximum",
     "win": {
-      "target": [{"target":"nsis","arch":["x64"]},{"target":"portable","arch":["x64"]}],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "requestedExecutionLevel": "asInvoker",
       "verifyUpdateCodeSignature": true
     },
@@ -40,8 +72,12 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Obserra Owner AI Command Center",
-      "uninstallDisplayName": "Obserra Owner AI Command Center"
+      "uninstallDisplayName": "Obserra Owner AI Command Center",
+      "runAfterFinish": false,
+      "deleteAppDataOnUninstall": false
     },
-    "portable": {"artifactName":"Obserra-Owner-AI-Command-Center-Portable-${version}-${arch}.${ext}"}
+    "portable": {
+      "artifactName": "Obserra-Owner-AI-Command-Center-Portable-${version}-${arch}.${ext}"
+    }
   }
 }

@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { officialBrand, assertBrandAndTags } from "./brand-policy.mjs";
+
+import { assertBrandAndTags, officialBrand } from "./brand-policy.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
@@ -15,18 +16,31 @@ function legalBlock(manifest) {
 function replaceOrInsertMarkdown(filePath, block) {
   if (!fs.existsSync(filePath)) return;
   const current = fs.readFileSync(filePath, "utf8");
-  const pattern = new RegExp(`${markerStart}[\\s\\S]*?${markerEnd}`, "m");
+  const pattern = new RegExp(`${markerStart}[\\s\\S]*?${markerEnd}`, "gm");
   const cleaned = current.replace(pattern, "").trim();
-  fs.writeFileSync(filePath, `${block}\n\n${cleaned}\n\n${block}\n`);
+  fs.writeFileSync(filePath, `${block}\n\n${cleaned}\n\n${block}\n`, {
+    encoding: "utf8",
+    mode: 0o600,
+  });
 }
 
 function updateJson(filePath, manifest) {
   if (!fs.existsSync(filePath)) return;
   const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-  data.branding = manifest.branding;
-  data.tags = manifest.tags;
-  data.disclaimer = manifest.disclaimer;
-  fs.writeFileSync(filePath, `${JSON.stringify(data, null, 2)}\n`);
+  const governed = Array.isArray(data)
+    ? {
+      schemaVersion: "1.0",
+      courseId: manifest.course.id,
+      records: data,
+    }
+    : data;
+  governed.branding = manifest.branding;
+  governed.tags = manifest.tags;
+  governed.disclaimer = manifest.disclaimer;
+  fs.writeFileSync(filePath, `${JSON.stringify(governed, null, 2)}\n`, {
+    encoding: "utf8",
+    mode: 0o600,
+  });
 }
 
 let processed = 0;
@@ -39,13 +53,28 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true })) {
   assertBrandAndTags(manifest, manifestPath);
   const block = legalBlock(manifest);
 
-  for (const file of ["instructor-manuscript.md", "learner-guide.md", "workbook.md", "visual-brief.md"]) {
+  for (const file of [
+    "instructor-manuscript.md",
+    "learner-guide.md",
+    "workbook.md",
+    "visual-brief.md",
+    "implementation-and-application-guide.md",
+  ]) {
     replaceOrInsertMarkdown(path.join(courseDir, file), block);
   }
-  for (const file of ["assessment-bank.json", "answer-key.json"]) {
+  for (const file of [
+    "assessment-bank.json",
+    "answer-key.json",
+    "documented-real-world-case-register.json",
+    "course-implementation-strategy.json",
+    "standards-implementation-map.json",
+    "prioritized-recommendations.json",
+    "implementation-guidance.json",
+    "certificate-package.json",
+  ]) {
     updateJson(path.join(courseDir, file), manifest);
   }
   processed += 1;
 }
 
-console.log(`[Academy Studio] Enforced official branding, tags, informational disclaimer, acknowledgement, and liability terms across ${processed} generated course package(s)`);
+console.log(`[Academy Studio] Enforced official branding, tags, informational disclaimer, acknowledgement, and liability terms across ${processed} detailed course package(s).`);

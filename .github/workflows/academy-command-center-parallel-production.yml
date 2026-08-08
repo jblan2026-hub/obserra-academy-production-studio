@@ -1,0 +1,301 @@
+name: Academy and Command Center Parallel Production
+run-name: 36-worker governed production surge • ${{ github.ref_name }} • ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/academy-36-worker-course-surge
+    paths:
+      - "policy/**"
+      - "studio/**"
+      - "courses/**/course-manifest.json"
+      - "owner-command-center/**"
+      - "prisma/**"
+      - "package.json"
+      - ".github/workflows/academy-command-center-parallel-production.yml"
+      - ".github/workflows/owner-command-center-windows.yml"
+      - ".github/workflows/continuous-course-ai-audit.yml"
+  pull_request:
+    branches:
+      - main
+      - agent/continue-course-buildout
+    paths:
+      - "policy/**"
+      - "studio/**"
+      - "courses/**/course-manifest.json"
+      - "owner-command-center/**"
+      - "prisma/**"
+      - "package.json"
+      - ".github/workflows/academy-command-center-parallel-production.yml"
+      - ".github/workflows/owner-command-center-windows.yml"
+      - ".github/workflows/continuous-course-ai-audit.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: academy-command-center-production-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OBSERRA_PORTFOLIO_WORKER_COUNT: 36
+  OBSERRA_APPLICATION_WORKER_COUNT: 0
+  COMMAND_CENTER_WORKER_ALLOCATION: 8
+  IDLE_WORKER_ALLOCATION: 0
+  ACADEMY_AUTHORING_CONCURRENCY: 28
+  ACADEMY_STAGING_CONCURRENCY: 28
+
+jobs:
+  academy-production:
+    name: Author, validate, and compliance-stage all 60 Academy courses
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      ACADEMY_AUTHORING_PROVIDER: openai
+      ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
+      ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
+      ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: 1200000
+      ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: 1800000
+      ACADEMY_AUTHORING_PREFLIGHT_TIMEOUT_MS: 120000
+      ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: true
+      ACADEMY_EXPECTED_REVIEW_COURSES: 60
+      ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
+      ACADEMY_SUPABASE_REGION: us-east-1
+      ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: true
+      STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
+      STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
+      OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
+      DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout governed production source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Normalize protected provider and PostgreSQL credentials
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const output = process.env.GITHUB_ENV;
+          if (!output) throw new Error('GITHUB_ENV is unavailable.');
+
+          function trimOuterQuotes(value) {
+            const normalized = String(value ?? '').trim();
+            const quoted = (normalized.startsWith('"') && normalized.endsWith('"'))
+              || (normalized.startsWith("'") && normalized.endsWith("'"));
+            return quoted ? normalized.slice(1, -1).trim() : normalized;
+          }
+
+          function normalizeDatabaseUrl(raw) {
+            let value = trimOuterQuotes(raw);
+            const assignment = value.match(/^(?:ACADEMY_DATABASE_URL|DATABASE_URL)\s*=\s*(.+)$/is);
+            if (assignment) value = trimOuterQuotes(assignment[1]);
+            if (!value) return '';
+            if (/\r|\n/.test(value)) throw new Error('DATABASE_URL contains an unexpected newline.');
+
+            if (!/^postgres(?:ql)?:\/\//i.test(value)) {
+              const projectRef = String(process.env.ACADEMY_SUPABASE_PROJECT_REF ?? '').trim();
+              const region = String(process.env.ACADEMY_SUPABASE_REGION ?? '').trim();
+              if (!projectRef || !region) throw new Error('Supabase project metadata is unavailable.');
+              value = `postgresql://${encodeURIComponent(`postgres.${projectRef}`)}:${encodeURIComponent(value)}@aws-0-${region}.pooler.supabase.com:5432/postgres?schema=public&sslmode=require&connect_timeout=30`;
+            }
+
+            try {
+              const parsed = new URL(value);
+              if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+              return parsed.toString();
+            } catch {
+              const schemeEnd = value.indexOf('://');
+              const scheme = value.slice(0, schemeEnd + 3);
+              const remainder = value.slice(schemeEnd + 3);
+              const at = remainder.lastIndexOf('@');
+              if (at <= 0) throw new Error('DATABASE_URL must contain credentials and a host.');
+              const credentials = remainder.slice(0, at);
+              const hostAndPath = remainder.slice(at + 1);
+              const colon = credentials.indexOf(':');
+              if (colon <= 0) throw new Error('DATABASE_URL must contain a username and password.');
+              const username = credentials.slice(0, colon);
+              const password = credentials.slice(colon + 1);
+              let decodedPassword = password;
+              try { decodedPassword = decodeURIComponent(password); } catch {}
+              const candidate = `${scheme}${encodeURIComponent(username)}:${encodeURIComponent(decodedPassword)}@${hostAndPath}`;
+              const parsed = new URL(candidate);
+              if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+              return parsed.toString();
+            }
+          }
+
+          for (const name of ['OPENAI_API_KEY', 'OPENAI_ORGANIZATION', 'OPENAI_PROJECT']) {
+            const value = trimOuterQuotes(process.env[name]);
+            if (value && /\r|\n/.test(value)) throw new Error(`${name} contains an unexpected newline.`);
+            if (value) fs.appendFileSync(output, `${name}=${value}\n`);
+          }
+
+          const databaseUrl = normalizeDatabaseUrl(process.env.DATABASE_URL);
+          if (databaseUrl) fs.appendFileSync(output, `DATABASE_URL=${databaseUrl}\n`);
+          console.log(`[Academy Studio] Protected selectors normalized. providerCredential=${Boolean(trimOuterQuotes(process.env.OPENAI_API_KEY))} databaseCredential=${Boolean(databaseUrl)}`);
+          NODE
+
+      - name: Install production dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Verify 36-worker and commercial cinematic contracts
+        run: npm run verify:worker-contract
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Normalize governed course policy
+        run: npm run apply:course-policy
+
+      - name: Require protected Academy PostgreSQL
+        shell: bash
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Protected Academy PostgreSQL is required before authoring workers may launch."
+            exit 1
+          fi
+
+      - name: Bootstrap and verify protected Academy schema
+        run: npm run db:bootstrap:protected
+
+      - name: Verify protected authoring checkpoint gateway
+        run: npm run preflight:checkpoint-gateway
+
+      - name: Restore matching protected authoring checkpoints
+        run: npm run restore:authoring-checkpoints
+
+      - name: Audit all governed course manifests and packages
+        id: audit
+        run: npm run audit:courses
+
+      - name: Verify funded authoring provider routing and capacity
+        if: steps.audit.outputs.authoring_required == 'true'
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "OPENAI_API_KEY is required for remaining governed authoring work."
+            exit 1
+          fi
+          npm run preflight:authoring
+
+      - name: Launch 28 governed Academy workers
+        if: steps.audit.outputs.authoring_required == 'true'
+        run: npm run author:parallel
+
+      - name: Prove every owner-review package is current
+        run: |
+          npm run audit:courses
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('catalog/continuous-course-audit.json', 'utf8'));
+          const authoringFindings = new Set([
+            'missing-ai-course-package',
+            'stale-ai-course-package',
+            'untraceable-ai-course-package',
+            'outdated-ai-authoring-policy',
+            'unsupported-ai-authoring-envelope',
+            'worker-contract-mismatch',
+            'production-standard-mismatch',
+            'missing-detailed-reference-structure',
+            'missing-commercial-production-structure',
+          ]);
+          const unresolved = (report.courses ?? []).filter((course) =>
+            course.ownerReviewEligible && (course.findings ?? []).some((finding) => authoringFindings.has(finding))
+          );
+          if (unresolved.length) {
+            throw new Error(`${unresolved.length} course package(s) remain unresolved: ${unresolved.map((course) => course.courseId).join(', ')}`);
+          }
+          NODE
+
+      - name: Materialize detailed course, implementation, assessment, and cinematic assets
+        run: npm run build:all
+
+      - name: Generate protected learner and public metadata catalogs
+        run: npm run catalog
+
+      - name: Build authoritative source-resolution queue
+        run: npm run collect:sources
+
+      - name: Validate learner catalog and implementation guidance
+        run: npm run validate:learner-catalog
+
+      - name: Compliance-stage every course package
+        run: npm run stage:courses
+
+      - name: Measure final commercial release blockers without promotion
+        id: release_gate
+        continue-on-error: true
+        run: npm run validate:commercial-release
+
+      - name: Validate protected LCMS delivery and repository tests
+        run: |
+          npm run validate
+          npm run load:courses:check
+          npm test
+          npm run db:validate
+
+      - name: Load validated owner-review packages into protected LCMS
+        run: npm run load:courses
+
+      - name: Publish Academy production evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-commercial-production-${{ github.run_id }}
+          path: |
+            catalog/worker-pool-contract-verification.json
+            catalog/commercial-course-production-standard-verification.json
+            catalog/authoring-provider-preflight.json
+            catalog/authoring-checkpoint-gateway-preflight.json
+            catalog/authoring-checkpoint-restore.json
+            catalog/continuous-course-audit.json
+            catalog/parallel-authoring-summary.json
+            catalog/bulk-build-report.json
+            catalog/academy-course-catalog.json
+            catalog/learner-catalog-readiness.json
+            catalog/commercial-implementation-guidance-readiness.json
+            catalog/authoritative-source-resolution-queue.json
+            catalog/compliance-staging-summary.json
+            catalog/commercial-release-readiness.json
+          if-no-files-found: ignore
+          retention-days: 90
+
+  command-center-production:
+    name: Build, install, and endpoint-verify Owner Command Center
+    uses: ./.github/workflows/owner-command-center-windows.yml
+
+  production-summary:
+    name: Reconcile parallel production outcomes
+    if: always()
+    needs:
+      - academy-production
+      - command-center-production
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Write governed outcome summary
+        shell: bash
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## Governed 36-worker parallel production outcome
+
+          - Academy production job: `${{ needs.academy-production.result }}`
+          - Command Center production job: `${{ needs.command-center-production.result }}`
+          - Governed allocation: 28 Academy / 8 Command Center / 0 unrelated application / 0 idle
+          - Academy publication and checkout: disabled until final release evidence and owner acceptance
+          - Command Center owner-endpoint installation: requires execution of the verified bundle on the owner's endpoint; CI installation proves package installability only
+          SUMMARY
+
+      - name: Fail when either governed workstream fails
+        if: needs.academy-production.result != 'success' || needs.command-center-production.result != 'success'
+        run: exit 1

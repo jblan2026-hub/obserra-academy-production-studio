@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "1.0",
+  "contractId": "obserra-commercial-instructional-content-v1",
+  "effectiveDate": "2026-08-07",
+  "owner": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+  "purpose": "Require every commercial Academy course to connect detailed instruction to authoritative references, explicit applicability boundaries, documented real-world examples, actionable recommendations, and standards-aligned implementation guidance.",
+  "claimBoundary": "Implementation guidance is educational and must be tailored to the learner's organization, jurisdiction, contracts, risk profile, technology, and authoritative requirements. It is not legal advice, an audit opinion, certification, accreditation, authorization to operate, or a guarantee of compliance or outcomes.",
+  "contentContractVersion": "2026.08.07.1",
+  "minimums": {
+    "authoritativeReferencesPerCourse": 8,
+    "authoritativeReferencesPerInstructionalModule": 2,
+    "realWorldExamplesPerInstructionalModule": 2,
+    "documentedCasesPerInstructionalModule": 1,
+    "implementationRecommendationsPerInstructionalModule": 3,
+    "implementationStepsPerInstructionalModule": 5,
+    "evidenceArtifactsPerInstructionalModule": 2,
+    "verificationMethodsPerInstructionalModule": 2,
+    "metricsPerInstructionalModule": 2,
+    "commonFailureModesPerInstructionalModule": 3,
+    "maturityStagesPerInstructionalModule": 3
+  },
+  "sourceQualityHierarchy": [
+    "binding-law-or-regulation",
+    "official-regulator-or-government-guidance",
+    "consensus-standard-or-framework",
+    "official-industry-body-guidance",
+    "peer-reviewed-research",
+    "documented-public-case",
+    "vendor-primary-documentation",
+    "original-obserra-instruction"
+  ],
+  "requiredSourceFields": [
+    "id",
+    "title",
+    "issuingAuthority",
+    "sourceType",
+    "authorityLevel",
+    "jurisdiction",
+    "publicationOrRevisionDate",
+    "locator",
+    "verificationStatus",
+    "claimOrTopic",
+    "moduleIds",
+    "whereItApplies",
+    "whereItDoesNotApply",
+    "implementationImplications",
+    "verificationInstruction",
+    "usageBoundary"
+  ],
+  "requiredModuleSections": [
+    "authoritativeReferenceIds",
+    "applicabilityGuide",
+    "realWorldExamples",
+    "standardsImplementation",
+    "implementationPlaybook",
+    "recommendations"
+  ],
+  "realWorldExampleRules": {
+    "allowedCaseTypes": [
+      "documented-public-case",
+      "anonymized-practice-pattern",
+      "synthetic-composite"
+    ],
+    "documentedCaseRequiresSourceIds": true,
+    "syntheticCaseMustBeExplicitlyLabeled": true,
+    "caseLimitationsRequired": true,
+    "outcomesMayNotBeInvented": true,
+    "confidentialOrProprietaryThirdPartyInformationProhibited": true
+  },
+  "implementationRules": {
+    "standardClauseOrControlMappingRequiredWhenAvailable": true,
+    "applicabilityAndNonApplicabilityRequired": true,
+    "prerequisitesDependenciesAndConstraintsRequired": true,
+    "rolesAndAccountabilityRequired": true,
+    "orderedImplementationStepsRequired": true,
+    "evidenceArtifactsRequired": true,
+    "verificationProceduresRequired": true,
+    "metricsAndSuccessCriteriaRequired": true,
+    "exceptionsAndTailoringRequired": true,
+    "commonFailureModesRequired": true,
+    "maturityAndSequencingGuidanceRequired": true,
+    "sustainmentAndContinuousImprovementRequired": true,
+    "recommendationsMustIdentifyOwnerEffortDependenciesAndRisk": true,
+    "bindingRequirementGuidanceAndObserraAdviceMustBeDistinguished": true
+  },
+  "referenceVerification": {
+    "authoringMayUsePendingIndependentVerification": true,
+    "publicationRequiresVerifiedStatus": true,
+    "verifiedReferenceRequiresReviewerIdentity": true,
+    "verifiedReferenceRequiresReviewTimestamp": true,
+    "verifiedReferenceRequiresStableLocator": true,
+    "sourceCardsRequiredForFactualClaims": true
+  },
+  "prohibitedContent": [
+    "invented-citation",
+    "invented-standard-clause",
+    "invented-statistic",
+    "fabricated-public-case",
+    "fictional-quote-presented-as-real",
+    "unsupported-compliance-claim",
+    "guaranteed-implementation-outcome",
+    "generic-recommendation-without-applicability",
+    "implementation-advice-without-evidence-plan",
+    "documented-case-without-source-traceability"
+  ],
+  "requiredReleaseEvidence": [
+    "verified-authoritative-reference-register",
+    "reference-application-matrix",
+    "framework-and-standard-applicability-review",
+    "documented-real-world-case-review",
+    "implementation-playbook-review",
+    "recommendation-and-advisory-boundary-review",
+    "evidence-and-verification-plan-review",
+    "subject-matter-expert-approval",
+    "owner-acceptance"
+  ]
+}

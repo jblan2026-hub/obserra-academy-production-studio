@@ -28,10 +28,9 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function runAuthoringProcess() {
+function runGovernedProcess(scriptName, extraArgs = []) {
   return new Promise((resolve, reject) => {
-    const args = ["studio/author-course-ai.mjs", "--course", courseId, "--provider", provider];
-    if (force) args.push("--force");
+    const args = [scriptName, "--course", courseId, "--provider", provider, ...extraArgs];
     const child = spawn(process.execPath, args, {
       cwd: root,
       env: process.env,
@@ -50,7 +49,7 @@ function runAuthoringProcess() {
     child.once("exit", (code, signal) => {
       process.off("SIGTERM", onSigterm);
       process.off("SIGINT", onSigint);
-      resolve({ code, signal });
+      resolve({ code, signal, scriptName });
     });
   });
 }
@@ -82,12 +81,27 @@ async function persistGeneratedPackage() {
   }
 }
 
-try {
-  const authoring = await runAuthoringProcess();
-  if (authoring.code !== 0) {
-    if (authoring.signal) console.error(`[Academy Studio] Authoring process for ${courseId} ended with signal ${authoring.signal}.`);
-    process.exit(authoring.code ?? 1);
+function stopForChildFailure(result, label) {
+  if (result.code === 0) return false;
+  if (result.signal) {
+    console.error(`[Academy Studio] ${label} for ${courseId} ended with signal ${result.signal}.`);
   }
+  process.exit(result.code ?? 1);
+  return true;
+}
+
+try {
+  const authoringArgs = force ? ["--force"] : [];
+  const authoring = await runGovernedProcess("studio/author-course-ai.mjs", authoringArgs);
+  if (stopForChildFailure(authoring, "Base commercial course authoring")) process.exit();
+
+  const implementation = await runGovernedProcess(
+    "studio/enrich-commercial-implementation-guidance.mjs",
+  );
+  if (stopForChildFailure(
+    implementation,
+    "Real-world case and implementation-guidance enrichment",
+  )) process.exit();
 
   await persistGeneratedPackage();
 } catch (error) {

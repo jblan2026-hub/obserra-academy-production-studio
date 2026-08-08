@@ -1,6 +1,7 @@
 name: Build Owner Command Center Windows Package
 
 on:
+  workflow_call:
   workflow_dispatch:
   push:
     branches:
@@ -9,15 +10,7 @@ on:
     paths:
       - "owner-command-center/**"
       - "studio/**"
-      - "courses/**"
-      - "package.json"
-      - ".github/workflows/owner-command-center-windows.yml"
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "owner-command-center/**"
-      - "studio/**"
+      - "policy/**"
       - "courses/**"
       - "package.json"
       - ".github/workflows/owner-command-center-windows.yml"
@@ -27,13 +20,20 @@ permissions:
 
 concurrency:
   group: owner-command-center-windows-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   production-gate:
-    name: Validate, package, and verify Windows release
+    name: Validate, package, install, and verify Windows release
     runs-on: windows-2025
-    timeout-minutes: 105
+    timeout-minutes: 120
+    env:
+      OBSERRA_PORTFOLIO_WORKER_COUNT: 36
+      OBSERRA_APPLICATION_WORKER_COUNT: 0
+      COMMAND_CENTER_WORKER_ALLOCATION: 8
+      IDLE_WORKER_ALLOCATION: 0
+      ACADEMY_AUTHORING_CONCURRENCY: 28
+      ACADEMY_STAGING_CONCURRENCY: 28
     defaults:
       run:
         working-directory: owner-command-center
@@ -50,31 +50,43 @@ jobs:
         working-directory: .
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Install Command Center dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install deterministic Command Center dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Validate source syntax and policy JSON
+      - name: Validate source syntax and governed policy JSON
         shell: pwsh
         run: |
-          node --check electron/main.cjs
-          node --check electron/preload.cjs
-          node --check electron/connectors.cjs
-          node --check electron/academy-studio.cjs
-          node --check electron/academy-preview.cjs
-          node --check electron/owner-ai.cjs
-          node --check electron/discovery.cjs
-          node --check electron/vulnerability-scan.cjs
-          node --check electron/threat-policy.cjs
-          node --check electron/security-enforcement.cjs
-          node --check electron/trend-store.cjs
-          node --check electron/ai-remediation.cjs
-          node --check electron/remediation-queue.cjs
-          node --check src/app.js
-          node --check src/security-dashboard.js
-          node --check src/remediation-dashboard.js
-          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('policy/connector-catalog.json','utf8')); console.log('JSON policy validation passed')"
+          $files = @(
+            "electron/main.cjs",
+            "electron/main-with-remediation.cjs",
+            "electron/preload.cjs",
+            "electron/connectors.cjs",
+            "electron/academy-studio.cjs",
+            "electron/academy-governance.cjs",
+            "electron/academy-preview.cjs",
+            "electron/owner-ai.cjs",
+            "electron/discovery.cjs",
+            "electron/vulnerability-scan.cjs",
+            "electron/threat-policy.cjs",
+            "electron/security-enforcement.cjs",
+            "electron/trend-store.cjs",
+            "electron/ai-remediation.cjs",
+            "electron/remediation-queue.cjs",
+            "src/app.js",
+            "src/academy-batch.js",
+            "src/security-dashboard.js",
+            "src/remediation-dashboard.js",
+            "scripts/verify-runtime-governance.mjs",
+            "scripts/verify-production-readiness.mjs"
+          )
+          foreach ($file in $files) { node --check $file }
+          node -e "const fs=require('fs'); for (const file of ['package.json','package-lock.json','policy/connector-catalog.json','../policy/elastic-worker-pool-contract.json','../policy/commercial-cinematic-course-production-standard.json']) JSON.parse(fs.readFileSync(file,'utf8')); console.log('JSON policy and dependency-lock validation passed')"
 
-      - name: Run Command Center security and Academy Operations gates
+      - name: Verify governed worker and commercial production contracts
+        working-directory: .
+        run: npm run verify:worker-contract
+
+      - name: Run Command Center security, installer, Academy, and production readiness gates
         run: npm run verify
 
       - name: Execute Studio and Command Center 500x workload gate
@@ -85,13 +97,17 @@ jobs:
         working-directory: .
         run: npm run test:1000x-remediation
 
-      - name: Build installer, portable executable, and removable-media bundle
+      - name: Execute Studio and Command Center 2000x resilience gate
+        working-directory: .
+        run: npm run test:2000x-resilience
+
+      - name: Build installer, portable executable, and endpoint bundle
         shell: pwsh
         run: ./scripts/build-removable-media-package.ps1 -TargetHostname obserra
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
-      - name: Verify release contents, bootstrap profile, and cryptographic integrity
+      - name: Verify release contents, bootstrap profile, contracts, and cryptographic integrity
         shell: pwsh
         run: |
           function Get-Sha256Hex {
@@ -107,16 +123,20 @@ jobs:
           $media = Join-Path $PWD "release-media"
           if (-not (Test-Path $media)) { throw "release-media directory missing" }
 
-          $installer = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" }
-          $portable = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe"
-          if (-not $installer) { throw "One-click installer missing" }
-          if (-not $portable) { throw "Portable executable missing" }
+          $installer = @(Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" })
+          $portable = @(Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe")
+          if ($installer.Count -lt 1) { throw "One-click installer missing" }
+          if ($portable.Count -lt 1) { throw "Portable executable missing" }
 
           $requiredFiles = @(
             "SHA256SUMS.txt",
             "SHA256SUMS.json",
             "Install-Obserra-Command-Center.ps1",
+            "Test-Obserra-Command-Center-Installation.ps1",
             "Obserra-Command-Center-Bootstrap.json",
+            "Obserra-Command-Center-Release.json",
+            "Obserra-Worker-Pool-Contract.json",
+            "Obserra-Commercial-Course-Production-Standard.json",
             "INSTALL-AND-RECOVERY.md",
             "HIGH-AVAILABILITY.md"
           )
@@ -127,35 +147,68 @@ jobs:
           $bootstrap = Get-Content (Join-Path $media "Obserra-Command-Center-Bootstrap.json") -Raw | ConvertFrom-Json
           if ($bootstrap.schemaVersion -ne "1.0") { throw "Unsupported bootstrap schema" }
           if ($bootstrap.targetHostname -ne "obserra") { throw "Bootstrap target must be machine 'obserra'" }
+          if ($bootstrap.workerContractId -ne "obserra-elastic-production-pool-36") { throw "Bootstrap worker contract mismatch" }
+          if ($bootstrap.productionStandardId -ne "obserra-commercial-cinematic-course-production-v1") { throw "Bootstrap production standard mismatch" }
           if (@($bootstrap.connectors).Count -lt 10) { throw "Bootstrap connector inventory is incomplete" }
           $requiredConnectorIds = @("lcms","academy","website","store","eios","stripe","github","vercel","clerk","localAi")
           foreach ($connectorId in $requiredConnectorIds) {
             if (-not (@($bootstrap.connectors) | Where-Object { $_.id -eq $connectorId })) { throw "Bootstrap connector missing: $connectorId" }
           }
 
+          $release = Get-Content (Join-Path $media "Obserra-Command-Center-Release.json") -Raw | ConvertFrom-Json
+          if ($release.version -ne "0.3.0") { throw "Unexpected Command Center release version" }
+          if ($release.totalLogicalWorkers -ne 36) { throw "Release worker total mismatch" }
+          if ($release.defaultParallelAllocation.academyWorkers -ne 28) { throw "Release Academy worker allocation mismatch" }
+          if ($release.defaultParallelAllocation.commandCenterWorkers -ne 8) { throw "Release Command Center worker allocation mismatch" }
+          if ($release.defaultParallelAllocation.unrelatedApplicationWorkers -ne 0) { throw "Release unrelated application allocation must be zero" }
+          if (-not $release.productionDistributionRequiresTrustedCodeSigning) { throw "Production signing requirement missing" }
+
           $installScript = Get-Content (Join-Path $media "Install-Obserra-Command-Center.ps1") -Raw
-          foreach ($term in @("Get-FileHash", "TargetHostname", "OBSERRA_COMMAND_CENTER_BOOTSTRAP", "Portable")) {
+          foreach ($term in @("Get-FileHash", "TargetHostname", "OBSERRA_COMMAND_CENTER_BOOTSTRAP", "OBSERRA_ACADEMY_STUDIO_ROOT", "Test-Obserra-Command-Center-Installation.ps1", "endpoint-health.json", "installation-record.json", "StudioRoot", "Portable")) {
             if ($installScript -notmatch [regex]::Escape($term)) { throw "Installer script missing required behavior: $term" }
           }
 
           $manifest = @(Get-Content (Join-Path $media "SHA256SUMS.json") -Raw | ConvertFrom-Json)
-          if ($manifest.Count -lt 6) { throw "JSON integrity manifest is incomplete" }
+          if ($manifest.Count -lt 10) { throw "JSON integrity manifest is incomplete" }
           foreach ($entry in $manifest) {
             $filePath = Join-Path $media $entry.File
             if (-not (Test-Path $filePath)) { throw "Manifest references missing file: $($entry.File)" }
             $actual = Get-Sha256Hex -Path $filePath
             if ($actual -ne $entry.SHA256) { throw "SHA-256 mismatch for $($entry.File)" }
+            if ([long]$entry.Bytes -ne (Get-Item $filePath).Length) { throw "File-size mismatch for $($entry.File)" }
           }
 
-          Write-Host "Windows release gate passed."
-          Write-Host "Installer: $($installer.Name)"
-          Write-Host "Portable: $($portable.Name)"
+          Write-Host "Windows release content gate passed."
+          Write-Host "Installer: $($installer[0].Name)"
+          Write-Host "Portable: $($portable[0].Name)"
           Write-Host "Bootstrap target: $($bootstrap.targetHostname)"
+          Write-Host "Installer Authenticode status: $($release.installer.authenticodeStatus)"
 
-      - name: Upload verified removable-media installer bundle
+      - name: Install and post-install verify on the Windows runner
+        shell: pwsh
+        run: |
+          $studioRoot = (Resolve-Path ..).Path
+          & ./release-media/Install-Obserra-Command-Center.ps1 -SkipHostnameCheck -NoLaunch -StudioRoot $studioRoot
+          $evidenceRoot = Join-Path $env:LOCALAPPDATA "Obserra\OwnerCommandCenter"
+          $healthPath = Join-Path $evidenceRoot "endpoint-health.json"
+          $installationPath = Join-Path $evidenceRoot "installation-record.json"
+          if (-not (Test-Path $healthPath)) { throw "Endpoint health evidence was not created" }
+          if (-not (Test-Path $installationPath)) { throw "Installation record was not created" }
+          $health = Get-Content $healthPath -Raw | ConvertFrom-Json
+          if (-not $health.ready) { throw "Endpoint health evidence is not ready" }
+          if (-not $health.localOnly) { throw "Endpoint health did not preserve the local-only boundary" }
+          if (-not $health.academyStudioReady) { throw "Installed Command Center did not bind to the Academy Studio repository" }
+          if ($health.workerContractId -ne "obserra-elastic-production-pool-36") { throw "Endpoint worker contract mismatch" }
+          if ($health.productionStandardId -ne "obserra-commercial-cinematic-course-production-v1") { throw "Endpoint production standard mismatch" }
+          Copy-Item $healthPath ./release-media/CI-Endpoint-Health.json -Force
+          Copy-Item $installationPath ./release-media/CI-Installation-Record.json -Force
+          Write-Host "Windows installation and endpoint health gate passed."
+          Write-Host "Authenticode status: $($health.authenticodeStatus)"
+
+      - name: Upload verified installer and endpoint evidence bundle
         uses: actions/upload-artifact@v4
         with:
           name: Obserra-Owner-AI-Command-Center-Windows-${{ github.sha }}
           path: owner-command-center/release-media/**
           if-no-files-found: error
-          retention-days: 180
+          retention-days: 90
