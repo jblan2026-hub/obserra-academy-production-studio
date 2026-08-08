@@ -57,6 +57,53 @@ jobs:
         working-directory: owner-command-center
         run: npm run verify
 
+  package-windows-command-center:
+    needs: validate-source-and-runtime-contracts
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Command Center dependencies
+        working-directory: owner-command-center
+        shell: pwsh
+        run: npm install --no-audit --no-fund
+
+      - name: Re-run complete verification before packaging
+        working-directory: owner-command-center
+        shell: pwsh
+        run: npm run verify
+
+      - name: Build one-click installer and portable executable
+        working-directory: owner-command-center
+        shell: pwsh
+        run: npm run package:windows
+
+      - name: Confirm distributable executables exist
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Path owner-command-center/dist -Filter *.exe -File
+          if ($files.Count -lt 2) { throw "Expected both NSIS installer and portable executable." }
+          $files | ForEach-Object {
+            $hash = Get-FileHash -Algorithm SHA256 $_.FullName
+            "{0}  {1}" -f $hash.Hash.ToLowerInvariant(), $_.Name
+          } | Set-Content -Encoding utf8 owner-command-center/dist/SHA256SUMS.txt
+
+      - name: Upload verified Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obserra-Owner-AI-Command-Center-${{ github.sha }}
+          path: |
+            owner-command-center/dist/*.exe
+            owner-command-center/dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
   verify-real-paid-access:
     if: github.event_name == 'workflow_dispatch' && inputs.course_id != '' && inputs.checkout_session_id != ''
     runs-on: ubuntu-latest
