@@ -1,10 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { recordAuditEvent } from "@/lib/audit-service";
 import { requireOrganization } from "@/lib/organization-service";
 import { prisma } from "@/lib/prisma";
-import { authorizeStudioRequest } from "@/lib/studio-auth";
+import { authenticateStudioRequest, authorizeStudioRequest } from "@/lib/studio-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,12 +16,12 @@ export async function GET(request: Request) {
   const correlationId = request.headers.get("x-correlation-id") ?? crypto.randomUUID();
 
   try {
-    const session = await auth();
-    if (!session.isAuthenticated || !session.orgId) {
-      return NextResponse.json({ error: "An authenticated organization session is required", correlationId }, { status: 401 });
+    const authentication = await authenticateStudioRequest(request);
+    if (!authentication.principal) {
+      return NextResponse.json({ error: authentication.reason ?? "Authentication required", correlationId }, { status: 401 });
     }
-
-    const organization = await requireOrganization(session.orgId);
+    const principal = authentication.principal;
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const prompts = await prisma.aiPromptTemplate.findMany({
       where: { organizationId: organization.id },
       orderBy: [{ key: "asc" }, { version: "desc" }],
@@ -31,16 +30,16 @@ export async function GET(request: Request) {
 
     await recordAuditEvent({
       organizationId: organization.id,
-      actorId: session.userId ?? undefined,
-      actorType: "user",
+      actorId: principal.actorId,
+      actorType: principal.actorType,
       action: "ai.prompt.list",
       resourceType: "AiPromptTemplate",
       correlationId,
       outcome: "success",
-      metadata: { count: prompts.length },
+      metadata: { count: prompts.length, identityProvider: principal.identityProvider },
     });
 
-    return NextResponse.json({ correlationId, organizationId: session.orgId, prompts });
+    return NextResponse.json({ correlationId, organizationId: principal.organizationId, prompts });
   } catch (error) {
     return NextResponse.json({
       correlationId,
@@ -69,7 +68,7 @@ export async function POST(request: Request) {
   const principal = authorization.principal;
 
   try {
-    const organization = await requireOrganization(principal.organizationId);
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const body = await request.json() as {
       key?: string;
       name?: string;
@@ -133,7 +132,7 @@ export async function POST(request: Request) {
       resourceId: prompt.id,
       correlationId,
       outcome: "success",
-      metadata: { key, version: prompt.version, expertId: body.expertId, role: principal.role },
+      metadata: { key, version: prompt.version, expertId: body.expertId, role: principal.role, identityProvider: principal.identityProvider },
     });
 
     return NextResponse.json({ correlationId, prompt }, { status: 201 });
@@ -145,7 +144,7 @@ export async function POST(request: Request) {
       resourceType: "AiPromptTemplate",
       correlationId,
       outcome: "failure",
-      metadata: { reason: error instanceof Error ? error.message : "unknown" },
+      metadata: { reason: error instanceof Error ? error.message : "unknown", identityProvider: principal.identityProvider },
     });
     return NextResponse.json({ error: "Prompt template creation failed", correlationId }, { status: 500 });
   }
