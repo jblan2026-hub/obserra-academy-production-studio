@@ -5,11 +5,50 @@ const Store = require("electron-store");
 const { createRemediationQueue } = require("./remediation-queue.cjs");
 const { getAcademyProductionEvidence } = require("./academy-production-evidence.cjs");
 const { createAcademyReleaseApproval } = require("./academy-release-approval.cjs");
+const { createAcademyGithubEvidence } = require("./academy-github-evidence.cjs");
+const { resolveStudioRoot } = require("./academy-studio.cjs");
 const { createEndpointEnrollmentRuntime } = require("./endpoint-enrollment.cjs");
 
 const store = new Store({ name: "owner-command-center" });
 const remediationQueue = createRemediationQueue(store);
+const academyGithubEvidence = createAcademyGithubEvidence({ store, safeStorage, app });
+const githubSyncIntervalMs = Math.max(
+  30000,
+  Math.min(15 * 60 * 1000, Number(process.env.ACADEMY_GITHUB_SYNC_INTERVAL_MS || 60000)),
+);
+let githubSyncTimer = null;
 let endpointRuntime;
+
+function readGateTimestamp(root) {
+  if (!root) return 0;
+  const gatePath = path.join(root, "catalog", "academy-release-approval-gate.json");
+  if (!fs.existsSync(gatePath)) return 0;
+  try {
+    const gate = JSON.parse(fs.readFileSync(gatePath, "utf8"));
+    const parsed = Date.parse(String(gate.generatedAt || ""));
+    return Number.isFinite(parsed) ? parsed : fs.statSync(gatePath).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+function resolveAcademyEvidenceRoot() {
+  const localRoot = resolveStudioRoot();
+  const remoteRoot = academyGithubEvidence.evidenceRoot();
+  if (localRoot && remoteRoot) {
+    const localTimestamp = readGateTimestamp(localRoot);
+    const remoteTimestamp = readGateTimestamp(remoteRoot);
+    if (remoteTimestamp > localTimestamp) return remoteRoot;
+    if (localTimestamp > 0) return localRoot;
+    return remoteRoot;
+  }
+  return remoteRoot || localRoot || null;
+}
+
+function currentAcademyEvidence() {
+  return getAcademyProductionEvidence(resolveAcademyEvidenceRoot());
+}
+
 const endpointIpcMain = {
   handle(name, handler) {
     if (name !== "endpoint:revoke") {
@@ -31,7 +70,7 @@ endpointRuntime = createEndpointEnrollmentRuntime({
   safeStorage,
   ipcMain: endpointIpcMain,
   academyEvidenceProvider: () => {
-    const evidence = getAcademyProductionEvidence();
+    const evidence = currentAcademyEvidence();
     return { ...evidence, operational: evidence.controlPlaneOperational === true };
   },
 });
@@ -39,6 +78,7 @@ const academyReleaseApproval = createAcademyReleaseApproval({
   store,
   safeStorage,
   endpointRuntime,
+  studioRootProvider: resolveAcademyEvidenceRoot,
 });
 
 function requireObject(value, name) {
@@ -115,6 +155,42 @@ function promoteEndpointBootstrapProfile(profilePath) {
   return endpointPath;
 }
 
+async function synchronizeGithubEvidence(trigger) {
+  try {
+    const result = await academyGithubEvidence.synchronize();
+    store.set("academy.lastGithubSync", {
+      trigger,
+      synchronizedAt: result.synchronizedAt,
+      runId: result.run?.id || null,
+      artifactId: result.artifact?.id || null,
+      gateHash: result.gateHash,
+      stagedCourses: result.stagedCourses,
+      expectedCourses: result.expectedCourses,
+    });
+    endpointRuntime.refresh();
+    return result;
+  } catch (error) {
+    store.set("academy.lastGithubSyncFailure", {
+      trigger,
+      failedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
+}
+
+async function submitDecisionToGithub(decision) {
+  let remoteSnapshot = academyGithubEvidence.snapshot();
+  if (!remoteSnapshot.evidenceAvailable || remoteSnapshot.gate?.gateHash !== decision.gateHash) {
+    await synchronizeGithubEvidence("owner-decision-pre-submit");
+    remoteSnapshot = academyGithubEvidence.snapshot();
+  }
+  if (remoteSnapshot.gate?.gateHash !== decision.gateHash) {
+    throw new Error("The synchronized GitHub approval gate does not match the recorded owner decision.");
+  }
+  return academyGithubEvidence.submitDecision(decision);
+}
+
 const primaryInstance = app.requestSingleInstanceLock();
 if (!primaryInstance) {
   app.quit();
@@ -144,7 +220,9 @@ if (!primaryInstance) {
       return remediationQueue.decide(String(request.proposalId || ""), String(request.decision || ""), String(request.note || ""));
     });
     ipcMain.handle("remediation:execute", async (_event, proposalId) => remediationQueue.execute(String(proposalId || "")));
-    ipcMain.handle("academy:getProductionEvidence", async () => getAcademyProductionEvidence());
+    ipcMain.handle("academy:getProductionEvidence", async () => currentAcademyEvidence());
+    ipcMain.handle("academy:getGithubEvidence", async () => academyGithubEvidence.snapshot());
+    ipcMain.handle("academy:syncGithubEvidence", async () => synchronizeGithubEvidence("owner-requested"));
     ipcMain.handle("academy:getReleaseApproval", async () => academyReleaseApproval.getSnapshot());
     ipcMain.handle("academy:recordReleaseDecision", async (_event, payload) => {
       const request = requireObject(payload, "Academy owner release decision");
@@ -153,18 +231,43 @@ if (!primaryInstance) {
         confirmation: request.confirmation,
         note: request.note,
       });
+      let submission = null;
+      let submissionError = null;
+      try {
+        submission = await submitDecisionToGithub(decision);
+      } catch (error) {
+        submissionError = error instanceof Error ? error.message : String(error);
+      }
       endpointRuntime.refresh();
       return {
         decision,
+        submission,
+        submissionError,
         approval: academyReleaseApproval.getSnapshot(),
-        productionEvidence: getAcademyProductionEvidence(),
+        githubEvidence: academyGithubEvidence.snapshot(),
+        productionEvidence: currentAcademyEvidence(),
       };
+    });
+    ipcMain.handle("academy:submitRecordedReleaseDecision", async () => {
+      const approval = academyReleaseApproval.getSnapshot();
+      if (!approval.decision || approval.currentDecisionMatchesGate !== true) {
+        throw new Error("No current device-bound owner decision is available for GitHub submission.");
+      }
+      return submitDecisionToGithub(approval.decision);
     });
 
     try {
       const profilePath = await waitForBootstrapProfile();
       if (profilePath) promoteEndpointBootstrapProfile(profilePath);
       await endpointRuntime.start();
+      if (academyGithubEvidence.snapshot().tokenConfigured) {
+        await synchronizeGithubEvidence("startup").catch(() => {});
+      }
+      githubSyncTimer = setInterval(() => {
+        if (!academyGithubEvidence.snapshot().tokenConfigured) return;
+        synchronizeGithubEvidence("scheduled").catch(() => {});
+      }, githubSyncIntervalMs);
+      githubSyncTimer.unref?.();
     } catch (error) {
       store.set("endpoint.startupFailure", {
         at: new Date().toISOString(),
@@ -174,6 +277,7 @@ if (!primaryInstance) {
   });
 
   app.on("before-quit", () => {
+    if (githubSyncTimer) clearInterval(githubSyncTimer);
     endpointRuntime.stop().catch(() => {});
   });
 
