@@ -45,6 +45,7 @@ jobs:
         working-directory: owner-command-center
         run: |
           node --check src/endpoint-enrollment-ui.js
+          node --check electron/bootstrap-main.cjs
           node --check electron/main.cjs
           node --check electron/main-with-remediation.cjs
           node --check electron/endpoint-enrollment.cjs
@@ -191,16 +192,21 @@ jobs:
         run: npx electron-builder --linux AppImage deb --${{ matrix.arch }} --publish never
       - name: Verify Linux package inventory
         run: |
-          test -f dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.AppImage
-          test -f dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.deb
-          sha256sum dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.AppImage dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.deb > dist/SHA256SUMS-Linux-${{ matrix.arch }}.txt
+          mapfile -t appimages < <(find dist -maxdepth 1 -type f -name 'Obserra-Owner-AI-Command-Center-0.4.0-*.AppImage' -print | sort)
+          mapfile -t debs < <(find dist -maxdepth 1 -type f -name 'Obserra-Owner-AI-Command-Center-0.4.0-*.deb' -print | sort)
+          test "${#appimages[@]}" -eq 1
+          test "${#debs[@]}" -eq 1
+          test "$(stat -c '%s' "${appimages[0]}")" -gt 1000000
+          test "$(stat -c '%s' "${debs[0]}")" -gt 1000000
+          sha256sum "${appimages[0]}" "${debs[0]}" > dist/SHA256SUMS-Linux-${{ matrix.arch }}.txt
+          printf 'AppImage: %s\nDEB: %s\n' "${appimages[0]}" "${debs[0]}"
       - name: Upload Linux standard installers
         uses: actions/upload-artifact@v4
         with:
           name: Obserra-Command-Center-Standard-Linux-${{ matrix.arch }}-${{ github.sha }}
           path: |
-            owner-command-center/dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.AppImage
-            owner-command-center/dist/Obserra-Owner-AI-Command-Center-0.4.0-${{ matrix.arch }}.deb
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-0.4.0-*.AppImage
+            owner-command-center/dist/Obserra-Owner-AI-Command-Center-0.4.0-*.deb
             owner-command-center/dist/SHA256SUMS-Linux-${{ matrix.arch }}.txt
           if-no-files-found: error
           retention-days: 180
