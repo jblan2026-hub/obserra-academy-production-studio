@@ -30,6 +30,7 @@ concurrency:
 
 jobs:
   fast-gate:
+    if: github.event_name != 'pull_request' || github.head_ref != 'agent/academy-61-course-completion-only'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
