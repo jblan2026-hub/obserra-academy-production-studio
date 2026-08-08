@@ -17,7 +17,7 @@ export type StudioPrincipal = {
   actorType: "user" | "service";
   organizationId?: string;
   role: string;
-  identityProvider?: "supabase" | "clerk" | "machine";
+  identityProvider?: "supabase" | "oidc" | "clerk" | "machine";
 };
 
 const rolePermissions: Record<string, ReadonlySet<StudioPermission>> = {
@@ -40,6 +40,20 @@ const rolePermissions: Record<string, ReadonlySet<StudioPermission>> = {
   "org:publisher": new Set(["build:start", "release:approve"]),
   "org:author": new Set(["course:create", "build:start", "source:collect", "ai:execute"]),
   "org:reviewer": new Set([]),
+};
+
+const roleAliases: Record<string, string> = {
+  admin: "org:admin",
+  owner: "org:admin",
+  executive: "org:executive",
+  publisher: "org:publisher",
+  author: "org:author",
+  reviewer: "org:reviewer",
+  "academy-admin": "org:admin",
+  "academy-executive": "org:executive",
+  "academy-publisher": "org:publisher",
+  "academy-author": "org:author",
+  "academy-reviewer": "org:reviewer",
 };
 
 function secureTokenMatch(provided: string, expected: string): boolean {
@@ -77,18 +91,30 @@ function claimRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
-function normalizeRole(value: unknown): string {
-  const raw = String(value || "").trim().toLowerCase();
-  const aliases: Record<string, string> = {
-    admin: "org:admin",
-    owner: "org:admin",
-    executive: "org:executive",
-    publisher: "org:publisher",
-    author: "org:author",
-    reviewer: "org:reviewer",
-  };
+function mappedRole(value: unknown): string | undefined {
+  const raw = String(value || "").trim().toLowerCase().replace(/^\/+/, "");
+  if (!raw) return undefined;
   if (rolePermissions[raw]) return raw;
-  return aliases[raw] || "org:reviewer";
+  return roleAliases[raw];
+}
+
+function normalizeRole(value: unknown): string {
+  return mappedRole(value) || "org:reviewer";
+}
+
+function firstMappedRole(values: unknown[]): string {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      for (const nested of value) {
+        const role = mappedRole(nested);
+        if (role) return role;
+      }
+      continue;
+    }
+    const role = mappedRole(value);
+    if (role) return role;
+  }
+  return "org:reviewer";
 }
 
 function principalFromSupabasePayload(payload: JWTPayload): StudioPrincipal | null {
@@ -96,12 +122,12 @@ function principalFromSupabasePayload(payload: JWTPayload): StudioPrincipal | nu
   if (!actorId) return null;
   const appMetadata = claimRecord(payload.app_metadata);
   const userMetadata = claimRecord(payload.user_metadata);
-  const role = normalizeRole(
-    appMetadata.studio_role ??
-    appMetadata.role ??
-    userMetadata.studio_role ??
+  const role = firstMappedRole([
+    appMetadata.studio_role,
+    appMetadata.role,
+    userMetadata.studio_role,
     userMetadata.role,
-  );
+  ]);
   const organizationId = stringClaim(
     appMetadata.organization_id ??
     appMetadata.org_id ??
@@ -117,7 +143,34 @@ function principalFromSupabasePayload(payload: JWTPayload): StudioPrincipal | nu
   };
 }
 
+function principalFromOidcPayload(payload: JWTPayload): StudioPrincipal | null {
+  const actorId = stringClaim(payload.sub);
+  if (!actorId) return null;
+  const realmAccess = claimRecord(payload.realm_access);
+  const role = firstMappedRole([
+    payload.studio_role,
+    payload.role,
+    realmAccess.roles,
+    payload.roles,
+    payload.groups,
+  ]);
+  const organizationId = stringClaim(
+    payload.organization_id ??
+    payload.org_id ??
+    payload.tenant_id,
+  ) ?? stringClaim(process.env.STUDIO_AUTH_DEFAULT_ORGANIZATION_ID);
+  return {
+    actorId,
+    actorType: "user",
+    organizationId,
+    role,
+    identityProvider: "oidc",
+  };
+}
+
 let supabaseJwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+let oidcJwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+let resolvedOidcJwksUrl: string | null = null;
 
 async function supabasePrincipal(request: Request): Promise<StudioPrincipal | null> {
   const token = bearerToken(request);
@@ -151,6 +204,37 @@ async function supabasePrincipal(request: Request): Promise<StudioPrincipal | nu
   }
 }
 
+async function oidcJwksSet(): Promise<ReturnType<typeof createRemoteJWKSet>> {
+  if (oidcJwks) return oidcJwks;
+  let jwksUrl = backendConfig.oidcJwksUrl;
+  if (!jwksUrl) {
+    if (!backendConfig.oidcIssuer) throw new Error("OIDC issuer is not configured");
+    const discoveryResponse = await fetch(`${backendConfig.oidcIssuer}/.well-known/openid-configuration`, { cache: "no-store" });
+    if (!discoveryResponse.ok) throw new Error(`OIDC discovery failed with HTTP ${discoveryResponse.status}`);
+    const discovery = await discoveryResponse.json() as { jwks_uri?: string };
+    jwksUrl = String(discovery.jwks_uri || "").trim();
+    if (!jwksUrl) throw new Error("OIDC discovery did not provide jwks_uri");
+  }
+  resolvedOidcJwksUrl = jwksUrl;
+  oidcJwks = createRemoteJWKSet(new URL(jwksUrl), { cooldownDuration: 60_000, cacheMaxAge: 10 * 60_000 });
+  return oidcJwks;
+}
+
+async function oidcPrincipal(request: Request): Promise<StudioPrincipal | null> {
+  const token = bearerToken(request);
+  if (!token || !backendConfig.oidcIssuer) return null;
+  try {
+    const jwks = await oidcJwksSet();
+    const { payload } = await jwtVerify(token, jwks, {
+      issuer: backendConfig.oidcIssuer,
+      ...(backendConfig.oidcAudience ? { audience: backendConfig.oidcAudience } : {}),
+    });
+    return principalFromOidcPayload(payload);
+  } catch {
+    return null;
+  }
+}
+
 async function clerkPrincipal(): Promise<StudioPrincipal | null> {
   try {
     const { auth } = await import("@clerk/nextjs/server");
@@ -171,6 +255,7 @@ async function clerkPrincipal(): Promise<StudioPrincipal | null> {
 async function interactivePrincipal(request: Request): Promise<StudioPrincipal | null> {
   if (backendConfig.authProvider === "machine-only") return null;
   if (backendConfig.authProvider === "clerk") return clerkPrincipal();
+  if (backendConfig.authProvider === "oidc") return oidcPrincipal(request);
   return supabasePrincipal(request);
 }
 
@@ -200,4 +285,15 @@ export async function authorizeStudioRequest(
   }
 
   return { principal };
+}
+
+export function studioAuthDiagnostics() {
+  return {
+    provider: backendConfig.authProvider,
+    supabaseConfigured: Boolean(backendConfig.supabaseUrl),
+    oidcConfigured: Boolean(backendConfig.oidcIssuer),
+    oidcJwksResolved: resolvedOidcJwksUrl,
+    clerkConfigured: Boolean(process.env.CLERK_SECRET_KEY),
+    machineConfigured: Boolean(process.env.STUDIO_MACHINE_TOKEN),
+  };
 }
