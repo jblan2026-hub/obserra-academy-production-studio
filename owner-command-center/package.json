@@ -1,15 +1,15 @@
 {
   "name": "obserra-owner-ai-command-center",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
-  "description": "Owner-only Obserra desktop command center with immediate visible startup, resilient background monitoring, performance telemetry, standard installers, and explicit device enrollment.",
+  "description": "Owner-only Obserra desktop command center with functional category pages, device enrollment, AI health, HTTPS and HTML monitoring, Academy review queues, resilient startup, and standard installers.",
   "homepage": "https://www.obserrallc.com",
   "desktopName": "Obserra Owner AI Command Center",
   "author": {
     "name": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
     "email": "info@obserrallc.com"
   },
-  "main": "electron/bootstrap-main.cjs",
+  "main": "electron/entrypoint.cjs",
   "type": "module",
   "scripts": {
     "start": "electron .",
@@ -20,7 +20,8 @@
     "verify:github-evidence": "node scripts/verify-academy-github-evidence.mjs",
     "verify:remote-cache": "node scripts/verify-academy-remote-evidence-cache.mjs",
     "verify:startup": "node scripts/verify-packaged-startup-contract.mjs",
-    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-packaged-startup-contract.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-endpoint-enrollment.mjs && node scripts/verify-academy-production-evidence.mjs && node scripts/verify-academy-release-approval.mjs && node scripts/verify-academy-github-evidence.mjs && node scripts/verify-academy-remote-evidence-cache.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
+    "verify:dashboard": "node scripts/verify-dashboard-navigation.mjs",
+    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-packaged-startup-contract.mjs && node scripts/verify-dashboard-navigation.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-endpoint-enrollment.mjs && node scripts/verify-academy-production-evidence.mjs && node scripts/verify-academy-release-approval.mjs && node scripts/verify-academy-github-evidence.mjs && node scripts/verify-academy-remote-evidence-cache.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
     "package:windows": "electron-builder --win nsis portable --x64 --arm64 --publish never",
     "package:windows:x64": "electron-builder --win nsis portable --x64 --publish never",
     "package:windows:arm64": "electron-builder --win nsis portable --arm64 --publish never",
@@ -145,7 +146,7 @@
       "maintainer": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC <info@obserrallc.com>",
       "vendor": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
       "synopsis": "Private owner command center for the Obserra ecosystem",
-      "description": "Owner-only desktop command center for governed Obserra operations, evidence, monitoring, and approvals.",
+      "description": "Owner-only desktop command center for governed Obserra operations, evidence, monitoring, approvals, network analysis, and Academy course review.",
       "target": [
         {
           "target": "AppImage",
