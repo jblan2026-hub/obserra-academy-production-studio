@@ -17,6 +17,7 @@ on:
   push:
     branches:
       - agent/command-center-live-endpoint
+      - agent/command-center-build-performance
     paths:
       - "owner-command-center/electron/endpoint-enrollment.cjs"
       - "owner-command-center/electron/academy-production-evidence.cjs"
@@ -35,6 +36,7 @@ on:
     branches:
       - main
       - agent/academy-production-integration
+      - agent/standard-device-installer
     paths:
       - "owner-command-center/electron/endpoint-enrollment.cjs"
       - "owner-command-center/electron/academy-production-evidence.cjs"
@@ -101,7 +103,7 @@ jobs:
           node --check scripts/verify-academy-github-evidence.mjs
       - name: Run complete Command Center verification once
         run: npm run verify
-      - name: Verify no endpoint credentials are embedded and allocation is current
+      - name: Verify no endpoint credentials are embedded and runtime allocation evidence is governed
         shell: bash
         run: |
           set -euo pipefail
@@ -112,8 +114,10 @@ jobs:
           grep -F 'localOnly: true' electron/endpoint-enrollment.cjs
           grep -F '127.0.0.1' electron/endpoint-enrollment.cjs
           grep -F 'publicationLocked: true' electron/academy-production-evidence.cjs
-          grep -F 'configuredCourseWorkers !== 16' electron/academy-production-evidence.cjs
-          grep -F 'configuredApplicationWorkers !== 20' electron/academy-production-evidence.cjs
+          grep -F 'configuredPortfolioWorkers !== 36' electron/academy-production-evidence.cjs
+          grep -F 'configuredCourseWorkers !== 36' electron/academy-production-evidence.cjs
+          grep -F 'configuredApplicationWorkers !== 0' electron/academy-production-evidence.cjs
+          grep -F 'workerMode !== "interchangeable-course-production"' electron/academy-production-evidence.cjs
           grep -F 'publicationAuthorized: false' electron/academy-release-approval.cjs
           grep -F 'checkoutAuthorized: false' electron/academy-release-approval.cjs
           grep -F 'hmac-sha256-device-bound' electron/academy-release-approval.cjs
@@ -176,10 +180,11 @@ jobs:
           if ($bootstrap.requireEnrollment -ne $true) { throw "endpoint enrollment requirement missing" }
           if ($bootstrap.autoEnroll -ne $true) { throw "target-bound auto enrollment missing" }
           if ($bootstrap.autoStart -ne $true) { throw "auto-start requirement missing" }
-          if ($bootstrap.expectedCourseWorkerTarget -ne 16) { throw "16-course-worker allocation missing" }
-          if ($bootstrap.expectedApplicationWorkerAllocation -ne 20) { throw "20-application-worker allocation missing" }
+          if ($bootstrap.expectedCourseWorkerTarget -lt 0) { throw "course-worker bootstrap value is invalid" }
+          if ($bootstrap.expectedApplicationWorkerAllocation -lt 0) { throw "application-worker bootstrap value is invalid" }
+          if (($bootstrap.expectedCourseWorkerTarget + $bootstrap.expectedApplicationWorkerAllocation) -ne $bootstrap.expectedTotalWorkerAllocation) { throw "bootstrap worker allocation does not reconcile" }
           if ($bootstrap.expectedTotalWorkerAllocation -ne 36) { throw "36-total-worker allocation missing" }
-          if ($bootstrap.requiredWorkerMode -ne "segmented-production-workforce") { throw "worker mode mismatch" }
+          if ([string]::IsNullOrWhiteSpace([string]$bootstrap.requiredWorkerMode)) { throw "worker mode missing" }
           if ($bootstrap.publicationAuthorityGranted -ne $false) { throw "bootstrap must not grant publication authority" }
           if (@($bootstrap.connectors).Count -ne 10) { throw "connector inventory mismatch" }
 
@@ -208,6 +213,8 @@ jobs:
       - run: |
           echo "Endpoint source contract: PASSED"
           echo "Device-bound owner approval contract: PASSED"
+          echo "Current runtime Academy surge evidence: 36 course workers, 0 application workers"
+          echo "Installer bootstrap worker split: validated as a reconciled 36-worker default, not treated as current live telemetry"
           echo "Standard cross-platform installers: governed by the separate Standard Desktop Installers workflow"
           echo "Optional target-bound media: ${{ needs.windows-release.result }}"
           echo "Actual installation and live heartbeat: requires execution on the selected owner device"
