@@ -1,25 +1,15 @@
 name: Academy 61 Course Completion Only
-run-name: 61-course completion • ${{ github.ref_name }} • ${{ github.sha }}
+run-name: manual 61-course completion fallback • ${{ github.ref_name }} • ${{ github.sha }}
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "courses/**"
-      - "sources/**"
-      - "studio/**"
-      - "prisma/**"
-      - "package.json"
-      - ".github/workflows/academy-61-course-completion-only.yml"
 
 permissions:
   contents: read
   id-token: write
 
 concurrency:
-  group: academy-61-course-completion-only
+  group: academy-61-course-completion-only-manual
   cancel-in-progress: false
 
 env:
@@ -79,7 +69,7 @@ env:
 
 jobs:
   complete-all-courses:
-    name: Local-only finish, review, render, verify, and privately back up all 61 courses
+    name: Manual local-only finish, review, render, verify, and private-backup fallback
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -247,7 +237,7 @@ jobs:
           const model = JSON.parse(fs.readFileSync('catalog/academy-local-ollama-evidence-summary.json','utf8'));
           const media = JSON.parse(fs.readFileSync('catalog/academy-61-local-media-render-summary.json','utf8'));
           if (Number(model.estimatedApiCostUsd) !== 0 || model.externalPaidApiUsed !== false) throw new Error('Model API evidence is not zero-cost.');
-          if (Number(media.estimatedApiCostUsd) !== 0 || media.externalPaidMediaProviderUsed !== false) throw new Error('Media API evidence is not zero-cost.');
+          if (Number(media.estimatedApiCostUsd) !== 0 || media.externalPaidMediaProviderUsed !== false) throw new Error('Media evidence is not zero-cost.');
           console.log('Zero commercial model/media API use verified from generated evidence.');
           NODE
 
