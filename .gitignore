@@ -16,6 +16,7 @@ catalog/academy-hollywood-compliance-staging.json
 catalog/academy-hollywood-media-submission.json
 catalog/academy-hollywood-media-checkpoint-restore.json
 catalog/academy-hollywood-media-reconciliation.json
+catalog/academy-hollywood-final-media-verification.json
 catalog/academy-hollywood-lcms-load-plan.json
 catalog/academy-hollywood-lcms-load-result.json
 catalog/academy-release-approval-gate.json
