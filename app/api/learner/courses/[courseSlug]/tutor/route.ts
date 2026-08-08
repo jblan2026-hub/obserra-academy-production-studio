@@ -1,7 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
 import { canPerformFinalCourseReview } from "@/lib/final-review-auth";
 import { finalReviewTutorRuntimeUrl } from "@/lib/final-review-tutor-url";
+import { requireOrganization } from "@/lib/organization-service";
 import { getFinalReviewReadiness } from "@/lib/repositories/final-review-repository";
+import { authenticateStudioRequest } from "@/lib/studio-auth";
 
 export const runtime = "nodejs";
 
@@ -52,16 +53,19 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ courseSlug: string }> },
 ): Promise<Response> {
-  const { userId, orgId, orgRole } = await auth();
-  if (!userId || !orgId) {
-    return Response.json({ error: "Authentication and organization context are required." }, { status: 401 });
+  const authentication = await authenticateStudioRequest(request);
+  if (!authentication.principal) {
+    return Response.json({ error: authentication.reason ?? "Authentication and organization context are required." }, { status: 401 });
   }
-  if (!canPerformFinalCourseReview(userId, orgRole)) {
+
+  const principal = authentication.principal;
+  if (!canPerformFinalCourseReview(principal.actorId, principal.role)) {
     return Response.json({ error: "Owner final review access is required." }, { status: 403 });
   }
 
+  const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
   const { courseSlug } = await params;
-  const readiness = await getFinalReviewReadiness(orgId, courseSlug);
+  const readiness = await getFinalReviewReadiness(organization.clerkOrganizationId, courseSlug);
   if (!readiness?.ready || !readiness.preview) {
     return Response.json(
       { error: "The exact final learner package is not ready for owner review." },
@@ -109,7 +113,7 @@ export async function POST(
         lessonId,
         prompt,
         reviewMode: "owner-final",
-        reviewerId: userId,
+        reviewerId: principal.actorId,
       }),
       cache: "no-store",
       signal: AbortSignal.timeout(30_000),
