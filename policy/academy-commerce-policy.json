@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0",
+  "policyId": "obserra-academy-final-sale",
+  "effectiveDate": "2026-08-08",
+  "appliesTo": [
+    "obserra-academy-course-purchases"
+  ],
+  "salesPolicy": {
+    "allSalesFinal": true,
+    "headline": "All Sales Are Final",
+    "checkoutNotice": "All Obserra Academy course sales are final once payment is completed, except where a refund, cancellation, or other remedy is required by applicable law.",
+    "acknowledgementRequired": true,
+    "acknowledgementText": "I understand and agree that this Obserra Academy purchase is final once payment is completed, except where a refund, cancellation, or other remedy is required by applicable law.",
+    "receiptNotice": "ALL SALES ARE FINAL. This Obserra Academy course purchase is final once payment is completed, except where a refund, cancellation, or other remedy is required by applicable law.",
+    "confirmationNotice": "Payment received. Your Obserra Academy purchase is final, except where a refund, cancellation, or other remedy is required by applicable law.",
+    "legalException": "Nothing in this policy limits rights or remedies that cannot lawfully be waived or excluded under applicable law."
+  },
+  "checkoutRequirements": {
+    "displayBeforePayment": true,
+    "requireTermsAcceptance": true,
+    "displayRefundPolicy": true,
+    "linkTermsOfService": true,
+    "linkPrivacyPolicy": true,
+    "doNotCollectPrimaryCardData": true,
+    "paymentProcessor": "Stripe"
+  },
+  "receiptRequirements": {
+    "emailReceiptEnabled": true,
+    "includeFinalSaleNoticeWhereStripeCustomizationSupportsIt": true,
+    "includeCourseName": true,
+    "includeAmountAndCurrency": true,
+    "excludeCardNumber": true,
+    "excludeCvc": true,
+    "excludeInternalCustomerIdentifiers": true
+  }
+}
