@@ -1,5 +1,14 @@
 export const ACADEMY_AUTHORING_POLICY_VERSION = "2026.08.08.2";
 
+const DEFAULT_FINAL_ASSESSMENT_QUESTIONS = 30;
+const commandLineCourseIndex = process.argv.indexOf("--course");
+const commandLineCourseId =
+  commandLineCourseIndex >= 0 ? process.argv[commandLineCourseIndex + 1] : null;
+const commandLineAssessmentMinimum =
+  commandLineCourseId === "pmp-exam-prep-business-application"
+    ? 180
+    : DEFAULT_FINAL_ASSESSMENT_QUESTIONS;
+
 export const ACADEMY_AUTHORING_QUALITY_REQUIREMENTS = Object.freeze({
   lessonNarrativeWords: 1200,
   learningObjectives: 6,
@@ -8,7 +17,7 @@ export const ACADEMY_AUTHORING_QUALITY_REQUIREMENTS = Object.freeze({
   slideNarratives: 10,
   videoSegments: 8,
   accessibilityNotes: 4,
-  finalAssessmentQuestions: 30,
+  finalAssessmentQuestions: commandLineAssessmentMinimum,
   finalAssessmentOptions: 4,
 });
 
@@ -30,10 +39,7 @@ export function requiredFinalAssessmentQuestions(manifest) {
   ]
     .map((value) => Number(value))
     .filter((value) => Number.isInteger(value) && value > 0);
-  return Math.max(
-    ACADEMY_AUTHORING_QUALITY_REQUIREMENTS.finalAssessmentQuestions,
-    ...candidates,
-  );
+  return Math.max(DEFAULT_FINAL_ASSESSMENT_QUESTIONS, ...candidates);
 }
 
 export function academyAuthoringQualityContract(manifest = null) {
@@ -42,7 +48,7 @@ export function academyAuthoringQualityContract(manifest = null) {
     ...ACADEMY_AUTHORING_QUALITY_REQUIREMENTS,
     requiredFinalAssessmentQuestions:
       manifest === null
-        ? ACADEMY_AUTHORING_QUALITY_REQUIREMENTS.finalAssessmentQuestions
+        ? commandLineAssessmentMinimum
         : requiredFinalAssessmentQuestions(manifest),
   };
 }
