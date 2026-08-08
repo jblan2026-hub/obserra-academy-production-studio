@@ -7,8 +7,13 @@ on:
       - agent/academy-36-worker-course-surge
     paths:
       - "policy/elastic-worker-pool-contract.json"
+      - "policy/commercial-cinematic-course-production-standard.json"
       - "studio/worker-pool-contract.mjs"
       - "studio/verify-worker-pool-contract.mjs"
+      - "studio/verify-commercial-course-production-standard.mjs"
+      - "studio/validate-commercial-implementation-guidance.mjs"
+      - "studio/enrich-commercial-implementation-guidance.mjs"
+      - "studio/author-course-with-checkpoint.mjs"
       - "studio/author-courses-parallel.mjs"
       - "package.json"
       - ".github/workflows/verify-elastic-worker-contract.yml"
@@ -18,8 +23,13 @@ on:
       - agent/continue-course-buildout
     paths:
       - "policy/elastic-worker-pool-contract.json"
+      - "policy/commercial-cinematic-course-production-standard.json"
       - "studio/worker-pool-contract.mjs"
       - "studio/verify-worker-pool-contract.mjs"
+      - "studio/verify-commercial-course-production-standard.mjs"
+      - "studio/validate-commercial-implementation-guidance.mjs"
+      - "studio/enrich-commercial-implementation-guidance.mjs"
+      - "studio/author-course-with-checkpoint.mjs"
       - "studio/author-courses-parallel.mjs"
       - "package.json"
       - ".github/workflows/verify-elastic-worker-contract.yml"
@@ -46,30 +56,42 @@ jobs:
           node-version: "22"
 
       - name: Verify contract structure, allocation, roles, prohibitions, and launcher binding
-        run: node studio/verify-worker-pool-contract.mjs
+        run: npm run verify:worker-contract
 
-      - name: Verify package gates invoke the contract verifier
+      - name: Verify package gates invoke both governed verifiers
         shell: bash
         run: |
           node <<'NODE'
           const fs = require('node:fs');
           const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
           const scripts = packageJson.scripts ?? {};
-          if (scripts['verify:worker-contract'] !== 'node studio/verify-worker-pool-contract.mjs') {
-            throw new Error('verify:worker-contract is missing or incorrect.');
+          const workerGate = String(scripts['verify:worker-contract'] ?? '');
+          if (!workerGate.includes('studio/verify-worker-pool-contract.mjs')) {
+            throw new Error('verify:worker-contract does not invoke the elastic worker contract verifier.');
+          }
+          if (!workerGate.includes('verify:course-production-standard')) {
+            throw new Error('verify:worker-contract does not invoke the commercial course production verifier.');
+          }
+          if (scripts['verify:course-production-standard'] !== 'node studio/verify-commercial-course-production-standard.mjs') {
+            throw new Error('verify:course-production-standard is missing or incorrect.');
+          }
+          if (!String(scripts['validate:learner-catalog'] ?? '').includes('validate-commercial-implementation-guidance.mjs')) {
+            throw new Error('validate:learner-catalog does not enforce the commercial implementation-guidance gate.');
           }
           for (const name of ['verify:public', 'verify:protected', 'verify:70x', 'verify:500x', 'verify:1000x', 'verify:2000x', 'ci']) {
             if (!String(scripts[name] ?? '').includes('verify:worker-contract')) {
-              throw new Error(`${name} does not enforce the worker contract gate.`);
+              throw new Error(`${name} does not enforce the composite worker and commercial-course contract gate.`);
             }
           }
-          console.log('All governed package verification paths enforce the worker contract.');
+          console.log('All governed package verification paths enforce both the worker contract and commercial course production standard.');
           NODE
 
       - name: Upload contract verification evidence
         uses: actions/upload-artifact@v4
         with:
           name: elastic-worker-contract-${{ github.sha }}
-          path: catalog/worker-pool-contract-verification.json
+          path: |
+            catalog/worker-pool-contract-verification.json
+            catalog/commercial-course-production-standard-verification.json
           if-no-files-found: error
           retention-days: 365
