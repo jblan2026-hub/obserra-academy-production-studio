@@ -1,5 +1,4 @@
-name: Legacy Academy 36 Worker Hollywood Production Disabled
-run-name: legacy commercial Academy production disabled
+name: Legacy Academy 36 Worker Production Disabled
 
 on:
   workflow_dispatch:
@@ -8,15 +7,10 @@ permissions:
   contents: read
 
 jobs:
-  superseded:
-    name: Confirm authoritative zero cost production path
-    runs-on: ubuntu-24.04
+  blocked:
+    runs-on: ubuntu-latest
     steps:
-      - name: Explain safe production path
-        shell: bash
+      - name: Reject legacy execution route
         run: |
-          set -euo pipefail
-          echo "This legacy workflow is intentionally disabled."
-          echo "It previously permitted paid model and commercial video provider execution."
-          echo "The authoritative production path is .github/workflows/academy-zero-cost-sharded-completion.yml."
-          echo "No model, media, database, deployment, or protected-content action was performed."
+          echo "This legacy Academy workflow is disabled. Use .github/workflows/academy-zero-cost-sharded-completion.yml."
+          exit 1

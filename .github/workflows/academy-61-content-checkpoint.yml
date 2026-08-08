@@ -1,156 +1,16 @@
-name: Academy 61 Course Content Checkpoint
-run-name: manual 61-course protected content fallback • ${{ github.ref_name }} • ${{ github.sha }}
+name: Legacy Academy 61 Content Checkpoint Disabled
 
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
-  id-token: write
-
-concurrency:
-  group: academy-61-content-checkpoint-manual
-  cancel-in-progress: false
-
-env:
-  NPM_CONFIG_AUDIT: "false"
-  NPM_CONFIG_FUND: "false"
-  NPM_CONFIG_PROGRESS: "false"
-  NPM_CONFIG_UPDATE_NOTIFIER: "false"
-  OBSERRA_PORTFOLIO_WORKER_COUNT: "36"
-  OBSERRA_APPLICATION_WORKER_COUNT: "0"
-  ACADEMY_COURSE_WORKER_COUNT: "36"
-  ACADEMY_WORKER_MODE: interchangeable-course-production
-  ACADEMY_EXPECTED_SURGE_COURSES: "61"
-  ACADEMY_EXPECTED_REVIEW_COURSES: "61"
-  ACADEMY_SURGE_EXCLUDED_COURSE_IDS: __none__
-  ACADEMY_MINIMUM_LESSON_WORDS: "1200"
-  ACADEMY_MINIMUM_EXACT_SOURCES_PER_COURSE: "2"
-  ACADEMY_EXECUTION_MODE: local-ollama-zero-model-api-cost
-  ACADEMY_RESEARCH_CONCURRENCY: "1"
-  ACADEMY_AUTHORING_CONCURRENCY: "1"
-  ACADEMY_REVIEW_CONCURRENCY: "1"
-  ACADEMY_LOCAL_CANARY_COUNT: "1"
-  ACADEMY_AUTHORING_MAX_ATTEMPTS: "2"
-  ACADEMY_RESEARCH_MAX_ATTEMPTS: "2"
-  ACADEMY_REVIEW_MAX_ATTEMPTS: "2"
-  ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: "5400000"
-  ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: "3600000"
-  ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: "true"
-  ACADEMY_FREE_SOURCE_MAX_BYTES: "8388608"
-  ACADEMY_FREE_SOURCE_TIMEOUT_MS: "30000"
-  ACADEMY_FREE_SOURCE_EXCERPT_CHARACTERS: "12000"
-  ACADEMY_DIRECT_SOURCE_CANDIDATES: "10"
-  ACADEMY_DIRECT_SOURCE_TARGET: "6"
-  ACADEMY_AUTHORING_PROVIDER: local
-  ACADEMY_RESEARCH_PROVIDER: local
-  ACADEMY_REVIEW_PROVIDER: local
-  LOCAL_AI_BASE_URL: http://127.0.0.1:11434
-  LOCAL_AI_MODEL: qwen2.5:7b-instruct
-  LOCAL_RESEARCH_MODEL: qwen2.5:7b-instruct
-  LOCAL_REVIEW_MODEL: qwen2.5:7b-instruct
-  LOCAL_AI_TIMEOUT_MS: "3600000"
-  LOCAL_AI_NUM_CTX: "32768"
-  ACADEMY_LOCAL_CONTEXT_MAX_CHARS: "100000"
-  OLLAMA_NO_CLOUD: "1"
-  OLLAMA_KEEP_ALIVE: "30m"
-  STUDIO_ALLOW_PAID_AI: "false"
-  OPENAI_API_KEY: ""
-  ANTHROPIC_API_KEY: ""
-  STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
-  ACADEMY_CHECKPOINT_GATEWAY_URL: https://nwxnyqlyzyufgoadtqxs.supabase.co/functions/v1/academy-checkpoint-gateway
 
 jobs:
-  checkpoint-all-course-content:
-    name: Manual local-only research, author, review, and checkpoint fallback
-    runs-on: ubuntu-24.04
-    timeout-minutes: 720
+  blocked:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout course production source
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Configure Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
-
-      - name: Install pinned Ollama local runtime
-        shell: bash
+      - name: Reject legacy execution route
         run: |
-          set -euo pipefail
-          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=0.30.8 sh
-          ollama --version
-
-      - name: Start Ollama in local-only mode and pull local model
-        shell: bash
-        run: |
-          set -euo pipefail
-          export OLLAMA_NO_CLOUD=1
-          nohup ollama serve > /tmp/academy-ollama.log 2>&1 &
-          for attempt in $(seq 1 60); do
-            if curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
-            sleep 2
-          done
-          curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null
-          ollama pull "$LOCAL_AI_MODEL"
-          ollama list
-
-      - name: Verify all 36 logical workers are assigned only to Academy
-        run: node studio/verify-academy-61-worker-contract.mjs
-
-      - name: Preflight protected OIDC checkpoint gateway
-        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
-
-      - name: Apply governed course policy
-        run: npm run apply:course-policy
-
-      - name: Restore matching protected course checkpoints before local generation
-        run: node studio/restore-academy-hollywood-checkpoints.mjs
-
-      - name: Reject restored packages with stale source context
-        run: node studio/prune-stale-restored-course-packages.mjs
-
-      - name: Download canonical authoritative sources without model API cost
-        run: node studio/fetch-free-authoritative-source-cache.mjs
-
-      - name: Build deterministic source context from authoritative registry and cache
-        run: node studio/build-free-course-source-context.mjs
-
-      - name: Research all missing course evidence through direct primary sources and local Ollama
-        run: node studio/research-all-61-courses.mjs
-
-      - name: Merge researched primary sources into governed runtime registry
-        run: node studio/merge-61-course-research-registry.mjs
-
-      - name: Author and checkpoint all 61 governed course packages through local Ollama only
-        run: node studio/author-all-61-cinematic-parallel.mjs
-
-      - name: Materialize learner, instructor, assessment, accessibility, rights, and certificate assets
-        run: node studio/materialize-hollywood-course-assets.mjs
-
-      - name: Validate all 61 structural packages and exact source mappings
-        run: node studio/validate-academy-hollywood-surge.mjs
-
-      - name: Independently review all courses through local Ollama only
-        run: node studio/review-all-61-courses.mjs
-
-      - name: Confirm zero commercial model credentials and native local providers
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$ACADEMY_AUTHORING_PROVIDER" = "local"
-          test "$ACADEMY_RESEARCH_PROVIDER" = "local"
-          test "$ACADEMY_REVIEW_PROVIDER" = "local"
-          test -z "$OPENAI_API_KEY"
-          test -z "$ANTHROPIC_API_KEY"
-          test "$STUDIO_ALLOW_PAID_AI" = "false"
-          test "$OLLAMA_NO_CLOUD" = "1"
-          echo "Academy content lane is native local-model-only with estimated model API cost $0."
-
-      - name: Confirm protected checkpoint count
-        run: node studio/verify-protected-61-checkpoint-count.mjs
+          echo "This legacy Academy workflow is disabled. Use .github/workflows/academy-zero-cost-sharded-completion.yml."
+          exit 1

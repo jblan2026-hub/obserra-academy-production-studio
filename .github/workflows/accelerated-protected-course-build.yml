@@ -1,5 +1,4 @@
 name: Legacy Accelerated Protected Course Build Disabled
-run-name: legacy accelerated course build disabled
 
 on:
   workflow_dispatch:
@@ -8,15 +7,10 @@ permissions:
   contents: read
 
 jobs:
-  superseded:
-    name: Confirm authoritative Academy pipeline
-    runs-on: ubuntu-24.04
+  blocked:
+    runs-on: ubuntu-latest
     steps:
-      - name: Explain safe production path
-        shell: bash
+      - name: Reject legacy execution route
         run: |
-          set -euo pipefail
-          echo "This legacy workflow is intentionally disabled."
-          echo "It previously allowed paid model execution and public workflow artifacts containing protected course output."
-          echo "The authoritative production path is .github/workflows/academy-zero-cost-sharded-completion.yml."
-          echo "No model, media, database, or protected-content action was performed."
+          echo "This legacy Academy workflow is disabled. Use .github/workflows/academy-zero-cost-sharded-completion.yml."
+          exit 1
