@@ -1,5 +1,5 @@
 name: Academy Zero Cost Sharded Completion
-run-name: zero-cost 61-course sharded completion • ${{ github.ref_name }} • ${{ github.sha }}
+run-name: zero-cost 61-course parallel completion • ${{ github.ref_name }} • ${{ github.sha }}
 
 on:
   workflow_dispatch:
@@ -48,7 +48,7 @@ env:
   ACADEMY_SURGE_EXCLUDED_COURSE_IDS: __none__
   ACADEMY_MINIMUM_LESSON_WORDS: "1200"
   ACADEMY_MINIMUM_EXACT_SOURCES_PER_COURSE: "2"
-  ACADEMY_SHARD_COUNT: "16"
+  ACADEMY_SHARD_COUNT: "61"
   ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS: "2"
   ACADEMY_EXECUTION_MODE: local-ollama-zero-commercial-api-cost
   ACADEMY_AUTHORING_PROVIDER: local
@@ -72,6 +72,7 @@ env:
   ACADEMY_FREE_SOURCE_MAX_BYTES: "8388608"
   ACADEMY_FREE_SOURCE_TIMEOUT_MS: "30000"
   ACADEMY_FREE_SOURCE_EXCERPT_CHARACTERS: "12000"
+  ACADEMY_FREE_SOURCE_CACHE_TTL_HOURS: "24"
   ACADEMY_OLLAMA_PROXY_PORT: "11436"
   ACADEMY_OLLAMA_UPSTREAM_PORT: "11434"
   ACADEMY_OLLAMA_PROXY_TIMEOUT_MS: "3600000"
@@ -80,6 +81,8 @@ env:
   OLLAMA_LINUX_AMD64_SHA256: ffe2b2c2f2f5f5b30c081ec353c2e0bb2d9ead516064a8e22663b24b8fd8dca0
   OLLAMA_NO_CLOUD: "1"
   OLLAMA_KEEP_ALIVE: "30m"
+  OLLAMA_NUM_PARALLEL: "1"
+  OLLAMA_MAX_LOADED_MODELS: "1"
   STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
   STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
   ACADEMY_CHECKPOINT_GATEWAY_URL: https://nwxnyqlyzyufgoadtqxs.supabase.co/functions/v1/academy-checkpoint-gateway
@@ -90,15 +93,46 @@ env:
   ACADEMY_PRIVATE_BACKUP_ROOT: private-backups/academy/61-course-completion
 
 jobs:
+  prepare-source-cache:
+    name: Prepare shared governed primary-source cache
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout governed Academy source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Preflight protected checkpoint gateway before parallel launch
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
+
+      - name: Restore shared governed public evidence cache
+        id: source-cache
+        uses: actions/cache@v4
+        with:
+          path: .academy-cache/authoritative-sources
+          key: academy-public-evidence-v2-${{ hashFiles('sources/authoritative-sources.json', 'sources/documented-cases.json') }}
+          restore-keys: |
+            academy-public-evidence-v2-
+
+      - name: Refresh authoritative authorities and documented cases once
+        run: node studio/fetch-free-authoritative-source-cache.mjs
+
   content-shards:
-    name: Local course shard ${{ matrix.shard }} of 16
+    name: Local course ${{ matrix.shard }} of 61
+    needs: prepare-source-cache
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     strategy:
       fail-fast: false
-      max-parallel: 16
+      max-parallel: 61
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]
     env:
       ACADEMY_SHARD_INDEX: ${{ matrix.shard }}
     steps:
@@ -124,20 +158,31 @@ jobs:
           test "$STUDIO_ALLOW_PAID_AI" = "false"
           test "$OLLAMA_NO_CLOUD" = "1"
           test "$LOCAL_AI_BASE_URL" = "http://127.0.0.1:11436"
+          test "$ACADEMY_SHARD_COUNT" = "61"
 
       - name: Preflight protected checkpoint gateway before expensive setup
         run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
 
       - name: Apply governed course policy
-        run: npm run apply:course-policy
+        run: node studio/apply-course-policy.mjs
 
-      - name: Restore reusable protected checkpoints
+      - name: Restore reusable protected checkpoint for this course
         run: node studio/restore-academy-hollywood-checkpoints.mjs
 
-      - name: Reject stale restored packages
+      - name: Reject stale restored package
         run: node studio/prune-stale-restored-course-packages.mjs
 
-      - name: Download authoritative primary-source cache at zero model cost
+      - name: Restore shared governed public evidence cache
+        id: source-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .academy-cache/authoritative-sources
+          key: academy-public-evidence-v2-${{ hashFiles('sources/authoritative-sources.json', 'sources/documented-cases.json') }}
+          restore-keys: |
+            academy-public-evidence-v2-
+
+      - name: Rebuild evidence cache only if shared cache restore missed
+        if: steps.source-cache.outputs.cache-hit != 'true'
         run: node studio/fetch-free-authoritative-source-cache.mjs
 
       - name: Build deterministic course source context
@@ -165,13 +210,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          nohup env OLLAMA_NO_CLOUD=1 OLLAMA_KEEP_ALIVE="$OLLAMA_KEEP_ALIVE" ollama serve > /tmp/academy-ollama.log 2>&1 &
+          nohup env \
+            OLLAMA_NO_CLOUD=1 \
+            OLLAMA_KEEP_ALIVE="$OLLAMA_KEEP_ALIVE" \
+            OLLAMA_NUM_PARALLEL="$OLLAMA_NUM_PARALLEL" \
+            OLLAMA_MAX_LOADED_MODELS="$OLLAMA_MAX_LOADED_MODELS" \
+            ollama serve > /tmp/academy-ollama.log 2>&1 &
           for attempt in $(seq 1 90); do
             if curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
             sleep 2
           done
           curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null
-          ollama pull "$LOCAL_AI_MODEL"
+          if ! ollama show "$LOCAL_AI_MODEL" >/dev/null 2>&1; then
+            ollama pull "$LOCAL_AI_MODEL"
+          fi
           ollama list
 
       - name: Start long-running local Ollama keepalive transport
@@ -185,10 +237,10 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:11436/health
 
-      - name: Research, author, independently review, and checkpoint this shard
+      - name: Research, author, independently review, and checkpoint this course
         run: node .github/scripts/run-academy-zero-cost-shard.mjs
 
-      - name: Emit local inference diagnostics on shard failure
+      - name: Emit local inference diagnostics on course failure
         if: failure()
         shell: bash
         run: |
@@ -215,7 +267,7 @@ jobs:
         run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); })"
 
       - name: Apply governed course policy
-        run: npm run apply:course-policy
+        run: node studio/apply-course-policy.mjs
 
       - name: Restore all protected packages, research, and independent reviews
         run: node studio/restore-academy-hollywood-checkpoints.mjs
@@ -264,7 +316,7 @@ jobs:
           test "$visibility" = "PRIVATE"
 
       - name: Apply governed course policy
-        run: npm run apply:course-policy
+        run: node studio/apply-course-policy.mjs
 
       - name: Restore all final protected content evidence
         run: node studio/restore-academy-hollywood-checkpoints.mjs
@@ -341,6 +393,8 @@ jobs:
           {
             echo "## Obserra Academy 61 Course Zero Cost Completion"
             echo "- Protected content generation: native local Ollama only"
+            echo "- Course execution units exposed concurrently: 61"
+            echo "- Actual simultaneous GitHub-hosted jobs: limited by the account plan"
             echo "- Media generation: local Piper and FFmpeg only"
             echo "- Commercial model/media API credentials: disabled"
             echo "- Public workflow artifacts containing protected course outputs: none"
