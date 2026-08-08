@@ -4,7 +4,7 @@ import { backendConfig } from "@/lib/backend-config";
 import { freeAiHealth } from "@/lib/free-ai-service";
 import { prisma } from "@/lib/prisma";
 import { storageHealth } from "@/lib/storage-service";
-import { authorizeStudioRequest } from "@/lib/studio-auth";
+import { authorizeStudioRequest, studioAuthDiagnostics } from "@/lib/studio-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -32,16 +32,18 @@ export async function GET(request: Request) {
     storage = { provider: backendConfig.storageProvider, configured: false, detail: error instanceof Error ? error.message : String(error) };
   }
   const ai = await freeAiHealth();
+  const authDiagnostics = studioAuthDiagnostics();
+  const authConfigured = backendConfig.authProvider === "machine-only"
+    ? authDiagnostics.machineConfigured
+    : backendConfig.authProvider === "clerk"
+      ? authDiagnostics.clerkConfigured
+      : backendConfig.authProvider === "oidc"
+        ? authDiagnostics.oidcConfigured
+        : authDiagnostics.supabaseConfigured;
+
   checks.storage = storage;
   checks.ai = ai;
-  checks.auth = {
-    provider: backendConfig.authProvider,
-    configured: backendConfig.authProvider === "machine-only"
-      ? Boolean(process.env.STUDIO_MACHINE_TOKEN)
-      : backendConfig.authProvider === "clerk"
-        ? Boolean(process.env.CLERK_SECRET_KEY)
-        : Boolean(backendConfig.supabaseUrl && (process.env.SUPABASE_JWT_SECRET || backendConfig.supabaseUrl)),
-  };
+  checks.auth = { ...authDiagnostics, configured: authConfigured };
   checks.costPolicy = {
     mode: backendConfig.mode,
     paidAiAllowed: backendConfig.paidAiAllowed,
@@ -49,7 +51,7 @@ export async function GET(request: Request) {
     paidAiPerRunCallBudget: backendConfig.paidAiPerRunCallBudget,
   };
 
-  const healthy = databaseHealthy && Boolean(storage.configured) && Boolean((checks.auth as { configured: boolean }).configured) && (backendConfig.aiProvider === "disabled" || ai.reachable);
+  const healthy = databaseHealthy && Boolean(storage.configured) && authConfigured && (backendConfig.aiProvider === "disabled" || ai.reachable);
   return NextResponse.json({
     correlationId,
     healthy,
