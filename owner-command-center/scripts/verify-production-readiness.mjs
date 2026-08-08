@@ -11,6 +11,10 @@ function read(relativePath, root = commandCenterRoot) {
   return fs.readFileSync(path.join(root, relativePath), "utf8");
 }
 
+function normalizeLineEndings(value) {
+  return String(value).replace(/\r\n?/g, "\n");
+}
+
 function record(name, passed, detail = null) {
   checks.push({ name, passed: Boolean(passed), detail });
 }
@@ -41,9 +45,15 @@ const academyDashboard = read("src/academy-batch.js");
 const preload = read("electron/preload.cjs");
 const installer = read("scripts/build-removable-media-package.ps1");
 const runtimeVerifier = read("scripts/verify-runtime-governance.mjs");
-const windowsWorkflow = read(".github/workflows/owner-command-center-windows.yml", repositoryRoot);
-const lockWorkflow = read(".github/workflows/owner-command-center-lockfile.yml", repositoryRoot);
-const parallelWorkflow = read(".github/workflows/academy-command-center-parallel-production.yml", repositoryRoot);
+const windowsWorkflow = normalizeLineEndings(
+  read(".github/workflows/owner-command-center-windows.yml", repositoryRoot),
+);
+const lockWorkflow = normalizeLineEndings(
+  read(".github/workflows/owner-command-center-lockfile.yml", repositoryRoot),
+);
+const parallelWorkflow = normalizeLineEndings(
+  read(".github/workflows/academy-command-center-parallel-production.yml", repositoryRoot),
+);
 const workerContract = JSON.parse(read("policy/elastic-worker-pool-contract.json", repositoryRoot));
 const productionStandard = JSON.parse(
   read("policy/commercial-cinematic-course-production-standard.json", repositoryRoot),
