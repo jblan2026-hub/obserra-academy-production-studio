@@ -65,10 +65,13 @@ env:
   SUPABASE_URL: https://nwxnyqlyzyufgoadtqxs.supabase.co
   STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
   STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
+  ACADEMY_PRIVATE_BACKUP_REPOSITORY: jblan2026-hub/ObserraAI
+  ACADEMY_PRIVATE_BACKUP_BRANCH: academy-backups
+  ACADEMY_PRIVATE_BACKUP_ROOT: private-backups/academy/61-course-completion
 
 jobs:
   complete-all-courses:
-    name: Finish, review, materialize, and verify all 61 courses
+    name: Finish, review, materialize, verify, and privately back up all 61 courses
     runs-on: ubuntu-24.04
     timeout-minutes: 720
     env:
@@ -83,6 +86,7 @@ jobs:
       HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
       HEYGEN_AVATAR_ID: ${{ secrets.HEYGEN_AVATAR_ID }}
       HEYGEN_VOICE_ID: ${{ secrets.HEYGEN_VOICE_ID }}
+      ACADEMY_PRIVATE_BACKUP_TOKEN: ${{ secrets.ACADEMY_PRIVATE_BACKUP_TOKEN || secrets.OBSERRA_GITHUB_TOKEN || secrets.GH_PAT }}
     steps:
       - name: Checkout course production source
         uses: actions/checkout@v4
@@ -101,6 +105,8 @@ jobs:
         run: |
           ffmpeg -version
           ffprobe -version
+          git lfs version
+          gh --version
 
       - name: Normalize protected credentials
         shell: bash
@@ -132,6 +138,7 @@ jobs:
           const required = {
             OPENAI_API_KEY: append('OPENAI_API_KEY', process.env.OPENAI_API_KEY),
             SUPABASE_SECRET_KEY: append('SUPABASE_SECRET_KEY', process.env.SUPABASE_SECRET_KEY),
+            ACADEMY_PRIVATE_BACKUP_TOKEN: append('ACADEMY_PRIVATE_BACKUP_TOKEN', process.env.ACADEMY_PRIVATE_BACKUP_TOKEN),
           };
           append('OPENAI_ORGANIZATION', process.env.OPENAI_ORGANIZATION);
           append('OPENAI_PROJECT', process.env.OPENAI_PROJECT);
@@ -142,8 +149,20 @@ jobs:
           append('HEYGEN_VOICE_ID', process.env.HEYGEN_VOICE_ID);
           if (!required.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is required.');
           if (!required.SUPABASE_SECRET_KEY) throw new Error('SUPABASE_SECRET_KEY is required for final media archival.');
-          console.log(`[Academy Studio] Protected credentials normalized. database=${Boolean(db)} openai=${required.OPENAI_API_KEY} mediaStorage=${required.SUPABASE_SECRET_KEY}`);
+          if (!required.ACADEMY_PRIVATE_BACKUP_TOKEN) throw new Error('A private GitHub backup token is required. Public repository backup is prohibited.');
+          console.log(`[Academy Studio] Protected credentials normalized. database=${Boolean(db)} openai=${required.OPENAI_API_KEY} mediaStorage=${required.SUPABASE_SECRET_KEY} privateBackup=${required.ACADEMY_PRIVATE_BACKUP_TOKEN}`);
           NODE
+
+      - name: Fail closed unless GitHub backup target is private
+        shell: bash
+        run: |
+          export GH_TOKEN="${ACADEMY_PRIVATE_BACKUP_TOKEN}"
+          visibility="$(gh repo view "${ACADEMY_PRIVATE_BACKUP_REPOSITORY}" --json visibility --jq '.visibility')"
+          if [ "${visibility}" != "PRIVATE" ]; then
+            echo "Backup target must be PRIVATE. Refusing to generate protected Academy material for a public GitHub target."
+            exit 2
+          fi
+          echo "[Academy Studio] Private backup target verified: ${ACADEMY_PRIVATE_BACKUP_REPOSITORY}/${ACADEMY_PRIVATE_BACKUP_BRANCH}"
 
       - name: Verify all 36 workers are assigned to Academy only
         run: npm run verify:academy-worker-contract
@@ -211,38 +230,9 @@ jobs:
       - name: Verify all 61 course content, materials, sources, and every final module video
         run: node studio/verify-all-61-course-completion.mjs
 
-      - name: Upload exact 61-course evidence list
-        if: always() && !cancelled()
-        uses: actions/upload-artifact@v4
-        with:
-          name: academy-61-course-completion-evidence-${{ github.run_id }}
-          path: |
-            catalog/academy-61-completion-evidence.json
-            catalog/ACADEMY-61-COMPLETION-EVIDENCE.md
-            catalog/academy-61-source-research-summary.json
-            catalog/academy-61-research-registry-merge.json
-            catalog/academy-61-cinematic-authoring-summary.json
-            catalog/academy-61-independent-review-summary.json
-            catalog/academy-hollywood-compliance-staging.json
-            catalog/academy-hollywood-media-reconciliation.json
-            catalog/academy-61-media-submission.json
-          if-no-files-found: warn
-          retention-days: 90
-
-      - name: Upload protected finished course packages
-        if: always() && !cancelled()
-        uses: actions/upload-artifact@v4
-        with:
-          name: academy-61-finished-course-packages-${{ github.run_id }}
-          path: |
-            courses/*/generated/authoring/course-package.json
-            courses/*/generated/production-stage/**
-            courses/*/generated/quality/independent-course-quality-review.json
-            courses/*/generated/research/authoritative-source-research.json
-            releases/*/FINAL/media/**
-          if-no-files-found: error
-          retention-days: 14
-          compression-level: 6
+      - name: Back up all finished materials, videos, certificates, and evidence to private GitHub
+        shell: bash
+        run: bash studio/backup-61-courses-to-private-github.sh
 
       - name: Record completion summary
         if: always()
@@ -257,5 +247,7 @@ jobs:
             echo "- Unresolved factual references allowed: no"
             echo "- Independent content review minimum: 90/100 in every dimension"
             echo "- Final module videos: playable decode, 1080p minimum, governed audio, captions, transcript, audio description, rights linkage"
-            echo "- Completion claim is valid only if the final 61-course evidence verifier passes"
+            echo "- Protected course outputs are not uploaded as artifacts to this public repository"
+            echo "- Required private GitHub backup: ${ACADEMY_PRIVATE_BACKUP_REPOSITORY}/${ACADEMY_PRIVATE_BACKUP_BRANCH}/${ACADEMY_PRIVATE_BACKUP_ROOT}"
+            echo "- Completion claim is valid only if the final 61-course evidence verifier and private backup both pass"
           } >> "$GITHUB_STEP_SUMMARY"
