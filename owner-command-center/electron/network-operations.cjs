@@ -1,15 +1,19 @@
 const { app, ipcMain, safeStorage } = require("electron");
-const Store = require("electron-store");
 
 const { resolvedConnectors } = require("./connectors.cjs");
 const { analyzeApprovedNetwork } = require("./discovery.cjs");
 const { monitorWebPages } = require("./web-monitor.cjs");
 
-const store = new Store({ name: "owner-command-center" });
 const WEB_MONITOR_INTERVAL_MS = 30000;
+let store = null;
 let webMonitorTimer = null;
 let webMonitorInFlight = null;
 let networkAnalysisInFlight = null;
+
+function requireStore() {
+  if (!store) throw new Error("Network operations store is not initialized.");
+  return store;
+}
 
 function decryptForDevice(value) {
   if (!safeStorage.isEncryptionAvailable()) return null;
@@ -21,12 +25,13 @@ function decryptForDevice(value) {
 }
 
 function connectorHeaders(connector) {
+  const activeStore = requireStore();
   const headers = {
     Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.1",
     "User-Agent": "Obserra-Owner-Command-Center-Network-Monitor",
   };
   if (!connector.credentialKey) return headers;
-  const encrypted = store.get(`secrets.${connector.credentialKey}`);
+  const encrypted = activeStore.get(`secrets.${connector.credentialKey}`);
   const secret = typeof encrypted === "string" ? decryptForDevice(encrypted) : null;
   if (secret) headers.Authorization = `Bearer ${secret}`;
   return headers;
@@ -34,10 +39,14 @@ function connectorHeaders(connector) {
 
 async function refreshWebMonitor(trigger = "scheduled") {
   if (webMonitorInFlight) return webMonitorInFlight;
+  const activeStore = requireStore();
   webMonitorInFlight = (async () => {
-    const snapshot = await monitorWebPages(resolvedConnectors(store), connectorHeaders);
+    const snapshot = await monitorWebPages(
+      resolvedConnectors(activeStore),
+      connectorHeaders,
+    );
     const recorded = { ...snapshot, trigger };
-    store.set("webMonitor.lastSnapshot", recorded);
+    activeStore.set("webMonitor.lastSnapshot", recorded);
     return recorded;
   })();
   try {
@@ -49,11 +58,15 @@ async function refreshWebMonitor(trigger = "scheduled") {
 
 async function analyzeNetwork(trigger = "owner-requested") {
   if (networkAnalysisInFlight) return networkAnalysisInFlight;
+  const activeStore = requireStore();
   networkAnalysisInFlight = (async () => {
-    const snapshot = await analyzeApprovedNetwork(resolvedConnectors(store), connectorHeaders);
+    const snapshot = await analyzeApprovedNetwork(
+      resolvedConnectors(activeStore),
+      connectorHeaders,
+    );
     const recorded = { ...snapshot, trigger };
-    store.set("network.lastAnalysis", recorded);
-    store.set("webMonitor.lastSnapshot", {
+    activeStore.set("network.lastAnalysis", recorded);
+    activeStore.set("webMonitor.lastSnapshot", {
       schemaVersion: "1.0",
       checkedAt: recorded.checkedAt,
       trigger,
@@ -81,40 +94,62 @@ async function analyzeNetwork(trigger = "owner-requested") {
 }
 
 function registerIpc() {
+  const activeStore = requireStore();
   ipcMain.handle("network:getSnapshot", async () => (
-    store.get("network.lastAnalysis") || analyzeNetwork("initial-network-analysis")
+    activeStore.get("network.lastAnalysis") || analyzeNetwork("initial-network-analysis")
   ));
-  ipcMain.handle("network:analyzeNow", async () => analyzeNetwork("owner-requested-network-analysis"));
+  ipcMain.handle(
+    "network:analyzeNow",
+    async () => analyzeNetwork("owner-requested-network-analysis"),
+  );
   ipcMain.handle("webMonitor:getSnapshot", async () => (
-    store.get("webMonitor.lastSnapshot") || refreshWebMonitor("initial-web-monitor")
+    activeStore.get("webMonitor.lastSnapshot") || refreshWebMonitor("initial-web-monitor")
   ));
-  ipcMain.handle("webMonitor:refresh", async () => refreshWebMonitor("owner-requested-web-monitor"));
+  ipcMain.handle(
+    "webMonitor:refresh",
+    async () => refreshWebMonitor("owner-requested-web-monitor"),
+  );
 }
 
-app.whenReady().then(() => {
+async function initialize() {
+  const electronStoreModule = await import("electron-store");
+  const Store = electronStoreModule.default;
+  if (typeof Store !== "function") {
+    throw new TypeError("electron-store did not provide its expected default constructor.");
+  }
+  store = new Store({ name: "owner-command-center" });
+  await app.whenReady();
   registerIpc();
+
   setTimeout(() => {
     void analyzeNetwork("startup-background-analysis").catch((error) => {
-      store.set("network.lastError", {
+      requireStore().set("network.lastError", {
         at: new Date().toISOString(),
         error: error instanceof Error ? error.message : String(error),
       });
     });
   }, 500);
+
   webMonitorTimer = setInterval(() => {
     void refreshWebMonitor("scheduled-web-monitor").catch((error) => {
-      store.set("webMonitor.lastError", {
+      requireStore().set("webMonitor.lastError", {
         at: new Date().toISOString(),
         error: error instanceof Error ? error.message : String(error),
       });
     });
   }, WEB_MONITOR_INTERVAL_MS);
   webMonitorTimer.unref?.();
-});
+}
 
 app.on("before-quit", () => {
   if (webMonitorTimer) clearInterval(webMonitorTimer);
   webMonitorTimer = null;
+});
+
+initialize().catch((error) => {
+  console.error(
+    `[Owner Command Center] Network operations initialization failed: ${error instanceof Error ? error.message : String(error)}`,
+  );
 });
 
 module.exports = {
