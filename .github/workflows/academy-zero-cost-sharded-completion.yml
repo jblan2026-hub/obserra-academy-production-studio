@@ -1,0 +1,289 @@
+name: Academy Zero Cost Sharded Completion
+run-name: zero-cost 61-course sharded completion • ${{ github.ref_name }} • ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/academy-zero-cost-sharded-completion.yml"
+      - ".github/scripts/run-academy-zero-cost-shard.mjs"
+      - "studio/research-course-authoritative-sources.mjs"
+      - "studio/author-course-hollywood.mjs"
+      - "studio/author-course-hollywood-with-checkpoint.mjs"
+      - "studio/review-course-quality.mjs"
+      - "studio/fetch-free-authoritative-source-cache.mjs"
+      - "studio/build-free-course-source-context.mjs"
+      - "studio/academy-hollywood-checkpoints.mjs"
+      - "studio/restore-academy-hollywood-checkpoints.mjs"
+      - "studio/materialize-hollywood-course-assets.mjs"
+      - "studio/validate-academy-hollywood-surge.mjs"
+      - "studio/render-all-61-local-media.mjs"
+      - "studio/verify-all-61-course-completion.mjs"
+      - "studio/backup-61-courses-to-private-github.sh"
+      - "courses/**"
+      - "sources/**"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: academy-zero-cost-sharded-completion
+  cancel-in-progress: true
+
+env:
+  NPM_CONFIG_AUDIT: "false"
+  NPM_CONFIG_FUND: "false"
+  NPM_CONFIG_PROGRESS: "false"
+  NPM_CONFIG_UPDATE_NOTIFIER: "false"
+  OBSERRA_PORTFOLIO_WORKER_COUNT: "36"
+  OBSERRA_APPLICATION_WORKER_COUNT: "0"
+  ACADEMY_COURSE_WORKER_COUNT: "36"
+  ACADEMY_EXPECTED_SURGE_COURSES: "61"
+  ACADEMY_EXPECTED_REVIEW_COURSES: "61"
+  ACADEMY_SURGE_EXCLUDED_COURSE_IDS: __none__
+  ACADEMY_MINIMUM_LESSON_WORDS: "1200"
+  ACADEMY_MINIMUM_EXACT_SOURCES_PER_COURSE: "2"
+  ACADEMY_SHARD_COUNT: "16"
+  ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS: "2"
+  ACADEMY_EXECUTION_MODE: local-ollama-zero-commercial-api-cost
+  ACADEMY_AUTHORING_PROVIDER: local
+  ACADEMY_RESEARCH_PROVIDER: local
+  ACADEMY_REVIEW_PROVIDER: local
+  OPENAI_API_KEY: ""
+  ANTHROPIC_API_KEY: ""
+  STUDIO_ALLOW_PAID_AI: "false"
+  LOCAL_AI_BASE_URL: http://127.0.0.1:11434
+  LOCAL_AI_MODEL: qwen2.5:7b-instruct
+  LOCAL_RESEARCH_MODEL: qwen2.5:7b-instruct
+  LOCAL_REVIEW_MODEL: qwen2.5:7b-instruct
+  LOCAL_AI_TIMEOUT_MS: "3600000"
+  LOCAL_REVIEW_TIMEOUT_MS: "3600000"
+  LOCAL_AI_NUM_CTX: "32768"
+  ACADEMY_LOCAL_MODEL_CONTEXT: "32768"
+  ACADEMY_LOCAL_CONTEXT_MAX_CHARS: "100000"
+  ACADEMY_SOURCE_CONTEXT_MAX_CHARS: "100000"
+  ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: "3600000"
+  ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: "true"
+  ACADEMY_FREE_SOURCE_MAX_BYTES: "8388608"
+  ACADEMY_FREE_SOURCE_TIMEOUT_MS: "30000"
+  ACADEMY_FREE_SOURCE_EXCERPT_CHARACTERS: "12000"
+  OLLAMA_NO_CLOUD: "1"
+  OLLAMA_KEEP_ALIVE: "30m"
+  STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
+  STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
+  ACADEMY_CHECKPOINT_GATEWAY_URL: https://nwxnyqlyzyufgoadtqxs.supabase.co/functions/v1/academy-checkpoint-gateway
+  ACADEMY_LOCAL_TTS_MODEL: en_US-joe-medium
+  ACADEMY_LOCAL_TTS_DATA_DIR: /tmp/academy-piper-voices
+  ACADEMY_PRIVATE_BACKUP_REPOSITORY: jblan2026-hub/ObserraAI
+  ACADEMY_PRIVATE_BACKUP_BRANCH: academy-backups
+  ACADEMY_PRIVATE_BACKUP_ROOT: private-backups/academy/61-course-completion
+
+jobs:
+  content-shards:
+    name: Local course shard ${{ matrix.shard }} of 16
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    env:
+      ACADEMY_SHARD_INDEX: ${{ matrix.shard }}
+    steps:
+      - name: Checkout governed Academy source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Node dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Install pinned local Ollama runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=0.30.8 sh
+          ollama --version
+
+      - name: Start local-only Ollama and pull the governed model
+        shell: bash
+        run: |
+          set -euo pipefail
+          export OLLAMA_NO_CLOUD=1
+          nohup ollama serve > /tmp/academy-ollama.log 2>&1 &
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null
+          ollama pull "$LOCAL_AI_MODEL"
+          ollama list
+
+      - name: Assert commercial model providers are disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ACADEMY_AUTHORING_PROVIDER" = "local"
+          test "$ACADEMY_RESEARCH_PROVIDER" = "local"
+          test "$ACADEMY_REVIEW_PROVIDER" = "local"
+          test -z "$OPENAI_API_KEY"
+          test -z "$ANTHROPIC_API_KEY"
+          test "$STUDIO_ALLOW_PAID_AI" = "false"
+          test "$OLLAMA_NO_CLOUD" = "1"
+
+      - name: Preflight protected checkpoint gateway
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
+
+      - name: Apply governed course policy
+        run: npm run apply:course-policy
+
+      - name: Restore reusable protected checkpoints
+        run: node studio/restore-academy-hollywood-checkpoints.mjs
+
+      - name: Reject stale restored packages
+        run: node studio/prune-stale-restored-course-packages.mjs
+
+      - name: Download authoritative primary-source cache at zero model cost
+        run: node studio/fetch-free-authoritative-source-cache.mjs
+
+      - name: Build deterministic course source context
+        run: node studio/build-free-course-source-context.mjs
+
+      - name: Research, author, independently review, and checkpoint this shard
+        run: node .github/scripts/run-academy-zero-cost-shard.mjs
+
+  finalize-content:
+    name: Restore and validate all 61 protected course checkpoints
+    needs: content-shards
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout governed Academy source
+        uses: actions/checkout@v4
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Node dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Preflight protected checkpoint gateway
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); })"
+      - name: Apply governed course policy
+        run: npm run apply:course-policy
+      - name: Restore all protected packages, research, and independent reviews
+        run: node studio/restore-academy-hollywood-checkpoints.mjs
+      - name: Reject stale restored packages
+        run: node studio/prune-stale-restored-course-packages.mjs
+      - name: Merge restored research into governed runtime registry
+        run: node studio/merge-61-course-research-registry.mjs
+      - name: Materialize all course assets
+        run: node studio/materialize-hollywood-course-assets.mjs
+      - name: Validate all 61 structural packages and source mappings
+        run: node studio/validate-academy-hollywood-surge.mjs
+      - name: Confirm 61 protected checkpoints
+        run: node studio/verify-protected-61-checkpoint-count.mjs
+
+  media-verify-backup:
+    name: Render, verify, and privately back up all 61 courses
+    needs: finalize-content
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      ACADEMY_PRIVATE_BACKUP_TOKEN: ${{ secrets.ACADEMY_PRIVATE_BACKUP_TOKEN || secrets.OBSERRA_GITHUB_TOKEN || secrets.GH_PAT }}
+    steps:
+      - name: Checkout governed Academy source
+        uses: actions/checkout@v4
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Node dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install local media and private backup tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ffmpeg git-lfs python3 python3-venv curl ca-certificates
+          git lfs install --local
+          python3 -m venv .academy-tools
+          .academy-tools/bin/python -m pip install --disable-pip-version-check --no-cache-dir "piper-tts==1.5.0"
+          echo "${GITHUB_WORKSPACE}/.academy-tools/bin" >> "$GITHUB_PATH"
+      - name: Download governed local Piper voice model
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ACADEMY_LOCAL_TTS_DATA_DIR"
+          .academy-tools/bin/python -m piper.download_voices "$ACADEMY_LOCAL_TTS_MODEL" --data-dir "$ACADEMY_LOCAL_TTS_DATA_DIR"
+      - name: Require and verify private backup destination
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${ACADEMY_PRIVATE_BACKUP_TOKEN:-}" ]; then echo "Private backup token is required."; exit 2; fi
+          export GH_TOKEN="$ACADEMY_PRIVATE_BACKUP_TOKEN"
+          visibility="$(gh repo view "$ACADEMY_PRIVATE_BACKUP_REPOSITORY" --json visibility --jq '.visibility')"
+          test "$visibility" = "PRIVATE"
+      - name: Preflight protected checkpoint gateway
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); })"
+      - name: Apply governed course policy
+        run: npm run apply:course-policy
+      - name: Restore all final protected content evidence
+        run: node studio/restore-academy-hollywood-checkpoints.mjs
+      - name: Reject stale restored packages
+        run: node studio/prune-stale-restored-course-packages.mjs
+      - name: Merge restored source research into runtime registry
+        run: node studio/merge-61-course-research-registry.mjs
+      - name: Materialize final learner, instructor, assessment, accessibility, rights, and certificate assets
+        run: node studio/materialize-hollywood-course-assets.mjs
+      - name: Validate structural readiness before media rendering
+        run: node studio/validate-academy-hollywood-surge.mjs
+      - name: Render final 1080p module media locally with Piper and FFmpeg
+        run: node studio/render-all-61-local-media.mjs
+      - name: Verify every course and every final module video
+        run: node studio/verify-all-61-course-completion.mjs
+      - name: Prove restored course evidence used only local models
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$OPENAI_API_KEY"
+          test -z "$ANTHROPIC_API_KEY"
+          test "$STUDIO_ALLOW_PAID_AI" = "false"
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const ids = fs.readdirSync('courses').filter(id => fs.existsSync(path.join('courses', id, 'course-manifest.json'))).sort();
+          if (ids.length !== 61) throw new Error(`Expected 61 courses, found ${ids.length}`);
+          for (const id of ids) {
+            const pkg = JSON.parse(fs.readFileSync(path.join('courses', id, 'generated/authoring/course-package.json'), 'utf8'));
+            const research = JSON.parse(fs.readFileSync(path.join('courses', id, 'generated/research/authoritative-source-research.json'), 'utf8'));
+            const review = JSON.parse(fs.readFileSync(path.join('courses', id, 'generated/quality/independent-course-quality-review.json'), 'utf8'));
+            if (pkg.provider !== 'local' || research.provider !== 'local' || review.provider !== 'local') throw new Error(`${id} contains non-local model provenance`);
+          }
+          const media = JSON.parse(fs.readFileSync('catalog/academy-61-local-media-render-summary.json', 'utf8'));
+          if (media.externalPaidMediaProviderUsed !== false || Number(media.estimatedApiCostUsd) !== 0) throw new Error('Media evidence is not zero-cost.');
+          console.log('All 61 restored course records and media evidence prove local-only generation.');
+          NODE
+      - name: Back up all protected materials, videos, certificates, and evidence to private GitHub
+        shell: bash
+        run: bash studio/backup-61-courses-to-private-github.sh
+      - name: Record go-live evidence gate
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Obserra Academy 61 Course Zero Cost Completion"
+            echo "- Protected content generation: native local Ollama only"
+            echo "- Media generation: local Piper and FFmpeg only"
+            echo "- Commercial model/media API credentials: disabled"
+            echo "- Public workflow artifacts containing protected course outputs: none"
+            echo "- Completion requires 61/61 final verifier pass plus successful private GitHub backup"
+          } >> "$GITHUB_STEP_SUMMARY"
