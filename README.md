@@ -6,6 +6,16 @@ Production system for authoring, validating, packaging, approving, and publishin
 
 This repository is the authoritative production source for commercial Academy courses. It is separate from the public marketing website so instructional content, assessments, release artifacts, and review evidence can be governed independently.
 
+## AI-first technical operations
+
+The Studio follows the [AI-First Technical Operations standard](docs/AI_FIRST_AUTOMATED_OPERATIONS.md) for vulnerability intelligence, incident response, containment, platform health, build remediation, dependency maintenance, and approved patching of Obserra-owned infrastructure.
+
+Routine first-party technical changes that pass locked-source verification, isolated testing, compatibility, accessibility, security, build, canary, independent verification, and rollback gates execute through pre-approved playbooks. Human approval is required only when an Obserra-owned technical dependency or patch retains material predicted outage risk after those controls are evaluated.
+
+Autonomous patch authority never extends through Academy systems to learners, students, customers, employers, visitors, or vendors. Their devices, browsers, accounts, networks, repositories, tenants, and vendor-managed platforms remain observe-only for security remediation. Connection, enrollment, telemetry, or API credentials do not establish ownership, and human approval cannot override this boundary.
+
+This technical automation does not self-approve course content. SME, technical, legal, accessibility, brand, assessment, certification, pricing, entitlement, and publication approvals remain required when the course manifest or policy requires them.
+
 ## Commercial model
 
 Academy courses use a one-time payment entitlement. Paid access remains active until the learner completes the course. Completion produces a durable transcript and certificate record. Courses do not use recurring SaaS subscriptions.
@@ -18,7 +28,7 @@ Academy courses use a one-time payment entitlement. Paid access remains active u
 - `releases/` approved FINAL course releases
 - `catalog/` generated Academy publishing catalog
 - `templates/` reusable course-authoring templates
-- `docs/` architecture, governance, and publishing documentation
+- `docs/` architecture, governance, technical-operations, and publishing documentation
 - `.github/workflows/` validation and release automation
 
 ## Quick start
@@ -44,3 +54,7 @@ npm run catalog
 ## Governance
 
 No course is published merely because a draft exists. Publication requires an approved manifest, evidence of required reviews, and a valid FINAL release package.
+
+Technical automation and content governance remain separate. A verified technical patch may rebuild an approved course package without changing instructional meaning, but any change to claims, objectives, assessments, pricing, entitlements, certificates, or legal terms requires the applicable governed review.
+
+Documentation and release evidence distinguish target, implemented, verified, packaged, deployed, operating, and effective states.
