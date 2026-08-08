@@ -9,13 +9,13 @@ on:
       - "courses/**"
       - "sources/**"
       - "studio/**"
-      - "prisma/**"
       - "package.json"
       - ".github/workflows/academy-61-content-checkpoint.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: academy-61-content-checkpoint
@@ -43,7 +43,6 @@ env:
   ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: "2700000"
   ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: "1800000"
   ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: "true"
-  ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: "true"
   OPENAI_AUTHORING_MODEL: gpt-5
   OPENAI_RESEARCH_MODEL: gpt-5
   OPENAI_REVIEW_MODEL: gpt-5
@@ -51,8 +50,8 @@ env:
   OPENAI_REVIEW_REASONING_EFFORT: high
   OPENAI_RESEARCH_MAX_OUTPUT_TOKENS: "20000"
   OPENAI_REVIEW_MAX_OUTPUT_TOKENS: "16000"
-  ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
-  ACADEMY_SUPABASE_REGION: us-east-1
+  STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
+  ACADEMY_CHECKPOINT_GATEWAY_URL: https://nwxnyqlyzyufgoadtqxs.supabase.co/functions/v1/academy-checkpoint-gateway
 
 jobs:
   checkpoint-all-course-content:
@@ -63,7 +62,6 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
       OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
-      DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
     steps:
       - name: Checkout course production source
         uses: actions/checkout@v4
@@ -78,39 +76,20 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Normalize required protected credentials
+      - name: Require OpenAI credential
         shell: bash
         run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const out = process.env.GITHUB_ENV;
-          const trim = (value) => String(value ?? '').trim().replace(/^['"]|['"]$/g, '');
-          const openai = trim(process.env.OPENAI_API_KEY);
-          let db = trim(process.env.DATABASE_URL);
-          const assignment = db.match(/^(?:ACADEMY_DATABASE_URL|DATABASE_URL)\s*=\s*(.+)$/is);
-          if (assignment) db = trim(assignment[1]);
-          if (db && !/^postgres(?:ql)?:\/\//i.test(db)) {
-            const ref = process.env.ACADEMY_SUPABASE_PROJECT_REF;
-            const region = process.env.ACADEMY_SUPABASE_REGION;
-            db = `postgresql://${encodeURIComponent(`postgres.${ref}`)}:${encodeURIComponent(db)}@aws-0-${region}.pooler.supabase.com:5432/postgres?schema=public&sslmode=require&connect_timeout=30`;
-          }
-          if (!openai) throw new Error('OPENAI_API_KEY is required.');
-          if (!db) throw new Error('ACADEMY_DATABASE_URL is required.');
-          fs.appendFileSync(out, `OPENAI_API_KEY=${openai}\n`);
-          fs.appendFileSync(out, `DATABASE_URL=${new URL(db).toString()}\n`);
-          console.log('[Academy Studio] OpenAI and protected database credentials are available.');
-          NODE
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "OPENAI_API_KEY is required."
+            exit 2
+          fi
+          echo "[Academy Studio] OpenAI credential available; protected persistence uses GitHub OIDC."
 
       - name: Verify all 36 workers are assigned to the 61-course Academy objective
         run: node studio/verify-academy-61-worker-contract.mjs
 
-      - name: Generate Prisma client
-        run: npm run db:generate
-
-      - name: Bootstrap protected authoring checkpoints
-        run: |
-          npm run db:bootstrap:protected
-          npm run db:bootstrap:hollywood-checkpoints
+      - name: Preflight protected OIDC checkpoint gateway
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
 
       - name: Apply governed course policy
         run: npm run apply:course-policy
