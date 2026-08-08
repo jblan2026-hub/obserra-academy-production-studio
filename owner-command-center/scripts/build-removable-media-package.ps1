@@ -33,6 +33,12 @@ function Read-JsonFile {
     return Get-Content $Path -Raw | ConvertFrom-Json
 }
 
+function Read-JsonHashTable {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    if (-not (Test-Path $Path -PathType Leaf)) { throw "Required JSON file is missing: $Path" }
+    return Get-Content $Path -Raw | ConvertFrom-Json -AsHashTable
+}
+
 Push-Location $root
 try {
     npm run verify
@@ -59,17 +65,17 @@ $packageLockPath = Join-Path $root "package-lock.json"
 $dependencyLockFileName = "Obserra-Command-Center-Dependency-Lock.json"
 $workerContract = Read-JsonFile -Path $workerContractPath
 $productionStandard = Read-JsonFile -Path $productionStandardPath
-$packageLock = Read-JsonFile -Path $packageLockPath
+$packageLock = Read-JsonHashTable -Path $packageLockPath
 Copy-Item $workerContractPath (Join-Path $destinationPath "Obserra-Worker-Pool-Contract.json")
 Copy-Item $productionStandardPath (Join-Path $destinationPath "Obserra-Commercial-Course-Production-Standard.json")
 Copy-Item $packageLockPath (Join-Path $destinationPath $dependencyLockFileName)
 
 $packageJson = Read-JsonFile -Path (Join-Path $root "package.json")
-if ([string]$packageLock.name -ne [string]$packageJson.name -or [string]$packageLock.version -ne [string]$packageJson.version) {
+if ([string]$packageLock["name"] -ne [string]$packageJson.name -or [string]$packageLock["version"] -ne [string]$packageJson.version) {
     throw "Command Center package-lock identity does not match package.json."
 }
 $dependencyLockSha256 = Get-Sha256Hex -Path $packageLockPath
-$dependencyLockPackageCount = @($packageLock.packages.PSObject.Properties).Count
+$dependencyLockPackageCount = [int]$packageLock["packages"].Count
 $installerSignature = Get-AuthenticodeSignature -FilePath $installer.FullName
 $portableSignature = Get-AuthenticodeSignature -FilePath $portable.FullName
 $release = [ordered]@{
@@ -86,8 +92,8 @@ $release = [ordered]@{
     dependencyLock = [ordered]@{
         file = $dependencyLockFileName
         packageManager = [string]$packageJson.packageManager
-        lockfileVersion = [int]$packageLock.lockfileVersion
-        packageCount = [int]$dependencyLockPackageCount
+        lockfileVersion = [int]$packageLock["lockfileVersion"]
+        packageCount = $dependencyLockPackageCount
         sha256 = $dependencyLockSha256
     }
     defaultParallelAllocation = [ordered]@{
