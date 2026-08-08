@@ -65,10 +65,20 @@ for (const method of [
 rejectPattern(preload, /require\(["']node:(fs|child_process|net|http|https)|require\(["'](fs|child_process|net|http|https)/, "preload must not expose raw filesystem, process, or network modules");
 
 requirePattern(academyStudio, /ALLOWED_ACTIONS/, "Studio actions must be allowlisted");
-requirePattern(academyStudio, /author-all/, "batch course generation must be supported");
-requirePattern(academyStudio, /build-all/, "batch release building must be supported");
+requirePattern(academyStudio, /function\s+studioActionArgs/, "Studio action dispatch must validate only the selected action");
+requirePattern(academyStudio, /case\s+["']author-all["'][\s\S]*return\s+\[["']run["'],\s*["']author:all["']\]/, "batch authoring must not require a single course identifier");
+requirePattern(academyStudio, /case\s+["']build-all["'][\s\S]*return\s+\[["']run["'],\s*["']build:all["']\]/, "batch building must not require a single course identifier");
+requirePattern(academyStudio, /ACADEMY_COMMAND_CENTER_ACTION_TIMEOUT_MS/, "owner Academy actions must have a governed timeout override");
+requirePattern(academyStudio, /ACTION_TIMEOUT_DEFAULTS_MS/, "owner Academy actions must have action-specific timeout defaults");
+requirePattern(academyStudio, /function\s+terminateChildTree/, "timed out Studio actions must terminate their child process tree");
+requirePattern(academyStudio, /taskkill/, "Windows Studio process-tree termination must be implemented");
+requirePattern(academyStudio, /SIGTERM/, "non-Windows Studio actions must receive graceful termination first");
+requirePattern(academyStudio, /SIGKILL/, "non-Windows Studio actions must have a forced termination fallback");
+requirePattern(academyStudio, /timedOut/, "Studio action results must expose timeout evidence");
+requirePattern(academyStudio, /MAX_CAPTURED_OUTPUT_CHARS/, "Studio action output must remain bounded");
 requirePattern(academyStudio, /shell:\s*false/, "Studio commands must execute without a shell");
 requirePattern(academyStudio, /atomicWriteJson/, "course metadata updates must be atomic");
+rejectPattern(academyStudio, /const\s+commandMap\s*=\s*\{/, "Studio action dispatch cannot eagerly validate unrelated course actions");
 rejectPattern(academyStudio, /exec\s*\(/, "arbitrary command execution is prohibited");
 
 for (const functionName of ["previewCourse", "previewMaterials", "previewCertificate"]) requirePattern(academyPreview, new RegExp(`function\\s+${functionName}|${functionName}\\s*=`), `${functionName} must be implemented`);
@@ -114,6 +124,7 @@ requirePattern(styles, /panel|gapItem|metrics/, "dashboard styling must be packa
 
 if (packageJson.private !== true) throw new Error("Command Center verification failed: package must remain private");
 if (!packageJson.build || packageJson.build.publish) throw new Error("Command Center verification failed: automatic public publishing must not be configured");
+if (!packageJson.scripts?.verify?.includes("verify-academy-action-runtime.mjs")) throw new Error("Command Center verification failed: Academy action runtime regression test must be part of the release gate");
 for (const requiredFile of ["electron/**/*", "src/**/*", "scripts/**/*"]) {
   if (!packageJson.build.files?.includes(requiredFile)) throw new Error(`Command Center verification failed: package must include ${requiredFile}`);
 }
@@ -127,4 +138,4 @@ for (const resource of resources) {
   if (!Array.isArray(resource.capabilities) || resource.capabilities.length === 0) throw new Error(`Command Center verification failed: resource ${resource.id} must declare capabilities`);
 }
 
-console.log(`[Owner Command Center] Live AI, Academy, vulnerability, mapped blocking, override, and trend verification passed for ${resources.length} approved resource(s).`);
+console.log(`[Owner Command Center] Live AI, Academy, bounded action execution, vulnerability, mapped blocking, override, and trend verification passed for ${resources.length} approved resource(s).`);

@@ -14,7 +14,7 @@ const academyGaps = document.getElementById("academyGaps");
 const academyActionLog = document.getElementById("academyActionLog");
 const academySearch = document.getElementById("academySearch");
 const academyFilter = document.getElementById("academyFilter");
-const REFRESH_INTERVAL_MS = 30000;
+const REFRESH_INTERVAL_MS = 15000;
 let snapshot;
 let connectorState = [];
 let academyState = { available: false, courses: [], summary: {} };

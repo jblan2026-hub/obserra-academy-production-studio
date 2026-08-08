@@ -1,10 +1,35 @@
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getStudioStatusSnapshot } from "@/lib/repositories/studio-repository";
 import { getMissionControlOperations } from "@/lib/repositories/mission-control-repository";
 
 export const dynamic = "force-dynamic";
+
+const navigation = [
+  "Mission Control",
+  "Production Queue",
+  "Expert Panel",
+  "Source Intelligence",
+  "Build History",
+  "Release History",
+  "Activity Timeline",
+  "Course Authoring",
+  "Visual Production",
+  "Video Production",
+  "Quality Gates",
+  "Review and Approval",
+  "Publishing Center",
+  "Analytics",
+  "Administration",
+] as const;
+
+function navigationHref(item: (typeof navigation)[number]): string {
+  return item === "Review and Approval"
+    ? "/admin/final-review"
+    : `#${item.toLowerCase().replaceAll(" ", "-")}`;
+}
 
 function MetricCard({ label, value, detail }: { label: string; value: string | number; detail: string }) {
   return <article className="metric-card"><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>;
@@ -44,8 +69,8 @@ export default async function StudioDashboard() {
           <div><UserButton /><small>{orgRole ?? "organization member"}</small></div>
         </div>
         <nav aria-label="Studio navigation">
-          {["Mission Control", "Production Queue", "Expert Panel", "Source Intelligence", "Build History", "Release History", "Activity Timeline", "Course Authoring", "Visual Production", "Video Production", "Quality Gates", "Review and Approval", "Publishing Center", "Analytics", "Administration"].map((item, index) => (
-            <a key={item} className={index === 0 ? "active" : ""} href={`#${item.toLowerCase().replaceAll(" ", "-")}`}>{item}</a>
+          {navigation.map((item, index) => (
+            <a key={item} className={index === 0 ? "active" : ""} href={navigationHref(item)}>{item}</a>
           ))}
         </nav>
         <div className="nav-status"><span className="status-dot" />Organization scoped session active</div>
@@ -59,7 +84,11 @@ export default async function StudioDashboard() {
             <p>One governed workspace for course authoring, expert review, media production, compliance validation, packaging, publication, licensing, certificates, and analytics.</p>
             <small>Operational sources: portfolio {snapshot.source}; history {operations.source}</small>
           </div>
-          <div className="header-actions"><button>Collect sources</button><button className="primary">Create course</button></div>
+          <div className="header-actions">
+            <button>Collect sources</button>
+            <Link className="primary" href="/admin/final-review">Open Final Review</Link>
+            <button className="primary">Create course</button>
+          </div>
         </header>
 
         <section className="metrics-grid">

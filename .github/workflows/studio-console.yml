@@ -1,5 +1,7 @@
 name: Obserra Academy Studio Console
 
+run-name: "Academy Studio ${{ inputs.operation }} ${{ inputs.course_id || 'portfolio' }} · ${{ github.actor }}"
+
 on:
   workflow_dispatch:
     inputs:
@@ -9,13 +11,16 @@ on:
         type: choice
         options:
           - sync_website_catalog
+          - author_course
+          - revise_course
+          - author_all
           - build_all_drafts
           - validate_all
           - generate_course_media
           - build_course_release
           - publish_approved_catalog
       course_id:
-        description: "Required for media or release operations"
+        description: "Required for per-course authoring, media, or release operations"
         required: false
         type: string
       video_provider:
@@ -42,7 +47,7 @@ env:
 jobs:
   operate:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - name: Checkout Production Studio
         uses: actions/checkout@v4
@@ -54,13 +59,20 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install locked Studio dependencies
+        run: npm ci
+
       - name: Validate required course input
         shell: bash
         run: |
           case "${{ inputs.operation }}" in
-            generate_course_media|build_course_release)
+            author_course|revise_course|generate_course_media|build_course_release)
               if [ -z "${{ inputs.course_id }}" ]; then
                 echo "course_id is required for ${{ inputs.operation }}"
+                exit 1
+              fi
+              if ! [[ "${{ inputs.course_id }}" =~ ^[a-z0-9][a-z0-9-]{2,159}$ ]]; then
+                echo "course_id is not canonical"
                 exit 1
               fi
               ;;
@@ -76,6 +88,33 @@ jobs:
           gh api repos/jblan2026-hub/obserra-website/contents/app/academy/courseData.ts \
             -H "Accept: application/vnd.github.raw+json" > tmp/courseData.ts
           npm run sync:website
+
+      - name: Author one protected course package
+        if: inputs.operation == 'author_course'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
+          OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
+          ACADEMY_AI_PROVIDER: openai
+        run: npm run author:course -- --course "${{ inputs.course_id }}"
+
+      - name: Revise one protected course package
+        if: inputs.operation == 'revise_course'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
+          OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
+          ACADEMY_AI_PROVIDER: openai
+        run: npm run author:course -- --course "${{ inputs.course_id }}" --force
+
+      - name: Author all governed course packages
+        if: inputs.operation == 'author_all'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
+          OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
+          ACADEMY_AI_PROVIDER: openai
+        run: npm run author:all
 
       - name: Build all draft course assets
         if: inputs.operation == 'build_all_drafts'
@@ -106,8 +145,8 @@ jobs:
           const id = process.env.COURSE_ID;
           const manifest = JSON.parse(fs.readFileSync(`courses/${id}/course-manifest.json`, 'utf8'));
           const allowed = ['approved', 'published'];
-          if (!allowed.includes(manifest.release?.status) || manifest.release?.publishToAcademy !== true) {
-            throw new Error(`Course ${id} is not approved and enabled for Academy publication.`);
+          if (!allowed.includes(manifest.release?.status)) {
+            throw new Error(`Course ${id} is not approved for release construction.`);
           }
           const reviews = Object.entries(manifest.reviews || {});
           const failed = reviews.filter(([, value]) => value?.required && value?.status !== 'approved');

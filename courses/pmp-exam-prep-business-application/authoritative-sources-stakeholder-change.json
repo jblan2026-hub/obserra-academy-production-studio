@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "supplementId": "stakeholder-change-and-user-adoption",
+  "verifiedAt": "2026-08-07T00:00:00Z",
+  "governance": {
+    "primarySourceRequired": true,
+    "governmentCaseFactsMustBeAttributed": true,
+    "inventedCaseStudiesProhibited": true,
+    "timeSensitiveFactsRequireObservationDate": true,
+    "causalOverstatementProhibited": true
+  },
+  "sources": [
+    {
+      "id": "GAO-VA-EHR-STAKEHOLDERS-2020",
+      "owner": "U.S. Government Accountability Office",
+      "title": "Electronic Health Records: Ongoing Stakeholder Involvement Needed in the Department of Veterans Affairs' Modernization Effort",
+      "publicationDate": "2020-06-05",
+      "retrievedAt": "2026-08-07",
+      "sourceType": "government-program-assessment",
+      "url": "https://www.gao.gov/products/gao-20-473",
+      "authoritativeFor": ["stakeholder identification", "stakeholder involvement", "workshop design", "configuration decisions"],
+      "keyFacts": [
+        "VA established 18 electronic health record councils composed of clinicians, staff, and other experts.",
+        "VA held eight national workshops between November 2018 and October 2019 and local workshops at two planned initial sites.",
+        "GAO recommended ensuring the involvement of all relevant facility stakeholders in configuration decisions.",
+        "GAO identified a need for clearer terminology and more detailed workshop descriptions to facilitate participation."
+      ],
+      "usageLimitations": "Historical federal modernization case. Use documented facts and recommendations only. Workshop count does not by itself prove engagement quality."
+    },
+    {
+      "id": "GAO-VA-EHR-DATA-USERS-2022",
+      "owner": "U.S. Government Accountability Office",
+      "title": "Electronic Health Records: VA Needs to Address Data Management Challenges for New System",
+      "publicationDate": "2022-02-01",
+      "retrievedAt": "2026-08-07",
+      "sourceType": "government-program-assessment",
+      "url": "https://www.gao.gov/products/gao-22-103718",
+      "authoritativeFor": ["user consultation", "data quality", "reporting needs", "stakeholder feedback"],
+      "keyFacts": [
+        "GAO reported quality problems in selected transferred data.",
+        "GAO reported that reports were made available without consulting all users and therefore might not meet all user needs.",
+        "GAO recommended actions intended to improve data management and stakeholder engagement for reporting."
+      ],
+      "usageLimitations": "Federal healthcare context. Do not generalize individual findings to every system or infer a single cause."
+    },
+    {
+      "id": "GAO-VA-EHR-CHANGE-MANAGEMENT-2023",
+      "owner": "U.S. Government Accountability Office",
+      "title": "Electronic Health Records: Challenges with VA's New System Call for Management Improvements",
+      "publicationDate": "2023-05-09",
+      "retrievedAt": "2026-08-07",
+      "sourceType": "government-program-assessment",
+      "url": "https://www.gao.gov/products/gao-23-106785",
+      "authoritativeFor": ["organizational change management", "training", "user satisfaction", "deployment readiness"],
+      "keyFacts": [
+        "GAO reported that many users said they were not adequately trained to use the new system.",
+        "GAO reported significant user concerns about the system.",
+        "GAO reported that VA had not established goals to assess user satisfaction.",
+        "GAO assessed change-management activities against leading practices and identified gaps."
+      ],
+      "usageLimitations": "Government assessment. Use official findings with the publication date and do not claim that training alone explains the program's challenges."
+    },
+    {
+      "id": "GAO-VA-EHR-INCREMENTAL-IMPROVEMENT-2025",
+      "owner": "U.S. Government Accountability Office",
+      "title": "Electronic Health Records: VA Making Incremental Improvements in New System but Needs Updated Cost Estimate and Schedule",
+      "publicationDate": "2025-03-12",
+      "retrievedAt": "2026-08-07",
+      "sourceType": "government-program-assessment",
+      "url": "https://www.gao.gov/products/gao-25-106874",
+      "authoritativeFor": ["user feedback", "incremental improvement", "stakeholder coordination", "cost and schedule governance"],
+      "keyFacts": [
+        "VA paused deployments in 2023 because of user concerns.",
+        "GAO reported incremental configuration and system improvements during the pause.",
+        "GAO reported that additional complex projects required significant stakeholder coordination with live sites.",
+        "GAO reported that the program lacked an updated life-cycle cost estimate and integrated schedule reflecting changes and delays."
+      ],
+      "usageLimitations": "Time-sensitive government assessment. Reverify before publication. Incremental activity does not by itself prove value or readiness."
+    },
+    {
+      "id": "GAO-VA-EHR-CRITICAL-ACTIONS-2025",
+      "owner": "U.S. Government Accountability Office",
+      "title": "VA Electronic Health Record Modernization: Critical Actions Needed to Support Accelerated System Deployments",
+      "publicationDate": "2025-12-15",
+      "retrievedAt": "2026-08-07",
+      "sourceType": "government-testimony",
+      "url": "https://files.gao.gov/reports/GAO-26-108812/index.html",
+      "authoritativeFor": ["continuing stakeholder involvement", "deployment readiness", "testing", "user adoption"],
+      "keyFacts": [
+        "GAO reported that earlier decision procedures did not always ensure involvement of key stakeholders.",
+        "GAO continued to identify user adoption, satisfaction, testing, schedule, cost, and program-management actions as important to deployment readiness.",
+        "GAO reported that deployments had been paused while improvement work continued."
+      ],
+      "usageLimitations": "Government testimony summarizing a long-running program. Do not represent open recommendations as completed."
+    }
+  ]
+}

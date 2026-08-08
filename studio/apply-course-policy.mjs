@@ -19,6 +19,15 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function parseDurationMinutes(value) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  const hours = normalized.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:hour|hours|hr|hrs)/);
+  const minutes = normalized.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:minute|minutes|min|mins)/);
+  if (hours || minutes) return Math.round(Number(hours?.[1] ?? 0) * 60 + Number(minutes?.[1] ?? 0));
+  const numeric = Number(normalized);
+  return Number.isFinite(numeric) ? Math.round(numeric) : NaN;
+}
+
 function inferFrameworks(manifest) {
   const text = JSON.stringify(manifest).toLowerCase();
   const mappings = [
@@ -37,6 +46,23 @@ function inferFrameworks(manifest) {
   return matches.length ? matches : ["industry-guidance"];
 }
 
+function completionPolicy(manifest) {
+  const courseMinutes = parseDurationMinutes(manifest.course?.duration);
+  const moduleMinutes = (manifest.course?.modules ?? []).reduce((total, module) => {
+    const minutes = parseDurationMinutes(module.duration);
+    return total + (Number.isFinite(minutes) ? minutes : 0);
+  }, 0);
+  const existing = parseDurationMinutes(manifest.completion?.assessmentDuration);
+  const inferred = Number.isFinite(courseMinutes) && courseMinutes > moduleMinutes ? courseMinutes - moduleMinutes : 0;
+  const assessmentMinutes = Number.isFinite(existing) && existing > 0 ? existing : inferred;
+
+  return {
+    ...manifest.completion,
+    assessmentDuration: assessmentMinutes > 0 ? `${assessmentMinutes} min` : manifest.completion?.assessmentDuration ?? null,
+    durationAccounting: assessmentMinutes > 0 ? "modules-plus-final-assessment" : "modules-only",
+  };
+}
+
 function enrichManifest(manifest) {
   const course = manifest.course ?? {};
   const releaseStatus = manifest.release?.status === "published" ? "public-release-approved" : "internal-review";
@@ -44,6 +70,7 @@ function enrichManifest(manifest) {
 
   return {
     ...manifest,
+    completion: completionPolicy(manifest),
     branding: {
       legalName: officialBrand.legalName,
       brandName: officialBrand.brandName,
@@ -89,4 +116,4 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true })) {
   updated += 1;
 }
 
-console.log(`[Academy Studio] Applied official branding, tags, informational disclaimer, and liability terms to ${updated} course manifest(s)`);
+console.log(`[Academy Studio] Applied official branding, duration accounting, tags, informational disclaimer, and liability terms to ${updated} course manifest(s)`);

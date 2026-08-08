@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "supplementId": "procurement-contract-performance-and-supply-chain",
+  "verifiedAt": "2026-08-07T00:00:00Z",
+  "governance": {
+    "primarySourceRequired": true,
+    "legalAdviceProhibited": true,
+    "jurisdictionMustBeStated": true,
+    "governmentProcurementRulesNotUniversal": true,
+    "timeSensitiveFactsRequireObservationDate": true
+  },
+  "sources": [
+    {
+      "id": "FAR-PART-16-CONTRACT-TYPES-2026",
+      "owner": "United States Government, Acquisition.gov",
+      "title": "Federal Acquisition Regulation, Part 16, Types of Contracts",
+      "publicationDate": null,
+      "retrievedAt": "2026-08-07",
+      "sourceType": "official-federal-procurement-regulation",
+      "url": "https://www.acquisition.gov/far/part-16",
+      "authoritativeFor": [
+        "United States federal contract-type principles",
+        "allocation of cost and performance risk",
+        "fixed-price and cost-reimbursement distinctions",
+        "incentive and indefinite-delivery contract context"
+      ],
+      "keyFacts": [
+        "FAR Part 16 identifies a range of contract types intended to provide flexibility in acquiring supplies and services.",
+        "The contract types vary according to the degree and timing of responsibility and risk assumed by the contractor for performance costs.",
+        "FAR Part 16 states that a firm-fixed-price contract places maximum risk and full responsibility for costs and resulting profit or loss on the contractor.",
+        "Cost-reimbursement contract types generally place greater cost risk on the government and require appropriate surveillance and controls.",
+        "Contract-type selection is expected to reflect the specific acquisition and risk environment rather than a default preference alone."
+      ],
+      "usageLimitations": "United States federal acquisition regulation. It is not a universal commercial contract rule and does not provide legal advice. Reverify current text and consult qualified procurement and legal professionals for a specific acquisition."
+    },
+    {
+      "id": "FAR-42-15-CONTRACTOR-PERFORMANCE-2026",
+      "owner": "United States Government, Acquisition.gov",
+      "title": "Federal Acquisition Regulation, Subpart 42.15, Contractor Performance Information",
+      "publicationDate": null,
+      "retrievedAt": "2026-08-07",
+      "sourceType": "official-federal-procurement-regulation",
+      "url": "https://www.acquisition.gov/far/subpart-42.15",
+      "authoritativeFor": [
+        "United States federal contractor-performance information",
+        "performance evaluation records",
+        "source-selection use of past performance",
+        "contract performance oversight context"
+      ],
+      "keyFacts": [
+        "FAR Subpart 42.15 establishes policies and procedures for recording and maintaining contractor performance information.",
+        "Past performance information is relevant to future source-selection decisions in United States federal acquisition.",
+        "Performance evaluation records require controlled handling and appropriate process."
+      ],
+      "usageLimitations": "United States federal procurement context. Do not present the federal process as a mandatory commercial supplier-scorecard method. Reverify current requirements before professional use."
+    },
+    {
+      "id": "CISA-ICT-SCRM-ESSENTIALS-2026",
+      "owner": "Cybersecurity and Infrastructure Security Agency",
+      "title": "Information and Communications Technology Supply Chain Risk Management Essentials",
+      "publicationDate": null,
+      "retrievedAt": "2026-08-07",
+      "sourceType": "official-government-guidance",
+      "url": "https://www.cisa.gov/resources-tools/resources/ict-supply-chain-risk-management",
+      "authoritativeFor": [
+        "information and communications technology supply-chain risk",
+        "supplier and product risk considerations",
+        "organizational supply-chain governance",
+        "cybersecurity procurement context"
+      ],
+      "keyFacts": [
+        "CISA treats ICT supply-chain risk management as a lifecycle concern rather than a one-time vendor-selection activity.",
+        "Supply-chain risk can involve products, services, suppliers, dependencies, counterfeits, malicious functionality, vulnerabilities, and disruption.",
+        "Organizations are encouraged to integrate supply-chain risk management into governance, acquisition, operations, and incident response."
+      ],
+      "usageLimitations": "Cybersecurity and ICT-specific guidance. Tailor to sector, risk, contracts, and organizational authority. Do not treat guidance as a legal determination."
+    },
+    {
+      "id": "NIST-CSF-2-0-GV-SC-2024",
+      "owner": "National Institute of Standards and Technology",
+      "title": "The NIST Cybersecurity Framework 2.0, Govern Supply Chain Risk Management Category",
+      "publicationDate": "2024-02-26",
+      "retrievedAt": "2026-08-07",
+      "sourceType": "official-government-framework",
+      "url": "https://www.nist.gov/cyberframework",
+      "authoritativeFor": [
+        "cybersecurity supply-chain governance",
+        "supplier roles and requirements",
+        "risk-based contract and monitoring context",
+        "governance and accountability"
+      ],
+      "keyFacts": [
+        "NIST CSF 2.0 added Govern as a core function and includes a Cybersecurity Supply Chain Risk Management category.",
+        "The framework supports defining supplier and customer roles, requirements, risk processes, and monitoring in a cybersecurity context.",
+        "The framework is voluntary guidance and is intended to be tailored."
+      ],
+      "usageLimitations": "Voluntary cybersecurity framework. It does not create a universal legal requirement and should be tailored to applicable obligations and organizational context."
+    }
+  ]
+}
