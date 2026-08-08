@@ -17,7 +17,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs && node scripts/verify-production-readiness.mjs",
+    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-runtime-governance.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs && node scripts/verify-production-readiness.mjs",
     "package:windows": "electron-builder --win nsis portable --publish never",
     "package:media": "powershell -ExecutionPolicy Bypass -File scripts/build-removable-media-package.ps1"
   },
