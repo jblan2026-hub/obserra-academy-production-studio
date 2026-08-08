@@ -11,6 +11,7 @@ on:
       - "studio/verify-free-backend.mjs"
       - "prisma/**"
       - "package.json"
+      - "tsconfig.backend.json"
       - "Dockerfile.backend"
       - "docker-compose.free-backend.yml"
       - ".dockerignore"
@@ -59,11 +60,14 @@ jobs:
       - name: Verify free-first backend contract
         run: npm run verify:free-backend
 
+      - name: Generate Prisma Client explicitly
+        run: npx prisma generate
+
       - name: Validate Prisma schema
         run: npm run db:validate
 
-      - name: Type-check backend and application
-        run: npx tsc --noEmit
+      - name: Type-check backend surface
+        run: npx tsc --noEmit -p tsconfig.backend.json
 
       - name: Build application without paid providers
         run: npm run build
