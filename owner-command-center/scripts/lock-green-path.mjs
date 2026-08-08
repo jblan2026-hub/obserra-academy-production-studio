@@ -9,13 +9,24 @@ const repoRoot = path.resolve(here, "..", "..");
 const registryPath = path.join(repoRoot, "policy", "academy-green-path-locks.json");
 const controlManifestPath = path.join(repoRoot, "policy", "academy-command-center-control-manifest.json");
 
+const TEXT_EXTENSIONS = new Set([
+  ".cjs", ".css", ".html", ".js", ".json", ".md", ".mjs", ".ps1", ".ts", ".tsx", ".txt", ".yml", ".yaml",
+]);
+
 function fail(message) {
   console.error(message);
   process.exit(1);
 }
 
+function canonicalBytes(filePath) {
+  const bytes = fs.readFileSync(filePath);
+  if (!TEXT_EXTENSIONS.has(path.extname(filePath).toLowerCase())) return bytes;
+  const text = bytes.toString("utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  return Buffer.from(text, "utf8");
+}
+
 function sha256File(filePath) {
-  return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+  return crypto.createHash("sha256").update(canonicalBytes(filePath)).digest("hex");
 }
 
 function git(...args) {
@@ -52,7 +63,11 @@ const protectedFiles = files.map((relativePath) => {
   const absolute = path.resolve(repoRoot, relativePath);
   if (!absolute.startsWith(`${repoRoot}${path.sep}`)) fail(`Path escapes repository root: ${relativePath}`);
   if (!fs.existsSync(absolute)) fail(`Cannot freeze missing path: ${relativePath}`);
-  return { path: relativePath.replaceAll("\\", "/"), sha256: sha256File(absolute) };
+  return {
+    path: relativePath.replaceAll("\\", "/"),
+    sha256: sha256File(absolute),
+    hashMode: TEXT_EXTENSIONS.has(path.extname(absolute).toLowerCase()) ? "canonical-utf8-lf" : "raw-bytes",
+  };
 });
 
 registry.locks.push({
@@ -68,4 +83,4 @@ registry.locks.push({
 });
 
 fs.writeFileSync(registryPath, `${JSON.stringify(registry, null, 2)}\n`, "utf8");
-console.log(`Frozen ${controlId} with ${protectedFiles.length} file(s). Commit the updated lock registry to activate the immutable baseline.`);
+console.log(`Frozen ${controlId} with ${protectedFiles.length} file(s) using canonical text hashing and raw binary hashing. Commit the updated lock registry to activate the immutable baseline.`);
