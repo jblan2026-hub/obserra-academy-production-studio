@@ -5,11 +5,18 @@ import { fileURLToPath } from "node:url";
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
 const registryPath = path.join(root, "sources", "authoritative-sources.json");
+const cacheRoot = path.join(root, ".academy-cache", "authoritative-sources");
 const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
 const sources = Array.isArray(registry.sources) ? registry.sources : [];
 const expectedCourses = Number(process.env.ACADEMY_EXPECTED_SURGE_COURSES || 61);
+const maxExcerptCharacters = Math.max(2_000, Math.min(25_000, Number(process.env.ACADEMY_FREE_SOURCE_EXCERPT_CHARACTERS || 12_000)));
 
 const stopWords = new Set(["and","the","for","with","from","into","that","this","your","course","business","executive","professional","management","leadership","application","advanced","fundamentals"]);
+
+function readJson(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  try { return JSON.parse(fs.readFileSync(filePath, "utf8")); } catch { return null; }
+}
 
 function tokens(value) {
   return new Set(String(value || "")
@@ -39,6 +46,20 @@ function sourceScore(source, manifest) {
   return score;
 }
 
+function cachedSource(source) {
+  const sourceDir = path.join(cacheRoot, source.id);
+  const metadata = readJson(path.join(sourceDir, "metadata.json"));
+  const textPath = path.join(sourceDir, "source.txt");
+  const text = fs.existsSync(textPath) ? fs.readFileSync(textPath, "utf8").slice(0, maxExcerptCharacters) : "";
+  return {
+    cacheAvailable: Boolean(metadata?.sha256 && text),
+    cacheFetchedAt: metadata?.fetchedAt || null,
+    cacheSha256: metadata?.sha256 || null,
+    cacheContentType: metadata?.contentType || null,
+    cachedExcerpt: text,
+  };
+}
+
 const courseIds = fs.readdirSync(coursesRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
@@ -60,29 +81,33 @@ for (const courseId of courseIds) {
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score || String(a.source.id).localeCompare(String(b.source.id)))
     .slice(0, 12);
+  const matchedSources = ranked.map(({ source, score }) => ({ ...source, matchScore: score, ...cachedSource(source) }));
   const context = {
-    schemaVersion: "1.0",
+    schemaVersion: "1.1",
     generatedAt: new Date().toISOString(),
     courseId,
     sourceRegistryUpdatedAt: registry.updatedAt || null,
     policy: registry.policy || {},
-    matchedSources: ranked.map(({ source, score }) => ({ ...source, matchScore: score })),
-    sourceCount: ranked.length,
+    matchedSources,
+    sourceCount: matchedSources.length,
+    cachedSourceCount: matchedSources.filter((item) => item.cacheAvailable).length,
     noModelCreditUsed: true,
-    claimBoundary: "Deterministic source matching is a cost-avoidance context step only. It does not establish applicability or factual sufficiency; paid research is used only for unresolved mapping, freshness, documented cases, or gaps."
+    claimBoundary: "Deterministic source matching and direct canonical-source caching are cost-avoidance steps. They support model-free evidence reuse and reduce paid browsing. Applicability, interpretation, documented-case sufficiency, and unresolved gaps still require the governed quality gates."
   };
   const outputDir = path.join(courseDir, "generated", "research");
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, "free-source-context.json"), `${JSON.stringify(context, null, 2)}\n`);
-  summary.push({ courseId, sourceCount: ranked.length });
+  summary.push({ courseId, sourceCount: matchedSources.length, cachedSourceCount: context.cachedSourceCount });
 }
 
 fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
 fs.writeFileSync(path.join(root, "catalog", "academy-free-source-context-summary.json"), `${JSON.stringify({
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
   expectedCourses,
   coursesWithMatches: summary.filter((item) => item.sourceCount > 0).length,
+  coursesWithCachedSources: summary.filter((item) => item.cachedSourceCount > 0).length,
+  totalCachedMatches: summary.reduce((total, item) => total + item.cachedSourceCount, 0),
   courses: summary,
 }, null, 2)}\n`);
-console.log(`[Academy Studio] Built no-model source context for ${summary.length}/${expectedCourses} courses.`);
+console.log(`[Academy Studio] Built no-model source context for ${summary.length}/${expectedCourses} courses with ${summary.reduce((total, item) => total + item.cachedSourceCount, 0)} cached authoritative source matches.`);
