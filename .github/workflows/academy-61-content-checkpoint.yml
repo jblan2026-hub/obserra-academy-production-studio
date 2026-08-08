@@ -1,0 +1,136 @@
+name: Academy 61 Course Content Checkpoint
+run-name: 61-course protected content • ${{ github.ref_name }} • ${{ github.sha }}
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "courses/**"
+      - "sources/**"
+      - "studio/**"
+      - "prisma/**"
+      - "package.json"
+      - ".github/workflows/academy-61-content-checkpoint.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: academy-61-content-checkpoint
+  cancel-in-progress: false
+
+env:
+  NPM_CONFIG_AUDIT: "false"
+  NPM_CONFIG_FUND: "false"
+  NPM_CONFIG_PROGRESS: "false"
+  NPM_CONFIG_UPDATE_NOTIFIER: "false"
+  OBSERRA_PORTFOLIO_WORKER_COUNT: "36"
+  OBSERRA_APPLICATION_WORKER_COUNT: "0"
+  ACADEMY_COURSE_WORKER_COUNT: "36"
+  ACADEMY_AUTHORING_CONCURRENCY: "36"
+  ACADEMY_RESEARCH_CONCURRENCY: "36"
+  ACADEMY_REVIEW_CONCURRENCY: "36"
+  ACADEMY_WORKER_MODE: interchangeable-course-production
+  ACADEMY_EXPECTED_SURGE_COURSES: "61"
+  ACADEMY_EXPECTED_REVIEW_COURSES: "61"
+  ACADEMY_SURGE_EXCLUDED_COURSE_IDS: __none__
+  ACADEMY_MINIMUM_LESSON_WORDS: "1200"
+  ACADEMY_MINIMUM_EXACT_SOURCES_PER_COURSE: "2"
+  ACADEMY_AUTHORING_PROVIDER: openai
+  ACADEMY_AUTHORING_MAX_ATTEMPTS: "3"
+  ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: "2700000"
+  ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: "1800000"
+  ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: "true"
+  OPENAI_AUTHORING_MODEL: gpt-5
+  OPENAI_RESEARCH_MODEL: gpt-5
+  OPENAI_REVIEW_MODEL: gpt-5
+  OPENAI_RESEARCH_REASONING_EFFORT: medium
+  OPENAI_REVIEW_REASONING_EFFORT: high
+  OPENAI_RESEARCH_MAX_OUTPUT_TOKENS: "20000"
+  OPENAI_REVIEW_MAX_OUTPUT_TOKENS: "16000"
+  ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
+  ACADEMY_SUPABASE_REGION: us-east-1
+
+jobs:
+  checkpoint-all-course-content:
+    name: Research, author, review, and checkpoint all 61 courses
+    runs-on: ubuntu-24.04
+    timeout-minutes: 720
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
+      OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
+      DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
+    steps:
+      - name: Checkout course production source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Normalize required protected credentials
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const out = process.env.GITHUB_ENV;
+          const trim = (value) => String(value ?? '').trim().replace(/^['"]|['"]$/g, '');
+          const openai = trim(process.env.OPENAI_API_KEY);
+          let db = trim(process.env.DATABASE_URL);
+          const assignment = db.match(/^(?:ACADEMY_DATABASE_URL|DATABASE_URL)\s*=\s*(.+)$/is);
+          if (assignment) db = trim(assignment[1]);
+          if (db && !/^postgres(?:ql)?:\/\//i.test(db)) {
+            const ref = process.env.ACADEMY_SUPABASE_PROJECT_REF;
+            const region = process.env.ACADEMY_SUPABASE_REGION;
+            db = `postgresql://${encodeURIComponent(`postgres.${ref}`)}:${encodeURIComponent(db)}@aws-0-${region}.pooler.supabase.com:5432/postgres?schema=public&sslmode=require&connect_timeout=30`;
+          }
+          if (!openai) throw new Error('OPENAI_API_KEY is required.');
+          if (!db) throw new Error('ACADEMY_DATABASE_URL is required.');
+          fs.appendFileSync(out, `OPENAI_API_KEY=${openai}\n`);
+          fs.appendFileSync(out, `DATABASE_URL=${new URL(db).toString()}\n`);
+          console.log('[Academy Studio] OpenAI and protected database credentials are available.');
+          NODE
+
+      - name: Verify all 36 workers are assigned to Academy only
+        run: npm run verify:academy-worker-contract
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Bootstrap protected authoring checkpoints
+        run: |
+          npm run db:bootstrap:protected
+          npm run db:bootstrap:hollywood-checkpoints
+
+      - name: Apply governed course policy
+        run: npm run apply:course-policy
+
+      - name: Research current primary sources and documented cases for all 61 courses
+        run: node studio/research-all-61-courses.mjs
+
+      - name: Merge researched primary sources into governed runtime registry
+        run: node studio/merge-61-course-research-registry.mjs
+
+      - name: Author and checkpoint all 61 premium course packages
+        run: node studio/author-all-61-cinematic-parallel.mjs
+
+      - name: Materialize learner, instructor, assessment, accessibility, rights, and certificate assets
+        run: node studio/materialize-hollywood-course-assets.mjs
+
+      - name: Validate all 61 structural packages and exact source mappings
+        run: node studio/validate-academy-hollywood-surge.mjs
+
+      - name: Independently review all 61 courses
+        run: node studio/review-all-61-courses.mjs
+
+      - name: Confirm protected checkpoint count
+        run: node studio/verify-protected-61-checkpoint-count.mjs
