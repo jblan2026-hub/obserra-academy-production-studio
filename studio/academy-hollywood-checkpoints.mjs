@@ -12,6 +12,20 @@ export const PRODUCTION_CONTRACT_VERSION = "academy-hollywood-production-contrac
 const COURSE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{1,120}$/;
 const REQUIRED_VALUES = new Set(["1", "true", "yes", "on"]);
 const CHECKPOINT_AUDIENCE = "obserra-academy-checkpoint";
+const RETRYABLE_GATEWAY_STATUSES = new Set([429, 500, 502, 503, 504]);
+const GATEWAY_MAX_ATTEMPTS = boundedInteger(process.env.ACADEMY_CHECKPOINT_GATEWAY_MAX_ATTEMPTS, 4, 1, 6);
+const GATEWAY_RETRY_BASE_MS = boundedInteger(process.env.ACADEMY_CHECKPOINT_GATEWAY_RETRY_BASE_MS, 500, 100, 5000);
+let cachedOidcToken = null;
+
+function boundedInteger(value, fallback, minimum, maximum) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed)) return fallback;
+  return Math.max(minimum, Math.min(maximum, parsed));
+}
+
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
 
 export function stableHash(value) {
   return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -62,7 +76,21 @@ function checkpointGatewayUrl() {
   return parsed.toString();
 }
 
+function oidcExpiryMilliseconds(token) {
+  try {
+    const segment = token.split(".")[1];
+    if (!segment) return 0;
+    const payload = JSON.parse(Buffer.from(segment, "base64url").toString("utf8"));
+    return Number(payload.exp || 0) * 1000;
+  } catch {
+    return 0;
+  }
+}
+
 async function githubOidcToken() {
+  const now = Date.now();
+  if (cachedOidcToken?.value && cachedOidcToken.refreshAfter > now) return cachedOidcToken.value;
+
   const requestUrl = String(process.env.ACTIONS_ID_TOKEN_REQUEST_URL ?? "").trim();
   const requestToken = String(process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN ?? "").trim();
   if (!requestUrl || !requestToken) {
@@ -80,29 +108,58 @@ async function githubOidcToken() {
   if (!response.ok) throw new Error(`GitHub OIDC token request failed with ${response.status}: ${text.slice(0, 600)}`);
   const payload = JSON.parse(text);
   if (!payload?.value || typeof payload.value !== "string") throw new Error("GitHub OIDC token response did not contain a token.");
+
+  const expiry = oidcExpiryMilliseconds(payload.value);
+  const maximumReuse = now + 5 * 60_000;
+  const refreshAfter = expiry > 0
+    ? Math.max(now + 30_000, Math.min(expiry - 60_000, maximumReuse))
+    : now + 4 * 60_000;
+  cachedOidcToken = { value: payload.value, refreshAfter };
   return payload.value;
+}
+
+function gatewayError(message, retryable) {
+  const error = new Error(message);
+  error.retryable = retryable;
+  return error;
 }
 
 async function gatewayRequest(body) {
   const gateway = checkpointGatewayUrl();
   if (!gateway) throw new Error("Protected Academy checkpoint gateway is not configured.");
-  const token = await githubOidcToken();
-  const response = await fetch(gateway, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  const text = await response.text();
-  let payload = null;
-  try { payload = JSON.parse(text); } catch { payload = { error: text.slice(0, 1000) }; }
-  if (!response.ok) {
-    throw new Error(`Protected checkpoint gateway failed with ${response.status}: ${payload?.error ?? text.slice(0, 1000)}`);
+
+  let lastError = null;
+  for (let attempt = 1; attempt <= GATEWAY_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const token = await githubOidcToken();
+      const response = await fetch(gateway, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      const text = await response.text();
+      let payload = null;
+      try { payload = JSON.parse(text); } catch { payload = { error: text.slice(0, 1000) }; }
+      if (response.ok) return payload;
+
+      throw gatewayError(
+        `Protected checkpoint gateway failed with ${response.status}: ${payload?.error ?? text.slice(0, 1000)}`,
+        RETRYABLE_GATEWAY_STATUSES.has(response.status),
+      );
+    } catch (error) {
+      lastError = error;
+      const retryable = error?.retryable !== false;
+      if (!retryable || attempt >= GATEWAY_MAX_ATTEMPTS) throw error;
+      const backoff = GATEWAY_RETRY_BASE_MS * (2 ** (attempt - 1)) + Math.floor(Math.random() * 250);
+      console.warn(`[Academy Studio] Protected checkpoint gateway attempt ${attempt}/${GATEWAY_MAX_ATTEMPTS} failed; retrying in ${backoff} ms.`);
+      await delay(backoff);
+    }
   }
-  return payload;
+  throw lastError ?? new Error("Protected checkpoint gateway request failed.");
 }
 
 function databaseUrl() {
@@ -124,6 +181,32 @@ async function createPrismaClient() {
   const PrismaClient = module.PrismaClient ?? module.default?.PrismaClient;
   if (!PrismaClient) throw new Error("PrismaClient is unavailable for protected Academy checkpoints.");
   return new PrismaClient();
+}
+
+function governedCourseScope() {
+  const allCourseIds = fs.readdirSync(coursesRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((courseId) => fs.existsSync(path.join(coursesRoot, courseId, "course-manifest.json")))
+    .sort();
+
+  const shardValue = String(process.env.ACADEMY_SHARD_INDEX ?? "").trim();
+  if (!shardValue) {
+    return { courseIds: allCourseIds, scope: "portfolio", shardIndex: null, shardCount: null, portfolioCourseCount: allCourseIds.length };
+  }
+
+  const shardIndex = Number(shardValue);
+  const shardCount = boundedInteger(process.env.ACADEMY_SHARD_COUNT, 16, 1, 64);
+  if (!Number.isInteger(shardIndex) || shardIndex < 0 || shardIndex >= shardCount) {
+    throw new Error(`ACADEMY_SHARD_INDEX must be an integer from 0 through ${shardCount - 1}.`);
+  }
+  return {
+    courseIds: allCourseIds.filter((_courseId, index) => index % shardCount === shardIndex),
+    scope: "shard",
+    shardIndex,
+    shardCount,
+    portfolioCourseCount: allCourseIds.length,
+  };
 }
 
 export async function bootstrapHollywoodCheckpointTable() {
@@ -246,15 +329,11 @@ async function fetchGatewayCheckpoint(courseId, manifest) {
 }
 
 export async function restoreHollywoodCheckpoints() {
-  const selected = fs.readdirSync(coursesRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .filter((courseId) => fs.existsSync(path.join(coursesRoot, courseId, "course-manifest.json")))
-    .sort();
+  const scope = governedCourseScope();
   const restoredCourseIds = [];
   let evaluated = 0;
   let restored = 0;
-  for (const courseId of selected) {
+  for (const courseId of scope.courseIds) {
     const manifest = JSON.parse(fs.readFileSync(path.join(coursesRoot, courseId, "course-manifest.json"), "utf8"));
     evaluated += 1;
     let checkpoint = null;
@@ -287,10 +366,15 @@ export async function restoreHollywoodCheckpoints() {
     restoredCourseIds.push(courseId);
   }
   const summary = {
-    schemaVersion: "1.1",
+    schemaVersion: "1.2",
     generatedAt: new Date().toISOString(),
     authoringPolicyVersion: AUTHORING_POLICY_VERSION,
     productionContractVersion: PRODUCTION_CONTRACT_VERSION,
+    scope: scope.scope,
+    shardIndex: scope.shardIndex,
+    shardCount: scope.shardCount,
+    portfolioCourseCount: scope.portfolioCourseCount,
+    selectedCourseCount: scope.courseIds.length,
     evaluated,
     restored,
     restoredCourseIds,
