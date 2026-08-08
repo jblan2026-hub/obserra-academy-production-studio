@@ -243,8 +243,21 @@ app.on("child-process-gone", (_event, details) => {
 
 function installElectronStoreCompatibility(ElectronStore) {
   const originalLoad = Module._load;
+  const sharedStores = new Map();
+
+  class SharedElectronStore extends ElectronStore {
+    constructor(options = {}) {
+      const normalizedOptions = options && typeof options === "object" ? options : {};
+      const storeName = String(normalizedOptions.name || "config");
+      const existing = sharedStores.get(storeName);
+      if (existing) return existing;
+      super(normalizedOptions);
+      sharedStores.set(storeName, this);
+    }
+  }
+
   Module._load = function loadWithElectronStoreCompatibility(request, parent, isMain) {
-    if (request === "electron-store") return ElectronStore;
+    if (request === "electron-store") return SharedElectronStore;
     return originalLoad.call(this, request, parent, isMain);
   };
   return () => {
@@ -266,6 +279,7 @@ async function startMainProcess() {
     bootstrapLoaded = true;
     writeStartupHealth("main-process-loaded", {
       esmCompatibility: "electron-store-dynamic-import",
+      sharedStore: true,
     });
   } finally {
     restoreModuleLoader();
