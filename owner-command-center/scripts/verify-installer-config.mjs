@@ -14,9 +14,12 @@ for (const target of ["nsis", "portable"]) {
 if (packageJson?.build?.nsis?.oneClick !== true) throw new Error("NSIS installer must remain one-click");
 if (packageJson?.build?.nsis?.perMachine !== false) throw new Error("Installer must be per-user to avoid unnecessary elevation");
 if (packageJson?.build?.nsis?.allowElevation !== false) throw new Error("Installer must not allow elevation by default");
+if (packageJson?.build?.nsis?.runAfterFinish !== false) throw new Error("Application launch must remain controlled by the post-install verifier");
+if (packageJson?.build?.nsis?.deleteAppDataOnUninstall !== false) throw new Error("Uninstall must preserve owner evidence and configuration unless deliberately removed");
 if (packageJson?.build?.win?.requestedExecutionLevel !== "asInvoker") throw new Error("Installer must not request administrator rights by default");
 if (!String(packageJson?.build?.portable?.artifactName ?? "").includes("Portable")) throw new Error("Portable artifact must be clearly labeled");
 if (packageJson?.build?.asar !== true) throw new Error("Packaged application files must remain inside ASAR where supported");
+if (!String(packageJson?.scripts?.["package:windows"] ?? "").includes("--publish never")) throw new Error("Local Windows packaging must not auto-publish artifacts");
 
 const mediaScriptPath = path.join(root, "scripts", "build-removable-media-package.ps1");
 const mediaScript = fs.readFileSync(mediaScriptPath, "utf8");
@@ -81,5 +84,5 @@ if (!mediaScript.includes("ownerEndpointInstallationMayProceedAfterHashVerificat
 }
 
 console.log(
-  `[Owner Command Center] Installer configuration verified: one-click per-user NSIS, portable target, persistent bootstrap and Studio root, post-install health evidence, hash verification, explicit code-signing state, and ${requiredConnectorIds.length} governed connectors.`,
+  `[Owner Command Center] Installer configuration verified: controlled post-install launch, one-click per-user NSIS, portable target, persistent bootstrap and Studio root, post-install health evidence, hash verification, explicit code-signing state, and ${requiredConnectorIds.length} governed connectors.`,
 );
