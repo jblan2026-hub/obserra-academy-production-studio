@@ -8,11 +8,13 @@ This repository is the authoritative production source for commercial Academy co
 
 ## AI-first technical operations
 
-The Studio follows the [AI-First Technical Operations standard](docs/AI_FIRST_AUTOMATED_OPERATIONS.md) for vulnerability intelligence, incident response, containment, platform health, build remediation, dependency maintenance, and approved patching.
+The Studio follows the [AI-First Technical Operations standard](docs/AI_FIRST_AUTOMATED_OPERATIONS.md) for vulnerability intelligence, incident response, containment, platform health, build remediation, dependency maintenance, and approved patching of Obserra-owned infrastructure.
 
-Routine technical changes that pass locked-source verification, isolated testing, compatibility, accessibility, security, build, canary, independent verification, and rollback gates execute through pre-approved playbooks. Human approval is required only when a technical dependency or patch retains material predicted outage risk after those controls are evaluated.
+Routine first-party technical changes that pass locked-source verification, isolated testing, compatibility, accessibility, security, build, canary, independent verification, and rollback gates execute through pre-approved playbooks. Human approval is required only when an Obserra-owned technical dependency or patch retains material predicted outage risk after those controls are evaluated.
 
-This does not self-approve course content. SME, technical, legal, accessibility, brand, assessment, certification, pricing, entitlement, and publication approvals remain required when the course manifest or policy requires them.
+Autonomous patch authority never extends through Academy systems to learners, students, customers, employers, visitors, or vendors. Their devices, browsers, accounts, networks, repositories, tenants, and vendor-managed platforms remain observe-only for security remediation. Connection, enrollment, telemetry, or API credentials do not establish ownership, and human approval cannot override this boundary.
+
+This technical automation does not self-approve course content. SME, technical, legal, accessibility, brand, assessment, certification, pricing, entitlement, and publication approvals remain required when the course manifest or policy requires them.
 
 ## Commercial model
 
