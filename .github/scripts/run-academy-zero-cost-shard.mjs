@@ -44,6 +44,24 @@ async function withRetry(factory, label) {
   }
   return last;
 }
+function readGate(courseId) {
+  const filePath = path.join(coursesRoot, courseId, "generated", "quality", "deterministic-local-course-gate.json");
+  if (!fs.existsSync(filePath)) return null;
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+function writeRemediationContext(courseId, gate) {
+  const filePath = path.join(coursesRoot, courseId, "course-qa-local-remediation.json");
+  const payload = {
+    schemaVersion: "1.0",
+    generatedAt: new Date().toISOString(),
+    courseId,
+    purpose: "deterministic-zero-cost-authoring-remediation",
+    instruction: "Regenerate the complete course package and correct every finding below. Preserve exact manifest module identity and verified primary-source boundaries. Do not omit previously valid content and do not invent facts, URLs, cases, clauses, dates, statistics, or authorities.",
+    findings: Array.isArray(gate?.findings) ? gate.findings : ["deterministic-gate-failed-without-readable-findings"],
+  };
+  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, { mode: 0o600 });
+  return filePath;
+}
 
 const results = [];
 for (const [position, courseId] of selected.entries()) {
@@ -68,12 +86,35 @@ for (const [position, courseId] of selected.entries()) {
     break;
   }
 
+  let deterministic = await runNode([".github/scripts/validate-zero-cost-course.mjs", courseId], `${courseId} deterministic gate`);
+  let remediated = false;
+  if (!deterministic.ok) {
+    const gate = readGate(courseId);
+    const remediationPath = writeRemediationContext(courseId, gate);
+    console.warn(`[Academy Studio] ${courseId} failed deterministic production gate. One local remediation pass is authorized from ${path.relative(root, remediationPath)}.`);
+    const remediation = await withRetry(
+      () => runNode(["studio/author-course-hollywood-with-checkpoint.mjs", "--course", courseId, "--provider", "local", "--force"], `${courseId} remediation authoring`),
+      `${courseId} local deterministic remediation`,
+    );
+    if (!remediation.ok) {
+      results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "remediation-authoring", passed: false, error: remediation.error, findings: gate?.findings || [] });
+      break;
+    }
+    remediated = true;
+    deterministic = await runNode([".github/scripts/validate-zero-cost-course.mjs", courseId], `${courseId} post-remediation deterministic gate`);
+  }
+  if (!deterministic.ok) {
+    const gate = readGate(courseId);
+    results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "deterministic-gate", passed: false, remediated, error: deterministic.error, findings: gate?.findings || [] });
+    break;
+  }
+
   const review = await withRetry(
     () => runNode(["studio/review-course-quality.mjs", "--course", courseId], `${courseId} review`),
     `${courseId} local independent review`,
   );
   if (!review.ok) {
-    results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "review", passed: false, error: review.error });
+    results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "review", passed: false, remediated, error: review.error });
     break;
   }
 
@@ -82,22 +123,23 @@ for (const [position, courseId] of selected.entries()) {
     `${courseId} protected review-evidence checkpoint refresh`,
   );
   if (!refreshCheckpoint.ok) {
-    results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "checkpoint-refresh", passed: false, error: refreshCheckpoint.error });
+    results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "checkpoint-refresh", passed: false, remediated, error: refreshCheckpoint.error });
     break;
   }
 
-  results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "complete", passed: true });
+  results.push({ courseId, startedAt, completedAt: new Date().toISOString(), stage: "complete", passed: true, remediated });
 }
 
 const passed = results.filter((item) => item.passed).length;
 const report = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
   shardIndex,
   shardCount,
   expectedPortfolioCourses: 61,
   selectedCourses: selected,
   completedCourses: passed,
+  remediatedCourses: results.filter((item) => item.remediated).length,
   failedCourses: results.filter((item) => !item.passed).length,
   estimatedCommercialModelApiCostUsd: 0,
   externalPaidModelAllowed: false,
@@ -105,5 +147,5 @@ const report = {
 };
 fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
 fs.writeFileSync(path.join(root, "catalog", `academy-zero-cost-shard-${String(shardIndex).padStart(2, "0")}.json`), `${JSON.stringify(report, null, 2)}\n`);
-console.log(`[Academy Studio] Zero-cost shard ${shardIndex + 1}/${shardCount}: ${passed}/${selected.length} course(s) fully checkpointed.`);
+console.log(`[Academy Studio] Zero-cost shard ${shardIndex + 1}/${shardCount}: ${passed}/${selected.length} course(s) fully checkpointed, ${report.remediatedCourses} remediated.`);
 if (passed !== selected.length) process.exit(2);
