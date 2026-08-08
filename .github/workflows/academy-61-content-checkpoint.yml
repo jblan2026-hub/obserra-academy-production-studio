@@ -49,26 +49,23 @@ env:
   ACADEMY_FREE_SOURCE_MAX_BYTES: "8388608"
   ACADEMY_FREE_SOURCE_TIMEOUT_MS: "30000"
   ACADEMY_FREE_SOURCE_EXCERPT_CHARACTERS: "12000"
-  ACADEMY_AUTHORING_PROVIDER: openai
-  ACADEMY_RESEARCH_PROVIDER: openai
-  ACADEMY_REVIEW_PROVIDER: openai
-  OPENAI_API_URL: http://127.0.0.1:11435/v1/responses
-  OPENAI_API_KEY: ollama-local-no-secret
-  OPENAI_AUTHORING_MODEL: qwen2.5:7b-instruct
-  OPENAI_RESEARCH_MODEL: qwen2.5:7b-instruct
-  OPENAI_REVIEW_MODEL: qwen2.5:7b-instruct
-  OPENAI_RESEARCH_REASONING_EFFORT: medium
-  OPENAI_REVIEW_REASONING_EFFORT: high
-  OPENAI_RESEARCH_MAX_OUTPUT_TOKENS: "20000"
-  OPENAI_REVIEW_MAX_OUTPUT_TOKENS: "16000"
+  ACADEMY_DIRECT_SOURCE_CANDIDATES: "10"
+  ACADEMY_DIRECT_SOURCE_TARGET: "6"
+  ACADEMY_AUTHORING_PROVIDER: local
+  ACADEMY_RESEARCH_PROVIDER: local
+  ACADEMY_REVIEW_PROVIDER: local
   LOCAL_AI_BASE_URL: http://127.0.0.1:11434
   LOCAL_AI_MODEL: qwen2.5:7b-instruct
+  LOCAL_RESEARCH_MODEL: qwen2.5:7b-instruct
+  LOCAL_REVIEW_MODEL: qwen2.5:7b-instruct
   LOCAL_AI_TIMEOUT_MS: "3600000"
-  ACADEMY_LOCAL_MODEL_CONTEXT: "32768"
+  LOCAL_AI_NUM_CTX: "32768"
   ACADEMY_LOCAL_CONTEXT_MAX_CHARS: "100000"
   OLLAMA_NO_CLOUD: "1"
   OLLAMA_KEEP_ALIVE: "30m"
   STUDIO_ALLOW_PAID_AI: "false"
+  OPENAI_API_KEY: ""
+  ANTHROPIC_API_KEY: ""
   STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
   ACADEMY_CHECKPOINT_GATEWAY_URL: https://nwxnyqlyzyufgoadtqxs.supabase.co/functions/v1/academy-checkpoint-gateway
 
@@ -98,7 +95,7 @@ jobs:
           curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=0.30.8 sh
           ollama --version
 
-      - name: Start Ollama in local-only mode and pull Apache-2.0 model
+      - name: Start Ollama in local-only mode and pull local model
         shell: bash
         run: |
           set -euo pipefail
@@ -111,17 +108,6 @@ jobs:
           curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null
           ollama pull "$LOCAL_AI_MODEL"
           ollama list
-
-      - name: Start zero-cost Responses compatibility proxy
-        shell: bash
-        run: |
-          set -euo pipefail
-          nohup node studio/local-ollama-responses-proxy.mjs > /tmp/academy-local-proxy.log 2>&1 &
-          for attempt in $(seq 1 60); do
-            if curl --fail --silent http://127.0.0.1:11435/health >/dev/null; then break; fi
-            sleep 2
-          done
-          curl --fail --silent http://127.0.0.1:11435/health
 
       - name: Verify all 36 logical workers are assigned only to Academy
         run: node studio/verify-academy-61-worker-contract.mjs
@@ -144,20 +130,14 @@ jobs:
       - name: Build deterministic source context from authoritative registry and cache
         run: node studio/build-free-course-source-context.mjs
 
-      - name: Research all missing course evidence through local Ollama only
+      - name: Research all missing course evidence through direct primary sources and local Ollama
         run: node studio/research-all-61-courses.mjs
-
-      - name: Normalize local research provenance before registry merge
-        run: node studio/normalize-local-ollama-evidence.mjs
 
       - name: Merge researched primary sources into governed runtime registry
         run: node studio/merge-61-course-research-registry.mjs
 
       - name: Author and checkpoint all 61 governed course packages through local Ollama only
         run: node studio/author-all-61-cinematic-parallel.mjs
-
-      - name: Normalize local authoring provenance
-        run: node studio/normalize-local-ollama-evidence.mjs
 
       - name: Materialize learner, instructor, assessment, accessibility, rights, and certificate assets
         run: node studio/materialize-hollywood-course-assets.mjs
@@ -168,18 +148,18 @@ jobs:
       - name: Independently review all courses through local Ollama only
         run: node studio/review-all-61-courses.mjs
 
-      - name: Normalize local review provenance
-        run: node studio/normalize-local-ollama-evidence.mjs
-
-      - name: Confirm no commercial model credentials are required
+      - name: Confirm zero commercial model credentials and native local providers
         shell: bash
         run: |
           set -euo pipefail
-          test "$OPENAI_API_URL" = "http://127.0.0.1:11435/v1/responses"
-          test "$OPENAI_API_KEY" = "ollama-local-no-secret"
+          test "$ACADEMY_AUTHORING_PROVIDER" = "local"
+          test "$ACADEMY_RESEARCH_PROVIDER" = "local"
+          test "$ACADEMY_REVIEW_PROVIDER" = "local"
+          test -z "$OPENAI_API_KEY"
+          test -z "$ANTHROPIC_API_KEY"
           test "$STUDIO_ALLOW_PAID_AI" = "false"
           test "$OLLAMA_NO_CLOUD" = "1"
-          echo "Academy content lane is local-model-only with estimated model API cost $0."
+          echo "Academy content lane is native local-model-only with estimated model API cost $0."
 
       - name: Confirm protected checkpoint count
         run: node studio/verify-protected-61-checkpoint-count.mjs
