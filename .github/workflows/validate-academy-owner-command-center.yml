@@ -1,0 +1,81 @@
+name: Validate Academy Owner Command Center
+
+on:
+  pull_request:
+    paths:
+      - "owner-command-center/**"
+      - ".github/workflows/validate-academy-owner-command-center.yml"
+  workflow_dispatch:
+    inputs:
+      course_id:
+        description: "Academy course ID for a real paid-access verification"
+        required: false
+        type: string
+      checkout_session_id:
+        description: "Paid Stripe Checkout Session ID to verify against Clerk entitlement readback"
+        required: false
+        type: string
+      academy_url:
+        description: "Deployed Academy origin"
+        required: false
+        default: "https://www.obserrallc.com"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: academy-owner-command-center-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-source-and-runtime-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install locked Command Center dependencies
+        working-directory: owner-command-center
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Validate JavaScript syntax
+        run: |
+          node --check owner-command-center/electron/academy-course-control.cjs
+          node --check owner-command-center/electron/main-with-remediation.cjs
+          node --check owner-command-center/electron/preload.cjs
+          node --check owner-command-center/src/academy-control-ui.js
+          node --check owner-command-center/scripts/verify-academy-course-control.mjs
+          node --check owner-command-center/scripts/verify-live-academy-purchase.mjs
+
+      - name: Validate complete owner Command Center contract
+        working-directory: owner-command-center
+        run: npm run verify
+
+  verify-real-paid-access:
+    if: github.event_name == 'workflow_dispatch' && inputs.course_id != '' && inputs.checkout_session_id != ''
+    runs-on: ubuntu-latest
+    environment: academy-live-verification
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify Stripe payment, Clerk entitlement, and Academy commerce readback
+        working-directory: owner-command-center
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          ACADEMY_TEST_COURSE_ID: ${{ inputs.course_id }}
+          ACADEMY_TEST_CHECKOUT_SESSION_ID: ${{ inputs.checkout_session_id }}
+          OBSERRA_ACADEMY_URL: ${{ inputs.academy_url }}
+        run: npm run verify:live-purchase
