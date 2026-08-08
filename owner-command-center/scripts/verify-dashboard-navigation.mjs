@@ -111,7 +111,7 @@ assert.match(webNetworkUi, /Healthy HTTPS \+ HTML/);
 assert.match(webNetworkUi, /Analyze connections and network/);
 assert.match(webNetworkRuntime, /Monitored webpages must use HTTPS/);
 assert.match(webNetworkRuntime, /response did not contain an HTML document/);
-assert.match(webNetworkRuntime, /unrestrictedPortScanning: false/);
+assert.match(webNetworkRuntime, /does not perform unrestricted network or port scanning/);
 assert.match(mainWithRemediation, /webpages:scanAll/);
 assert.match(mainWithRemediation, /network:analyzeNow/);
 assert.match(mainWithRemediation, /runtime:getHealth/);
