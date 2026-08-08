@@ -82,6 +82,12 @@
     "requiredEvidence": [
       "source-traceability",
       "claim-level-source-and-applicability-audit",
+      "documented-real-world-case-register",
+      "real-world-case-source-audit",
+      "course-implementation-strategy",
+      "standards-implementation-map",
+      "prioritized-recommendation-register",
+      "implementation-evidence-and-metrics-review",
       "assessment-integrity",
       "accessibility-equivalence",
       "creative-treatment-approval",
