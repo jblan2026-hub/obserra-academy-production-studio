@@ -174,25 +174,29 @@ async function interactivePrincipal(request: Request): Promise<StudioPrincipal |
   return supabasePrincipal(request);
 }
 
-export async function authorizeStudioRequest(
+export async function authenticateStudioRequest(
   request: Request,
-  permission: StudioPermission,
 ): Promise<{ principal: StudioPrincipal | null; reason?: string }> {
   const machine = machinePrincipal(request);
   if (machine) return { principal: machine };
 
   const principal = await interactivePrincipal(request);
-  if (!principal) {
-    return { principal: null, reason: "Authentication required" };
-  }
+  if (!principal) return { principal: null, reason: "Authentication required" };
+  if (!principal.organizationId) return { principal: null, reason: "An active organization is required" };
+  return { principal };
+}
 
+export async function authorizeStudioRequest(
+  request: Request,
+  permission: StudioPermission,
+): Promise<{ principal: StudioPrincipal | null; reason?: string }> {
+  const authentication = await authenticateStudioRequest(request);
+  if (!authentication.principal) return authentication;
+
+  const principal = authentication.principal;
   const permissions = rolePermissions[principal.role] ?? new Set<StudioPermission>();
   if (!permissions.has(permission)) {
     return { principal: null, reason: `Role ${principal.role} does not grant ${permission}` };
-  }
-
-  if (!principal.organizationId) {
-    return { principal: null, reason: "An active organization is required" };
   }
 
   return { principal };
