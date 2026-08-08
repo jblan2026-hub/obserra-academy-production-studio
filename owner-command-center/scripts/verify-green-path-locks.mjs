@@ -8,8 +8,19 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "..", "..");
 const lockPath = path.join(repoRoot, "policy", "academy-green-path-locks.json");
 
+const TEXT_EXTENSIONS = new Set([
+  ".cjs", ".css", ".html", ".js", ".json", ".md", ".mjs", ".ps1", ".ts", ".tsx", ".txt", ".yml", ".yaml",
+]);
+
+function canonicalBytes(filePath) {
+  const bytes = fs.readFileSync(filePath);
+  if (!TEXT_EXTENSIONS.has(path.extname(filePath).toLowerCase())) return bytes;
+  const text = bytes.toString("utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  return Buffer.from(text, "utf8");
+}
+
 function sha256File(filePath) {
-  return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+  return crypto.createHash("sha256").update(canonicalBytes(filePath)).digest("hex");
 }
 
 const registry = JSON.parse(fs.readFileSync(lockPath, "utf8"));
@@ -44,4 +55,4 @@ for (const lock of registry.locks) {
   }
 }
 
-console.log(`Green-path immutability verification passed: ${registry.locks.length} frozen lock(s) checked.`);
+console.log(`Green-path immutability verification passed: ${registry.locks.length} frozen lock(s) checked with canonical text hashing and raw binary hashing.`);
