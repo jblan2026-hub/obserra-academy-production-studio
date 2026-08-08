@@ -1,0 +1,58 @@
+name: Generate Owner Command Center Lockfile
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/academy-36-worker-course-surge
+    paths:
+      - "owner-command-center/package.json"
+      - ".github/workflows/owner-command-center-lockfile.yml"
+  pull_request:
+    paths:
+      - "owner-command-center/package.json"
+      - "owner-command-center/package-lock.json"
+      - ".github/workflows/owner-command-center-lockfile.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: owner-command-center-lockfile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate-and-validate:
+    name: Generate and validate npm dependency lock
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: owner-command-center
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Generate lockfile without lifecycle execution
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Prove clean install from generated lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Validate lockfile identity and direct dependency coverage
+        shell: pwsh
+        run: |
+          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); const l=JSON.parse(fs.readFileSync('package-lock.json','utf8')); if(l.name!==p.name||l.version!==p.version) throw new Error('Lockfile identity mismatch'); if(Number(l.lockfileVersion)<3) throw new Error('npm lockfileVersion 3 or later is required'); const root=l.packages?.['']; if(!root) throw new Error('Lockfile root package is missing'); for(const group of ['dependencies','devDependencies']) for(const name of Object.keys(p[group]||{})) if(!(name in (root[group]||{}))) throw new Error('Lockfile root is missing '+group+' entry '+name); console.log('Command Center lockfile identity and direct dependency coverage passed.');"
+
+      - name: Upload validated lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-command-center-package-lock-${{ github.sha }}
+          path: owner-command-center/package-lock.json
+          if-no-files-found: error
+          retention-days: 30
