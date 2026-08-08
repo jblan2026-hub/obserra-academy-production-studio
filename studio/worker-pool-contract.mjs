@@ -18,6 +18,9 @@ const REQUIRED_PROHIBITED_WORKSTREAMS = Object.freeze([
   "third-party-system-mutation",
   "unapproved-production-publication",
   "unapproved-commerce-activation",
+  "placeholder-media-finalization",
+  "unlicensed-media-use",
+  "unverified-commercial-quality-claim",
 ]);
 const REQUIRED_UNIVERSAL_RULES = Object.freeze([
   "secure-by-design",
@@ -39,14 +42,29 @@ const REQUIRED_UNIVERSAL_RULES = Object.freeze([
   "no-automatic-purchase-enablement",
   "no-owner-approval-bypass",
 ]);
+const REQUIRED_ACADEMY_RULES = Object.freeze([
+  "commercial-cinematic-quality-gate",
+  "original-instructional-content-only",
+  "no-placeholder-media-as-final",
+  "human-media-qc-required",
+  "rights-cleared-assets-only",
+  "accessibility-equivalence-required",
+  "assessment-integrity-required",
+  "release-evidence-required",
+]);
 
 const ACADEMY_TASK_ROLES = Object.freeze({
   "protected-authoring": "instructional-author",
   "learner-materials": "learner-materials-producer",
   "assessment-and-answer-key": "assessment-author",
+  "creative-treatment-and-production-bible": "creative-director",
+  "storyboard-shot-list-and-visual-design": "storyboard-and-visual-design-producer",
   "video-script-and-media-production": "media-producer",
+  "narration-music-and-audio-mastering": "narration-and-audio-producer",
+  "editorial-color-motion-graphics-and-finishing": "post-production-editor",
   "captions-transcripts-and-accessibility": "accessibility-producer",
   "rights-and-source-records": "rights-record-producer",
+  "commercial-media-quality-control": "media-quality-validator",
   "certificate-package": "certificate-packager",
   "compliance-staging": "compliance-validator",
 });
@@ -59,11 +77,14 @@ const COMMAND_CENTER_TASK_ROLES = Object.freeze({
 });
 
 function unique(values) {
-  return new Set(values).size === values.length;
+  return Array.isArray(values) && new Set(values).size === values.length;
 }
 
 function sameMembers(left, right) {
-  return left.length === right.length && left.every((value) => right.includes(value));
+  return Array.isArray(left)
+    && Array.isArray(right)
+    && left.length === right.length
+    && left.every((value) => right.includes(value));
 }
 
 function assertBoolean(value, name, expected = true) {
@@ -72,12 +93,124 @@ function assertBoolean(value, name, expected = true) {
   }
 }
 
-function readContract() {
-  if (!fs.existsSync(contractPath)) {
-    throw new Error(`Worker pool contract not found: ${contractPath}`);
+function assertString(value, name) {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${name} must be a non-empty string.`);
   }
-  const contract = JSON.parse(fs.readFileSync(contractPath, "utf8"));
-  if (contract.schemaVersion !== "1.0") {
+  return value.trim();
+}
+
+function assertStringArray(value, name, minimum = 1) {
+  if (!Array.isArray(value) || value.length < minimum || !value.every((item) => typeof item === "string" && item.trim())) {
+    throw new Error(`${name} must contain at least ${minimum} non-empty string value(s).`);
+  }
+  if (!unique(value)) throw new Error(`${name} contains duplicates.`);
+  return value;
+}
+
+function readJson(filePath, name) {
+  if (!fs.existsSync(filePath)) throw new Error(`${name} not found: ${filePath}`);
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch (error) {
+    throw new Error(`${name} is invalid JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function resolveGovernedPath(relativePath, name) {
+  const normalized = assertString(relativePath, name);
+  const resolved = path.resolve(root, normalized);
+  const relative = path.relative(root, resolved);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`${name} must remain inside the repository.`);
+  }
+  return resolved;
+}
+
+function readProductionStandard(referencePath) {
+  const standardPath = resolveGovernedPath(referencePath, "academy productionStandardPath");
+  const standard = readJson(standardPath, "Commercial cinematic production standard");
+  if (standard.schemaVersion !== "1.0") {
+    throw new Error(`Unsupported commercial production standard schema: ${standard.schemaVersion ?? "missing"}`);
+  }
+  if (standard.standardId !== "obserra-commercial-cinematic-course-production-v1") {
+    throw new Error(`Unexpected commercial production standard identity: ${standard.standardId ?? "missing"}`);
+  }
+  if (standard.qualityTier !== "commercial-hollywood-grade") {
+    throw new Error("The Academy production standard must target commercial-hollywood-grade quality.");
+  }
+  assertString(standard.claimBoundary, "production standard claimBoundary");
+  assertBoolean(
+    standard.claimPolicy?.qualityClaimAllowedOnlyAfterAcceptance,
+    "production standard qualityClaimAllowedOnlyAfterAcceptance",
+  );
+  assertStringArray(standard.claimPolicy?.prohibitedInterimClaims, "production standard prohibitedInterimClaims", 5);
+  assertStringArray(standard.requiredCourseDeliverables, "production standard requiredCourseDeliverables", 8);
+  assertStringArray(
+    standard.requiredInstructionalLessonDeliverables,
+    "production standard requiredInstructionalLessonDeliverables",
+    15,
+  );
+  if (standard.pictureMaster?.minimumRaster !== "3840x2160") {
+    throw new Error("Commercial picture masters must target 3840x2160 or an explicitly approved equivalent.");
+  }
+  for (const flag of [
+    "approvedEquivalentAllowed",
+    "mezzanineMasterRequired",
+    "webDeliveryDerivativeRequired",
+    "consistentFrameRateRequired",
+    "colorReviewRequired",
+    "titleSafeReviewRequired",
+    "motionGraphicsReviewRequired",
+    "providerPreviewMayNotBeFinal",
+    "placeholderFramesProhibitedInFinal",
+    "silentOrStaticMockupMayNotBeFinal",
+  ]) {
+    assertBoolean(standard.pictureMaster?.[flag], `production standard pictureMaster.${flag}`);
+  }
+  if (standard.audioMaster?.sampleRateHz !== 48000) {
+    throw new Error("Commercial audio masters must use a 48 kHz sample rate.");
+  }
+  if (!Number.isInteger(standard.audioMaster?.minimumBitDepth) || standard.audioMaster.minimumBitDepth < 24) {
+    throw new Error("Commercial audio masters must use a minimum 24-bit depth.");
+  }
+  if (standard.audioMaster?.integratedLoudnessTargetLufs !== -16
+      || standard.audioMaster?.integratedLoudnessToleranceLufs !== 1
+      || standard.audioMaster?.truePeakMaximumDbtp !== -1) {
+    throw new Error("Commercial audio loudness and true-peak targets do not match the governed digital-learning master specification.");
+  }
+  for (const flag of [
+    "dialogueIntelligibilityReviewRequired",
+    "noiseAndArtifactReviewRequired",
+    "musicAndEffectsRightsRequired",
+    "noSilentMaster",
+    "professionalNarrationOrOwnerApprovedEquivalentRequired",
+  ]) {
+    assertBoolean(standard.audioMaster?.[flag], `production standard audioMaster.${flag}`);
+  }
+  for (const group of [
+    "editorialAndVisualQuality",
+    "accessibility",
+    "rightsAndProvenance",
+    "assessmentQuality",
+    "qualityControl",
+  ]) {
+    const values = standard[group];
+    if (!values || typeof values !== "object" || Array.isArray(values)) {
+      throw new Error(`production standard ${group} must be an object.`);
+    }
+    for (const [name, value] of Object.entries(values)) {
+      assertBoolean(value, `production standard ${group}.${name}`);
+    }
+  }
+  assertStringArray(standard.prohibitedFinalSubstitutes, "production standard prohibitedFinalSubstitutes", 10);
+  assertStringArray(standard.requiredReleaseEvidence, "production standard requiredReleaseEvidence", 12);
+  return { standard, standardPath };
+}
+
+function readContract() {
+  const contract = readJson(contractPath, "Worker pool contract");
+  if (contract.schemaVersion !== "1.1") {
     throw new Error(`Unsupported worker pool contract schema: ${contract.schemaVersion ?? "missing"}`);
   }
   if (contract.contractId !== "obserra-elastic-production-pool-36") {
@@ -135,12 +268,26 @@ function readContract() {
   if (!sameMembers(contract.academyContract?.allowedRoles ?? [], Object.values(ACADEMY_TASK_ROLES))) {
     throw new Error("The Academy role catalog does not match the enforceable task role mapping.");
   }
+  if (!sameMembers(contract.academyContract?.mandatoryRules ?? [], REQUIRED_ACADEMY_RULES)) {
+    throw new Error("The Academy commercial production rule catalog is incomplete or contains unapproved rules.");
+  }
+  assertStringArray(contract.academyContract?.requiredEvidence, "academy requiredEvidence", 15);
   assertBoolean(contract.academyContract?.publicationDefault, "academy publicationDefault", false);
   assertBoolean(contract.academyContract?.checkoutDefault, "academy checkoutDefault", false);
   assertBoolean(
     contract.academyContract?.releaseRequiresOwnerApproval,
     "academy releaseRequiresOwnerApproval",
   );
+
+  const { standard, standardPath } = readProductionStandard(
+    contract.academyContract?.productionStandardPath,
+  );
+  if (contract.academyContract.productionStandardId !== standard.standardId) {
+    throw new Error("The Academy contract production standard identity does not match the governed standard file.");
+  }
+  if (contract.academyContract.qualityTier !== standard.qualityTier) {
+    throw new Error("The Academy contract quality tier does not match the governed standard file.");
+  }
 
   if (!sameMembers(
     contract.commandCenterContract?.allowedRoles ?? [],
@@ -167,7 +314,7 @@ function readContract() {
   if (!unique(contract.universalRules ?? [])) {
     throw new Error("The universal rule catalog contains duplicates.");
   }
-  return contract;
+  return { contract, standard, standardPath };
 }
 
 function deepFreeze(value) {
@@ -177,7 +324,10 @@ function deepFreeze(value) {
   return value;
 }
 
-export const workerPoolContract = deepFreeze(readContract());
+const governedSource = readContract();
+export const workerPoolContract = deepFreeze(governedSource.contract);
+export const commercialProductionStandard = deepFreeze(governedSource.standard);
+export const commercialProductionStandardPath = governedSource.standardPath;
 export const WORKER_TOTAL = workerPoolContract.totalLogicalWorkers;
 export const ACADEMY_WORKSTREAM = "academy-course-production";
 export const COMMAND_CENTER_WORKSTREAM = "command-center-release";
@@ -191,6 +341,13 @@ export function contractHash() {
   return crypto
     .createHash("sha256")
     .update(JSON.stringify(workerPoolContract))
+    .digest("hex");
+}
+
+export function commercialProductionStandardHash() {
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify(commercialProductionStandard))
     .digest("hex");
 }
 
@@ -218,13 +375,26 @@ export function assertUniversalRules(requiredRules = REQUIRED_UNIVERSAL_RULES) {
   return true;
 }
 
+function appliedRulesForWorkstream(workstream) {
+  if (workstream === ACADEMY_WORKSTREAM) {
+    return Object.freeze([
+      ...workerPoolContract.universalRules,
+      ...workerPoolContract.academyContract.mandatoryRules,
+    ]);
+  }
+  return workerPoolContract.universalRules;
+}
+
 export function taskContract(taskType) {
   if (Object.hasOwn(ACADEMY_TASK_ROLES, taskType)) {
     return Object.freeze({
       taskType,
       workstream: ACADEMY_WORKSTREAM,
       role: ACADEMY_TASK_ROLES[taskType],
-      appliedRules: workerPoolContract.universalRules,
+      appliedRules: appliedRulesForWorkstream(ACADEMY_WORKSTREAM),
+      productionStandardId: commercialProductionStandard.standardId,
+      productionStandardHash: commercialProductionStandardHash(),
+      qualityTier: commercialProductionStandard.qualityTier,
     });
   }
   if (Object.hasOwn(COMMAND_CENTER_TASK_ROLES, taskType)) {
@@ -232,7 +402,7 @@ export function taskContract(taskType) {
       taskType,
       workstream: COMMAND_CENTER_WORKSTREAM,
       role: COMMAND_CENTER_TASK_ROLES[taskType],
-      appliedRules: workerPoolContract.universalRules,
+      appliedRules: appliedRulesForWorkstream(COMMAND_CENTER_WORKSTREAM),
     });
   }
   throw new Error(`No governed role is defined for task type: ${taskType}`);
@@ -246,7 +416,7 @@ export function assertTaskAssignment({
   workstream,
   taskType,
   role,
-  acknowledgedRules = workerPoolContract.universalRules,
+  acknowledgedRules,
 }) {
   assertWorkstream(workstream);
   const governedTask = taskContract(taskType);
@@ -263,13 +433,16 @@ export function assertTaskAssignment({
     throw new Error(`Command Center role is not authorized by contract: ${role}`);
   }
   if (!Array.isArray(acknowledgedRules)) {
-    throw new Error("Worker assignment must acknowledge the complete universal rule catalog.");
+    throw new Error("Worker assignment must acknowledge every applicable contract rule.");
   }
   const acknowledged = new Set(acknowledgedRules);
-  for (const rule of workerPoolContract.universalRules) {
+  for (const rule of governedTask.appliedRules) {
     if (!acknowledged.has(rule)) {
       throw new Error(`Worker assignment did not acknowledge mandatory rule ${rule}.`);
     }
+  }
+  if (acknowledged.size !== governedTask.appliedRules.length) {
+    throw new Error("Worker assignment includes rules outside the governed task contract.");
   }
   assertUniversalRules();
   return Object.freeze({
@@ -278,7 +451,14 @@ export function assertTaskAssignment({
     workstream,
     taskType,
     role,
-    appliedRules: workerPoolContract.universalRules,
+    appliedRules: governedTask.appliedRules,
+    ...(workstream === ACADEMY_WORKSTREAM
+      ? {
+        productionStandardId: commercialProductionStandard.standardId,
+        productionStandardHash: commercialProductionStandardHash(),
+        qualityTier: commercialProductionStandard.qualityTier,
+      }
+      : {}),
   });
 }
 
@@ -363,6 +543,9 @@ export function planWorkerAllocation({
     commandCenterPendingTasks: commandPending,
     contractId: workerPoolContract.contractId,
     contractHash: contractHash(),
+    productionStandardId: commercialProductionStandard.standardId,
+    productionStandardHash: commercialProductionStandardHash(),
+    qualityTier: commercialProductionStandard.qualityTier,
     contractCompliant: true,
   });
 }
@@ -414,6 +597,21 @@ export function verifyWorkerPoolContract() {
     workerPoolContract.academyContract.allowedRoles,
     Object.values(ACADEMY_TASK_ROLES),
   ));
+  check("academy-rule-coverage", sameMembers(
+    workerPoolContract.academyContract.mandatoryRules,
+    REQUIRED_ACADEMY_RULES,
+  ));
+  check("commercial-standard-id", commercialProductionStandard.standardId === "obserra-commercial-cinematic-course-production-v1");
+  check("commercial-quality-tier", commercialProductionStandard.qualityTier === "commercial-hollywood-grade");
+  check("commercial-claim-fail-closed", commercialProductionStandard.claimPolicy.qualityClaimAllowedOnlyAfterAcceptance === true);
+  check("commercial-picture-master", commercialProductionStandard.pictureMaster.minimumRaster === "3840x2160");
+  check("commercial-audio-master", commercialProductionStandard.audioMaster.sampleRateHz === 48000
+    && commercialProductionStandard.audioMaster.minimumBitDepth >= 24
+    && commercialProductionStandard.audioMaster.noSilentMaster === true);
+  check("commercial-human-qc", commercialProductionStandard.qualityControl.humanEditorialQcRequired === true
+    && commercialProductionStandard.qualityControl.humanVisualQcRequired === true
+    && commercialProductionStandard.qualityControl.humanAudioQcRequired === true
+    && commercialProductionStandard.qualityControl.ownerAcceptanceRequired === true);
   check("command-center-role-coverage", sameMembers(
     workerPoolContract.commandCenterContract.allowedRoles,
     Object.values(COMMAND_CENTER_TASK_ROLES),
@@ -430,10 +628,13 @@ export function verifyWorkerPoolContract() {
   check("command-center-first-party-only", workerPoolContract.commandCenterContract.firstPartyMutationOnly === true);
 
   return Object.freeze({
-    schemaVersion: "1.0",
+    schemaVersion: "1.1",
     verifiedAt: new Date().toISOString(),
     contractId: workerPoolContract.contractId,
     contractHash: contractHash(),
+    productionStandardId: commercialProductionStandard.standardId,
+    productionStandardHash: commercialProductionStandardHash(),
+    qualityTier: commercialProductionStandard.qualityTier,
     ready: findings.length === 0,
     checkCount: checks.length,
     findingCount: findings.length,
