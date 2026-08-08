@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "1.0",
+  "profileId": "obserra-academy-pci-dss-v4.0.1",
+  "standard": "PCI DSS v4.0.1",
+  "targetValidationModel": "SAQ A where confirmed eligible by the acquirer/payment brand",
+  "architecture": {
+    "preferredCheckoutPattern": "full-redirect-to-stripe-hosted-checkout",
+    "merchantHostedCardFieldsForbidden": true,
+    "directPostForbidden": true,
+    "primaryAccountNumberStorageForbidden": true,
+    "cvcStorageForbidden": true,
+    "rawPaymentMethodStorageForbidden": true,
+    "cardholderDataLoggingForbidden": true,
+    "stripeCheckoutRedirectOnlyForCardCapture": true,
+    "serverSidePaymentVerificationRequired": true,
+    "webhookSignatureVerificationRequired": true,
+    "successRedirectDoesNotGrantEntitlement": true,
+    "idempotentEntitlementGrantRequired": true
+  },
+  "merchantWebsiteControls": {
+    "httpsRequired": true,
+    "minimumTlsVersion": "1.2",
+    "hstsRequired": true,
+    "secureCookieRequired": true,
+    "httpOnlyCookieRequired": true,
+    "sameSiteCookieRequired": true,
+    "mixedContentForbidden": true,
+    "securityPatchManagementRequired": true,
+    "uniqueAdministrativeIdentitiesRequired": true,
+    "strongAuthenticationRequired": true,
+    "leastPrivilegeRequired": true,
+    "externalAsvScanningRequiredWhereApplicable": true,
+    "redirectIntegrityProtectionRequired": true,
+    "thirdPartyProviderComplianceMonitoringRequired": true,
+    "providerResponsibilityAgreementRequired": true
+  },
+  "ecommerceSecurity": {
+    "paymentPageScriptInventoryRequiredIfEmbeddedPaymentIsEverUsed": true,
+    "paymentPageScriptAuthorizationRequiredIfEmbeddedPaymentIsEverUsed": true,
+    "paymentPageTamperDetectionRequiredIfEmbeddedPaymentIsEverUsed": true,
+    "redirectModelPreferredToReduceScriptAttackSurface": true,
+    "cspRequired": true,
+    "frameAncestorsRestricted": true,
+    "formActionRestricted": true,
+    "sriRequiredForApprovedExternalScriptsWhereTechnicallyApplicable": true,
+    "dependencyAndSupplyChainScanningRequired": true
+  },
+  "dataProtection": {
+    "customerEmailMinimizationRequired": true,
+    "customerEmailMaskingInOwnerUiRequired": true,
+    "fullPaymentReferenceDisplayForbidden": true,
+    "paymentReferenceMaskingRequired": true,
+    "providerPayloadPersistenceForbidden": true,
+    "secretsEncryptedAtRestRequired": true,
+    "secretsExcludedFromLogsRequired": true,
+    "auditEvidenceMustBeMinimumNecessary": true
+  },
+  "complianceOperations": {
+    "annualPciScopeReviewRequired": true,
+    "annualStripePciStatusReviewRequired": true,
+    "annualThirdPartyResponsibilityReviewRequired": true,
+    "saqEligibilityMustBeConfirmedWithAcquirer": true,
+    "aocRetentionRequired": true,
+    "asvEvidenceRetentionRequiredWhereApplicable": true,
+    "incidentResponseForPaymentPageCompromiseRequired": true,
+    "changeControlForPaymentFlowRequired": true
+  },
+  "releaseGate": {
+    "blockIfMerchantHostedCardFieldDetected": true,
+    "blockIfDirectPostDetected": true,
+    "blockIfHttpCheckoutOrReturnUrlDetected": true,
+    "blockIfMixedContentDetected": true,
+    "blockIfWebhookSignatureVerificationMissing": true,
+    "blockIfEntitlementCanBeGrantedFromClientRedirectAlone": true,
+    "blockIfRawPaymentOrCustomerPayloadLoggingDetected": true,
+    "blockIfStripeSecretOrClientSecretLoggingDetected": true
+  }
+}

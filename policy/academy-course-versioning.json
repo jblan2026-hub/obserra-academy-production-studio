@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "policyId": "obserra-academy-course-versioning",
+  "effectiveDate": "2026-08-08",
+  "initialVersion": "1.0.0",
+  "scheme": "semantic-versioning",
+  "rules": {
+    "allCoursesRequireVersion": true,
+    "initialPublishedBaselineMustBeV1": true,
+    "publishedVersionMayNotBeSilentlyOverwritten": true,
+    "historicalReleaseEvidenceMustBeRetained": true,
+    "versionMustFlowToCatalog": true,
+    "versionMustFlowToWebsite": true,
+    "versionMustFlowToCertificateMetadata": true,
+    "versionMustFlowToAuditEvidence": true,
+    "versionBumpRequiredForPublishedContentChange": true
+  },
+  "bumpGuidance": {
+    "patch": "Corrections that do not materially change learning outcomes, assessment intent, or course structure.",
+    "minor": "Backward-compatible content additions, module/lesson enhancements, new examples, or meaningful assessment improvements.",
+    "major": "Material redesign, changed learning outcomes, significant curriculum restructuring, or a release that should be treated as a new course baseline."
+  },
+  "certificate": {
+    "retainCourseVersionAtCompletion": true,
+    "historicalCertificateMustResolveAgainstOriginalCourseVersion": true
+  },
+  "releaseGate": {
+    "rejectMissingVersion": true,
+    "rejectPre1Version": true,
+    "rejectInvalidSemver": true,
+    "rejectPublishedContentHashChangeWithoutVersionBump": true
+  }
+}

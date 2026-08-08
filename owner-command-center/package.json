@@ -1,21 +1,33 @@
 {
-  "name": "obserra-owner-ai-command-center",
-  "version": "0.3.3",
+  "name": "obserra-academy-command-center",
+  "version": "0.4.0",
   "private": true,
-  "description": "Owner-only local AI command center for the Obserra ecosystem.",
+  "description": "Owner-only local Academy review, approval, publication, and secure purchase verification command center.",
   "main": "electron/main-with-remediation.cjs",
   "type": "module",
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
+    "docs:sync": "node scripts/sync-control-documentation.mjs",
+    "docs:check": "node scripts/sync-control-documentation.mjs --check",
     "verify:endpoint": "node scripts/verify-endpoint-enrollment.mjs",
     "verify:academy-evidence": "node scripts/verify-academy-production-evidence.mjs",
     "verify:approval": "node scripts/verify-academy-release-approval.mjs",
     "verify:github-evidence": "node scripts/verify-academy-github-evidence.mjs",
     "verify:remote-cache": "node scripts/verify-academy-remote-evidence-cache.mjs",
     "verify:academy-control": "node scripts/verify-academy-course-control.mjs",
+    "verify:review-dashboard": "node scripts/verify-local-academy-review-dashboard.mjs",
+    "verify:data-protection": "node scripts/verify-academy-data-protection.mjs",
+    "verify:commerce-policy": "node scripts/verify-academy-commerce-policy.mjs",
+    "verify:payment-controls": "node scripts/verify-payment-control-baseline.mjs && node scripts/verify-payment-control-behavior.mjs",
+    "verify:payment-behavior": "node scripts/verify-payment-control-behavior.mjs",
+    "verify:credentials": "node scripts/verify-credential-encryption-controls.mjs",
+    "verify:website-retrieval": "node scripts/verify-academy-website-retrieval.mjs",
+    "verify:audit-manifest": "npm run docs:check && node scripts/verify-control-manifest.mjs",
+    "verify:green-locks": "node scripts/verify-green-path-locks.mjs",
+    "lock:green-path": "node scripts/lock-green-path.mjs",
     "verify:live-purchase": "node scripts/verify-live-academy-purchase.mjs",
-    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-endpoint-enrollment.mjs && node scripts/verify-academy-production-evidence.mjs && node scripts/verify-academy-release-approval.mjs && node scripts/verify-academy-github-evidence.mjs && node scripts/verify-academy-remote-evidence-cache.mjs && node scripts/verify-academy-course-control.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
+    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-endpoint-enrollment.mjs && node scripts/verify-academy-production-evidence.mjs && node scripts/verify-academy-release-approval.mjs && node scripts/verify-academy-github-evidence.mjs && node scripts/verify-academy-remote-evidence-cache.mjs && node scripts/verify-academy-course-control.mjs && node scripts/verify-local-academy-review-dashboard.mjs && node scripts/verify-academy-data-protection.mjs && node scripts/verify-academy-commerce-policy.mjs && node scripts/verify-payment-control-baseline.mjs && node scripts/verify-payment-control-behavior.mjs && node scripts/verify-credential-encryption-controls.mjs && node scripts/verify-academy-website-retrieval.mjs && npm run docs:check && node scripts/verify-control-manifest.mjs && node scripts/verify-green-path-locks.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
     "package:windows": "electron-builder --win nsis portable",
     "package:media": "powershell -ExecutionPolicy Bypass -File scripts/build-removable-media-package.ps1"
   },
@@ -27,9 +39,9 @@
     "electron-builder": "^26.0.12"
   },
   "build": {
-    "appId": "com.obserra.ownercommandcenter",
-    "productName": "Obserra Owner AI Command Center",
-    "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}",
+    "appId": "com.obserra.academycommandcenter",
+    "productName": "Obserra Academy Command Center",
+    "artifactName": "Obserra-Academy-Command-Center-${version}-${arch}.${ext}",
     "directories": {"output": "dist"},
     "files": ["electron/**/*","src/**/*","scripts/**/*","HIGH-AVAILABILITY.md","INSTALL-AND-RECOVERY.md","ENDPOINT-OPERATIONS.md","package.json"],
     "asar": true,
@@ -46,11 +58,11 @@
       "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Obserra Owner AI Command Center",
-      "uninstallDisplayName": "Obserra Owner AI Command Center",
+      "shortcutName": "Obserra Academy Command Center",
+      "uninstallDisplayName": "Obserra Academy Command Center",
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false
     },
-    "portable": {"artifactName":"Obserra-Owner-AI-Command-Center-Portable-${version}-${arch}.${ext}"}
+    "portable": {"artifactName":"Obserra-Academy-Command-Center-Portable-${version}-${arch}.${ext}"}
   }
 }
