@@ -7,6 +7,7 @@ const repoRoot = path.resolve(here, "..", "..");
 const manifestPath = path.join(repoRoot, "policy", "academy-command-center-control-manifest.json");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const registerPath = path.join(repoRoot, manifest.documentation);
+const checkOnly = process.argv.includes("--check");
 
 const START = "<!-- AUTO-CONTROL-TABLE:START -->";
 const END = "<!-- AUTO-CONTROL-TABLE:END -->";
@@ -53,5 +54,13 @@ if (start < 0 || end < 0 || end <= start) {
 
 const generated = `${START}\n${renderTable()}\n${END}`;
 const next = `${original.slice(0, start)}${generated}${original.slice(end + END.length)}`;
-if (next !== original) fs.writeFileSync(registerPath, next, "utf8");
-console.log(`Synchronized ${manifest.controls.length} Academy controls into ${manifest.documentation}.`);
+
+if (checkOnly) {
+  if (next !== original) {
+    throw new Error(`Control documentation drift detected. Run: npm run docs:sync`);
+  }
+  console.log(`Control documentation is synchronized for ${manifest.controls.length} Academy controls.`);
+} else {
+  if (next !== original) fs.writeFileSync(registerPath, next, "utf8");
+  console.log(`Synchronized ${manifest.controls.length} Academy controls into ${manifest.documentation}.`);
+}
