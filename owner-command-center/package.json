@@ -1,8 +1,8 @@
 {
   "name": "obserra-owner-ai-command-center",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
-  "description": "Owner-only Obserra desktop command center with standard installers, resilient startup, performance telemetry, and explicit device enrollment.",
+  "description": "Owner-only Obserra desktop command center with immediate visible startup, resilient background monitoring, performance telemetry, standard installers, and explicit device enrollment.",
   "homepage": "https://www.obserrallc.com",
   "desktopName": "Obserra Owner AI Command Center",
   "author": {
