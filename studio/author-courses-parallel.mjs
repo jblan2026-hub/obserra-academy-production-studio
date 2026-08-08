@@ -8,6 +8,9 @@ import { classificationFromAuthoringExit } from "./authoring-provider-errors.mjs
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const reportPath = path.join(root, "catalog", "continuous-course-audit.json");
 const failureContractVersion = "1.1";
+const portfolioWorkerCount = 36;
+const applicationWorkerAllocation = 20;
+const courseWorkerAllocation = 16;
 
 function boundedNumber(value, fallback, minimum, maximum) {
   const parsed = Number(value);
@@ -16,7 +19,12 @@ function boundedNumber(value, fallback, minimum, maximum) {
 }
 
 const provider = process.env.ACADEMY_AUTHORING_PROVIDER || "openai";
-const concurrency = boundedNumber(process.env.ACADEMY_AUTHORING_CONCURRENCY, 6, 1, 12);
+const concurrency = boundedNumber(
+  process.env.ACADEMY_AUTHORING_CONCURRENCY,
+  courseWorkerAllocation,
+  1,
+  courseWorkerAllocation,
+);
 const maxAttempts = boundedNumber(process.env.ACADEMY_AUTHORING_MAX_ATTEMPTS, 3, 1, 5);
 const baseDelayMs = boundedNumber(process.env.ACADEMY_AUTHORING_RETRY_BASE_MS, 5000, 1000, 120000);
 const processTimeoutMs = boundedNumber(
@@ -27,6 +35,10 @@ const processTimeoutMs = boundedNumber(
 );
 const terminationGraceMs = 10000;
 const heartbeatIntervalMs = 60 * 1000;
+
+if (applicationWorkerAllocation + courseWorkerAllocation !== portfolioWorkerCount) {
+  throw new Error("Portfolio worker allocation must remain 36 total: 20 application workers and 16 course workers.");
+}
 
 if (!fs.existsSync(reportPath)) {
   throw new Error(`Course audit report not found: ${reportPath}`);
@@ -180,7 +192,7 @@ if (targets.length === 0) {
   process.exit(0);
 }
 
-console.log(`[Academy Studio] Starting governed parallel authoring for ${targets.length} course(s) with concurrency ${concurrency}, request timeout ${Math.round(boundedNumber(process.env.ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS, 15 * 60 * 1000, 60 * 1000, 30 * 60 * 1000) / 1000)} seconds, process timeout ${Math.round(processTimeoutMs / 1000)} seconds, checkpoint persistence enabled=${String(process.env.ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED ?? "false")}, and failure contract ${failureContractVersion}.`);
+console.log(`[Academy Studio] Starting governed parallel authoring for ${targets.length} course(s) with concurrency ${concurrency} from the fixed 16-worker course allocation, request timeout ${Math.round(boundedNumber(process.env.ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS, 15 * 60 * 1000, 60 * 1000, 30 * 60 * 1000) / 1000)} seconds, process timeout ${Math.round(processTimeoutMs / 1000)} seconds, checkpoint persistence enabled=${String(process.env.ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED ?? "false")}, and failure contract ${failureContractVersion}.`);
 const queue = [...targets];
 const results = {
   started: 0,
@@ -208,10 +220,13 @@ try {
 const failures = results.completed.filter((result) => !result.ok);
 const summaryPath = path.join(root, "catalog", "parallel-authoring-summary.json");
 fs.writeFileSync(summaryPath, `${JSON.stringify({
-  schemaVersion: "1.3",
+  schemaVersion: "1.4",
   failureContractVersion,
   generatedAt: new Date().toISOString(),
   provider,
+  portfolioWorkerCount,
+  applicationWorkerAllocation,
+  courseWorkerAllocation,
   concurrency,
   maxAttempts,
   processTimeoutMs,
