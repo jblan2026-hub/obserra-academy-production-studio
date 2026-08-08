@@ -5,25 +5,35 @@ import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const registryPath = path.join(root, "sources", "authoritative-sources.json");
+const casesPath = path.join(root, "sources", "documented-cases.json");
 const cacheRoot = path.join(root, ".academy-cache", "authoritative-sources");
 const catalogRoot = path.join(root, "catalog");
 const maxBytes = Math.max(256_000, Math.min(20 * 1024 * 1024, Number(process.env.ACADEMY_FREE_SOURCE_MAX_BYTES || 8 * 1024 * 1024)));
 const timeoutMs = Math.max(5_000, Math.min(120_000, Number(process.env.ACADEMY_FREE_SOURCE_TIMEOUT_MS || 30_000)));
 
 const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
-const sources = Array.isArray(registry.sources) ? registry.sources : [];
-if (sources.length === 0) throw new Error("Authoritative source registry is empty.");
+const caseRegistry = fs.existsSync(casesPath) ? JSON.parse(fs.readFileSync(casesPath, "utf8")) : { cases: [] };
+const authorities = Array.isArray(registry.sources) ? registry.sources.map((source) => ({
+  id: source.id,
+  title: source.title,
+  canonicalUrl: source.canonicalUrl,
+  evidenceKind: "authority",
+})) : [];
+const cases = Array.isArray(caseRegistry.cases) ? caseRegistry.cases.map((item) => ({
+  id: item.id,
+  title: item.title,
+  canonicalUrl: item.primarySourceUrl,
+  evidenceKind: "documented-case",
+})) : [];
+const sources = [...authorities, ...cases];
+if (authorities.length === 0) throw new Error("Authoritative source registry is empty.");
 
 function safeId(value) {
   const id = String(value || "").trim();
   if (!/^[a-z0-9][a-z0-9._-]{1,120}$/.test(id)) throw new Error(`Unsafe source id: ${id}`);
   return id;
 }
-
-function sha256(buffer) {
-  return crypto.createHash("sha256").update(buffer).digest("hex");
-}
-
+function sha256(buffer) { return crypto.createHash("sha256").update(buffer).digest("hex"); }
 function stripHtml(value) {
   return String(value || "")
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
@@ -39,7 +49,6 @@ function stripHtml(value) {
     .replace(/\s+/g, " ")
     .trim();
 }
-
 function readableText(contentType, body) {
   if (contentType.includes("json")) {
     try { return JSON.stringify(JSON.parse(body.toString("utf8")), null, 2); } catch { return body.toString("utf8"); }
@@ -48,7 +57,6 @@ function readableText(contentType, body) {
   if (contentType.startsWith("text/")) return body.toString("utf8").replace(/\s+/g, " ").trim();
   return "";
 }
-
 async function fetchWithTimeout(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -57,7 +65,7 @@ async function fetchWithTimeout(url) {
       redirect: "follow",
       signal: controller.signal,
       headers: {
-        "User-Agent": "Obserra-Academy-Free-Source-Cache/1.0",
+        "User-Agent": "Obserra-Academy-Free-Source-Cache/1.1",
         Accept: "text/html,application/xhtml+xml,application/json,text/plain,application/pdf;q=0.9,*/*;q=0.5",
       },
     });
@@ -76,16 +84,16 @@ for (const source of sources) {
   try {
     const response = await fetchWithTimeout(source.canonicalUrl);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const arrayBuffer = await response.arrayBuffer();
-    const body = Buffer.from(arrayBuffer);
+    const body = Buffer.from(await response.arrayBuffer());
     if (body.length === 0) throw new Error("empty response");
     if (body.length > maxBytes) throw new Error(`response ${body.length} bytes exceeds ${maxBytes} byte cache limit`);
     const contentType = String(response.headers.get("content-type") || "application/octet-stream").split(";", 1)[0].trim().toLowerCase();
     const digest = sha256(body);
     const text = readableText(contentType, body);
     const metadata = {
-      schemaVersion: "1.0",
+      schemaVersion: "1.1",
       sourceId: id,
+      evidenceKind: source.evidenceKind,
       title: source.title,
       canonicalUrl: source.canonicalUrl,
       resolvedUrl: response.url,
@@ -103,8 +111,9 @@ for (const source of sources) {
     results.push({ ...metadata, ok: true });
   } catch (error) {
     results.push({
-      schemaVersion: "1.0",
+      schemaVersion: "1.1",
       sourceId: id,
+      evidenceKind: source.evidenceKind,
       title: source.title,
       canonicalUrl: source.canonicalUrl,
       fetchedAt: new Date().toISOString(),
@@ -115,16 +124,22 @@ for (const source of sources) {
   }
 }
 
+const authorityResults = results.filter((item) => item.evidenceKind === "authority");
+const caseResults = results.filter((item) => item.evidenceKind === "documented-case");
 const summary = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
+  authorityCount: authorities.length,
+  documentedCaseCount: cases.length,
   sourceCount: sources.length,
   fetched: results.filter((item) => item.ok).length,
   failed: results.filter((item) => !item.ok).length,
+  fetchedAuthorities: authorityResults.filter((item) => item.ok).length,
+  fetchedDocumentedCases: caseResults.filter((item) => item.ok).length,
   cacheRoot: ".academy-cache/authoritative-sources",
   noModelCreditUsed: true,
   results,
 };
 fs.writeFileSync(path.join(catalogRoot, "academy-free-authoritative-source-cache.json"), `${JSON.stringify(summary, null, 2)}\n`);
-console.log(`[Academy Studio] Free authoritative source cache fetched ${summary.fetched}/${summary.sourceCount} sources without model credits.`);
-if (summary.fetched === 0) process.exit(2);
+console.log(`[Academy Studio] Free primary-source cache fetched ${summary.fetched}/${summary.sourceCount} records: ${summary.fetchedAuthorities}/${authorities.length} authorities and ${summary.fetchedDocumentedCases}/${cases.length} documented cases.`);
+if (summary.fetchedAuthorities < 4 || summary.fetchedDocumentedCases < 2) process.exit(2);
