@@ -43,12 +43,16 @@ export function requiredFinalAssessmentQuestions(manifest) {
 }
 
 export function academyAuthoringQualityContract(manifest = null) {
+  if (manifest === null) {
+    return {
+      policyVersion: ACADEMY_AUTHORING_POLICY_VERSION,
+      ...ACADEMY_AUTHORING_QUALITY_REQUIREMENTS,
+    };
+  }
+  const requiredQuestions = requiredFinalAssessmentQuestions(manifest);
   return {
     policyVersion: ACADEMY_AUTHORING_POLICY_VERSION,
     ...ACADEMY_AUTHORING_QUALITY_REQUIREMENTS,
-    requiredFinalAssessmentQuestions:
-      manifest === null
-        ? commandLineAssessmentMinimum
-        : requiredFinalAssessmentQuestions(manifest),
+    finalAssessmentQuestions: requiredQuestions,
   };
 }
