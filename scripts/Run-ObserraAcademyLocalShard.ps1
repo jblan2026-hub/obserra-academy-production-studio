@@ -98,6 +98,8 @@ $env:ACADEMY_SOURCE_CONTEXT_MAX_CHARS = if ($env:ACADEMY_SOURCE_CONTEXT_MAX_CHAR
 $env:ACADEMY_SOURCE_FILE_MAX_CHARS = if ($env:ACADEMY_SOURCE_FILE_MAX_CHARS) { $env:ACADEMY_SOURCE_FILE_MAX_CHARS } else { '5000' }
 $env:ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS = if ($env:ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS) { $env:ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS } else { '1800000' }
 $env:ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS = if ($env:ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS) { $env:ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS } else { '2' }
+$env:LOCAL_AI_TIMEOUT_MS = if ($env:LOCAL_AI_TIMEOUT_MS) { $env:LOCAL_AI_TIMEOUT_MS } else { '3600000' }
+$env:LOCAL_REVIEW_TIMEOUT_MS = if ($env:LOCAL_REVIEW_TIMEOUT_MS) { $env:LOCAL_REVIEW_TIMEOUT_MS } else { '3600000' }
 
 $blockedVariables = @(
     'OPENAI_API_KEY','ANTHROPIC_API_KEY','ELEVENLABS_API_KEY','HEYGEN_API_KEY','SYNTHESIA_API_KEY',
@@ -116,11 +118,15 @@ foreach ($name in $blockedVariables) {
 Set-Location -LiteralPath $repo
 $courseId = Get-SelectedCourseId -Repo $repo -Index $ShardIndex -Count $ShardCount
 $startedAt = (Get-Date).ToString('o')
-Write-Host ('Academy local shard {0}/{1} starting course {2}' -f ($ShardIndex + 1), $ShardCount, $courseId) -ForegroundColor Cyan
+$freeContextPath = Join-Path (Join-Path (Join-Path (Join-Path $repo 'courses') $courseId) 'generated') 'research\free-source-context.json'
+if (-not (Test-Path -LiteralPath $freeContextPath)) {
+    throw ('Shared governed source context is missing for {0}: {1}' -f $courseId, $freeContextPath)
+}
 
+Write-Host ('Academy local shard {0}/{1} starting course {2}' -f ($ShardIndex + 1), $ShardCount, $courseId) -ForegroundColor Cyan
 Invoke-NodeStep -Arguments @('studio/academy-zero-cost-lock.mjs') -Label 'Zero-cost policy lock'
-Invoke-NodeStep -Arguments @('studio/build-free-course-source-context.mjs') -Label ('Governed source context for {0}' -f $courseId)
 Invoke-NodeStep -Arguments @('.github/scripts/run-academy-zero-cost-shard.mjs') -Label ('Research, author, validate, review: {0}' -f $courseId)
+Invoke-NodeStep -Arguments @('studio/materialize-hollywood-course-assets.mjs', '--course', $courseId) -Label ('Materialize learning assets: {0}' -f $courseId)
 
 $generatedPath = Join-Path (Join-Path (Join-Path $repo 'courses') $courseId) 'generated'
 $checkpointCourseRoot = Join-Path (Join-Path (Join-Path $root 'checkpoints') 'courses') $courseId
@@ -137,7 +143,7 @@ if ($copyCode -gt 7) {
 $commit = (& git -C $repo rev-parse HEAD 2>$null)
 if ($LASTEXITCODE -ne 0) { $commit = 'unknown' }
 $record = [ordered]@{
-    schemaVersion = '1.0'
+    schemaVersion = '1.1'
     courseId = $courseId
     shardIndex = $ShardIndex
     shardCount = $ShardCount
@@ -149,8 +155,11 @@ $record = [ordered]@{
     provider = 'local'
     model = $env:LOCAL_AI_MODEL
     commercialModelApiCostUsd = 0
+    contentPipelinePassed = $true
+    assetsMaterialized = $true
     passed = $true
 }
 $recordPath = Join-Path $checkpointCourseRoot 'local-checkpoint.json'
-$record | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $recordPath -Encoding UTF8
+$encoding = New-Object System.Text.UTF8Encoding($false)
+[IO.File]::WriteAllText($recordPath, (($record | ConvertTo-Json -Depth 8) + [Environment]::NewLine), $encoding)
 Write-Host ('COMPLETED {0}. Local checkpoint: {1}' -f $courseId, $checkpointCourseRoot) -ForegroundColor Green
