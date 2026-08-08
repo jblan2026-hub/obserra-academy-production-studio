@@ -77,7 +77,7 @@ function cachedEvidence(id) {
   };
 }
 
-const courseIds = fs.readdirSync(coursesRoot, { withFileTypes: true })
+const portfolioCourseIds = fs.readdirSync(coursesRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
   .map((entry) => entry.name)
   .filter((courseId) => fs.existsSync(path.join(coursesRoot, courseId, "course-manifest.json")))
@@ -86,7 +86,21 @@ const courseIds = fs.readdirSync(coursesRoot, { withFileTypes: true })
     return !["retired", "archived"].includes(String(manifest.release?.status || "draft").toLowerCase());
   })
   .sort();
-if (courseIds.length !== expectedCourses) throw new Error(`Free source-context builder expected ${expectedCourses} courses; discovered ${courseIds.length}.`);
+if (portfolioCourseIds.length !== expectedCourses) throw new Error(`Free source-context builder expected ${expectedCourses} courses; discovered ${portfolioCourseIds.length}.`);
+
+const shardValue = String(process.env.ACADEMY_SHARD_INDEX ?? "").trim();
+let shardIndex = null;
+let shardCount = null;
+let courseIds = portfolioCourseIds;
+if (shardValue) {
+  shardIndex = Number(shardValue);
+  shardCount = Number(process.env.ACADEMY_SHARD_COUNT || 16);
+  if (!Number.isInteger(shardIndex) || !Number.isInteger(shardCount) || shardCount < 1 || shardIndex < 0 || shardIndex >= shardCount) {
+    throw new Error("Invalid Academy shard configuration for deterministic source-context generation.");
+  }
+  courseIds = portfolioCourseIds.filter((_courseId, index) => index % shardCount === shardIndex);
+  if (!courseIds.length) throw new Error(`Academy source-context shard ${shardIndex}/${shardCount} contains no courses.`);
+}
 
 const summary = [];
 for (const courseId of courseIds) {
@@ -105,7 +119,7 @@ for (const courseId of courseIds) {
   const matchedSources = rankedSources.map(({ source, score }) => ({ ...source, matchScore: score, ...cachedEvidence(source.id) }));
   const matchedCases = rankedCases.map(({ item, score }) => ({ ...item, matchScore: score, ...cachedEvidence(item.id) }));
   const context = {
-    schemaVersion: "1.2",
+    schemaVersion: "1.3",
     generatedAt: new Date().toISOString(),
     courseId,
     sourceRegistryUpdatedAt: registry.updatedAt || null,
@@ -129,9 +143,14 @@ for (const courseId of courseIds) {
 
 fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
 fs.writeFileSync(path.join(root, "catalog", "academy-free-source-context-summary.json"), `${JSON.stringify({
-  schemaVersion: "1.2",
+  schemaVersion: "1.3",
   generatedAt: new Date().toISOString(),
   expectedCourses,
+  scope: shardIndex === null ? "portfolio" : "shard",
+  shardIndex,
+  shardCount,
+  selectedCourseCount: courseIds.length,
+  selectedCourseIds: courseIds,
   coursesWithMatches: summary.filter((item) => item.sourceCount > 0).length,
   coursesWithCases: summary.filter((item) => item.caseCount >= 2).length,
   coursesWithCachedSources: summary.filter((item) => item.cachedSourceCount > 0).length,
@@ -139,4 +158,4 @@ fs.writeFileSync(path.join(root, "catalog", "academy-free-source-context-summary
   totalCachedMatches: summary.reduce((total, item) => total + item.cachedSourceCount + item.cachedCaseCount, 0),
   courses: summary,
 }, null, 2)}\n`);
-console.log(`[Academy Studio] Built zero-cost governed context for ${summary.length}/${expectedCourses} courses with ${summary.reduce((total, item) => total + item.cachedSourceCount, 0)} cached authorities and ${summary.reduce((total, item) => total + item.cachedCaseCount, 0)} cached primary-source cases.`);
+console.log(`[Academy Studio] Built zero-cost governed context for ${summary.length}/${courseIds.length} selected courses with ${summary.reduce((total, item) => total + item.cachedSourceCount, 0)} cached authorities and ${summary.reduce((total, item) => total + item.cachedCaseCount, 0)} cached primary-source cases.`);
