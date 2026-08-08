@@ -1,0 +1,71 @@
+name: Validate Commercial Cinematic Course Production Standard
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "policy/commercial-cinematic-course-production-standard.json"
+      - "policy/elastic-worker-pool-contract.json"
+      - "studio/worker-pool-contract.mjs"
+      - "studio/verify-commercial-cinematic-standard.mjs"
+      - "studio/verify-worker-pool-contract.mjs"
+      - "studio/author-courses-parallel.mjs"
+      - "studio/generate-media.mjs"
+      - "package.json"
+      - ".github/workflows/validate-commercial-cinematic-standard.yml"
+  push:
+    branches:
+      - agent/academy-36-worker-course-surge
+    paths:
+      - "policy/commercial-cinematic-course-production-standard.json"
+      - "policy/elastic-worker-pool-contract.json"
+      - "studio/worker-pool-contract.mjs"
+      - "studio/verify-commercial-cinematic-standard.mjs"
+      - "studio/verify-worker-pool-contract.mjs"
+      - "studio/author-courses-parallel.mjs"
+      - "studio/generate-media.mjs"
+      - "package.json"
+      - ".github/workflows/validate-commercial-cinematic-standard.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commercial-cinematic-course-standard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production-standard:
+    name: Enforce cinematic picture, sound, accessibility, rights, and release rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Academy production branch
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate policy JSON
+        shell: bash
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('policy/commercial-cinematic-course-production-standard.json','utf8')); JSON.parse(require('fs').readFileSync('policy/elastic-worker-pool-contract.json','utf8')); console.log('Commercial production policy JSON is valid.')"
+
+      - name: Verify commercial cinematic production contract
+        run: npm run verify:cinematic-standard
+
+      - name: Verify elastic worker contract remains valid
+        run: npm run verify:worker-contract
+
+      - name: Upload non-sensitive verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commercial-cinematic-standard-${{ github.sha }}
+          path: |
+            catalog/commercial-cinematic-standard-verification.json
+            catalog/worker-pool-contract-verification.json
+          if-no-files-found: warn
+          retention-days: 365
