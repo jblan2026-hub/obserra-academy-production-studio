@@ -36,15 +36,19 @@ env:
   ACADEMY_MINIMUM_LESSON_WORDS: "1200"
   ACADEMY_MINIMUM_EXACT_SOURCES_PER_COURSE: "2"
   ACADEMY_PROVIDER_PREFERENCE: anthropic,openai
-  ACADEMY_PAID_RESEARCH_CONCURRENCY: "4"
-  ACADEMY_PAID_AUTHORING_CONCURRENCY: "4"
-  ACADEMY_PAID_REVIEW_CONCURRENCY: "2"
+  ACADEMY_PAID_RESEARCH_CONCURRENCY: "2"
+  ACADEMY_PAID_AUTHORING_CONCURRENCY: "2"
+  ACADEMY_PAID_REVIEW_CONCURRENCY: "1"
+  ACADEMY_PAID_CANARY_COUNT: "1"
   ACADEMY_AUTHORING_MAX_ATTEMPTS: "2"
   ACADEMY_RESEARCH_MAX_ATTEMPTS: "1"
   ACADEMY_REVIEW_MAX_ATTEMPTS: "1"
   ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: "2700000"
   ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: "1800000"
   ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: "true"
+  ACADEMY_FREE_SOURCE_MAX_BYTES: "8388608"
+  ACADEMY_FREE_SOURCE_TIMEOUT_MS: "30000"
+  ACADEMY_FREE_SOURCE_EXCERPT_CHARACTERS: "12000"
   OPENAI_AUTHORING_MODEL: gpt-5
   OPENAI_RESEARCH_MODEL: gpt-5
   OPENAI_REVIEW_MODEL: gpt-5
@@ -99,7 +103,10 @@ jobs:
       - name: Reject restored packages with stale source context
         run: node studio/prune-stale-restored-course-packages.mjs
 
-      - name: Build deterministic no-model source context from local authoritative registry
+      - name: Download canonical authoritative sources without model credits
+        run: node studio/fetch-free-authoritative-source-cache.mjs
+
+      - name: Build deterministic no-model source context from local authoritative registry and cache
         run: node studio/build-free-course-source-context.mjs
 
       - name: Validate all currently reusable packages without model credits
