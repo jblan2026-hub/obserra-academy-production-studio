@@ -22,6 +22,7 @@ on:
       - "studio/bootstrap-academy-hollywood-checkpoints.mjs"
       - "studio/bootstrap-academy-media-checkpoints.mjs"
       - "studio/checkpoint-academy-media-jobs.mjs"
+      - "studio/generate-hollywood-learner-catalog.mjs"
       - "studio/load-academy-hollywood-surge-to-lcms.mjs"
       - "studio/materialize-hollywood-course-assets.mjs"
       - "studio/prepare-hollywood-source-context.mjs"
@@ -205,6 +206,7 @@ jobs:
             studio/bootstrap-academy-hollywood-checkpoints.mjs \
             studio/bootstrap-academy-media-checkpoints.mjs \
             studio/checkpoint-academy-media-jobs.mjs \
+            studio/generate-hollywood-learner-catalog.mjs \
             studio/load-academy-hollywood-surge-to-lcms.mjs \
             studio/materialize-hollywood-course-assets.mjs \
             studio/prepare-hollywood-source-context.mjs \
@@ -349,9 +351,24 @@ jobs:
         continue-on-error: true
         run: npm run validate:hollywood:surge
 
+      - name: Preserve exact core 60 compliance evidence
+        id: core_compliance_evidence
+        if: steps.cinematic_validation.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          cp catalog/academy-hollywood-compliance-staging.json catalog/academy-core-60-compliance-staging.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('catalog/academy-core-60-compliance-staging.json', 'utf8'));
+          if (report.discoveredCourses !== 60 || report.complianceStagingReadyCourses !== 60 || report.readyForComplianceStaging !== true) {
+            throw new Error('Core 60 compliance evidence is not complete.');
+          }
+          NODE
+
       - name: Validate exact 60-course LCMS staging plan
         id: lcms_dry_run
-        if: steps.cinematic_validation.outcome == 'success'
+        if: steps.core_compliance_evidence.outcome == 'success'
         continue-on-error: true
         run: npm run load:hollywood:check
 
@@ -360,6 +377,12 @@ jobs:
         if: steps.lcms_dry_run.outcome == 'success' && steps.protected_database.outcome == 'success'
         continue-on-error: true
         run: npm run load:hollywood
+
+      - name: Generate protected 61-course learner catalog readiness
+        id: learner_catalog
+        if: steps.lcms_load.outcome == 'success' && steps.core_compliance_evidence.outcome == 'success'
+        continue-on-error: true
+        run: npm run catalog:hollywood:protected
 
       - name: Submit or preserve governed cinematic media jobs
         id: media_submission
@@ -400,12 +423,6 @@ jobs:
         continue-on-error: true
         run: npm run stage:release-approval
 
-      - name: Restore exact 60-course compliance evidence after owner gate calculation
-        id: restore_exact_compliance
-        if: always() && steps.materialization.outcome == 'success'
-        continue-on-error: true
-        run: npm run validate:hollywood:surge
-
       - name: Update owner notification issue
         if: always()
         shell: bash
@@ -419,7 +436,7 @@ jobs:
           if [ "${{ steps.release_stage.outputs.all_staged }}" = "true" ]; then
             TITLE="[READY FOR OWNER APPROVAL] Complete Academy portfolio release gate"
             if [[ "$CURRENT_TITLE" != "[READY FOR OWNER APPROVAL]"* ]]; then
-              gh issue comment 27 --body "All governed Academy courses—60 standard courses plus the supplemental PMP course—have reached the pre-owner release-approval staging gate. Publication and checkout remain disabled pending your explicit decision."
+              gh issue comment 27 --body "All governed Academy courses—60 standard courses plus the supplemental PMP course—have reached the pre-owner release-approval staging gate. Publication and checkout remain disabled pending your explicit device-bound decision."
             fi
           else
             TITLE="Academy release approval staging gate — ${{ steps.release_stage.outputs.staged_courses || '0' }}/${{ steps.release_stage.outputs.expected_courses || '61' }} staged"
@@ -454,7 +471,9 @@ jobs:
             catalog/academy-hollywood-parallel-summary.json
             catalog/academy-hollywood-source-context.json
             catalog/academy-hollywood-materialization.json
+            catalog/academy-core-60-compliance-staging.json
             catalog/academy-hollywood-compliance-staging.json
+            catalog/learner-catalog-readiness.json
             catalog/academy-hollywood-lcms-load-plan.json
             catalog/academy-hollywood-lcms-load-result.json
             catalog/academy-hollywood-media-submission.json
@@ -489,24 +508,25 @@ jobs:
             "${{ steps.package_completion.outcome }}" \
             "${{ steps.materialization.outcome }}" \
             "${{ steps.cinematic_validation.outcome }}" \
+            "${{ steps.core_compliance_evidence.outcome }}" \
             "${{ steps.lcms_dry_run.outcome }}" \
             "${{ steps.lcms_load.outcome }}" \
+            "${{ steps.learner_catalog.outcome }}" \
             "${{ steps.media_submission.outcome }}" \
             "${{ steps.media_checkpoint_submit.outcome }}" \
             "${{ steps.media_reconciliation.outcome }}" \
             "${{ steps.media_checkpoint_reconciled.outcome }}" \
             "${{ steps.final_media_verification.outcome }}" \
-            "${{ steps.release_stage.outcome }}" \
-            "${{ steps.restore_exact_compliance.outcome }}"; do
+            "${{ steps.release_stage.outcome }}"; do
             if [ "$outcome" != "success" ]; then failures=$((failures + 1)); fi
           done
 
           if [ "$failures" -gt 0 ]; then
-            echo "$failures governed production stage(s) did not succeed. The scheduled workflow will resume from protected authoring and media checkpoints."
+            echo "$failures governed production stage(s) did not succeed. The workflow can resume from protected authoring and media checkpoints."
             exit 1
           fi
           if [ "${{ steps.release_stage.outputs.all_staged }}" != "true" ]; then
             echo "The 60-course production pipeline completed, but the complete 61-course portfolio has not yet reached owner release-approval staging."
             exit 2
           fi
-          echo "All 60 standard courses and the supplemental PMP course are staged for explicit owner release approval. Publication and checkout remain disabled."
+          echo "All 60 standard courses and the supplemental PMP course are staged for explicit device-bound owner release approval. Publication and checkout remain disabled."

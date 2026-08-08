@@ -6,6 +6,7 @@ courses/*/generated/
 courses/*/authoritative-source-context.json
 catalog/academy-learner-course-catalog.json
 catalog/learner-catalog-readiness.json
+catalog/academy-core-60-compliance-staging.json
 catalog/academy-hollywood-provider-preflight.json
 catalog/academy-hollywood-course-audit.json
 catalog/academy-hollywood-checkpoint-restore.json

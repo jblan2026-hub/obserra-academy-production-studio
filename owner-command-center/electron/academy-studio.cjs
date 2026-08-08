@@ -3,33 +3,22 @@ const path = require("node:path");
 const os = require("node:os");
 const { spawn } = require("node:child_process");
 
-const ALLOWED_ACTIONS = new Set([
-  "author",
-  "revise",
-  "author-all",
-  "build",
-  "build-all",
-  "catalog",
-  "verify",
-  "stage-approval"
-]);
+const ALLOWED_ACTIONS = new Set(["author", "revise", "author-all", "build", "build-all", "catalog", "verify"]);
 const ALLOWED_RELEASE_STATUSES = new Set(["draft", "in-review", "approved", "published", "retired"]);
 const ACTION_TERMINATION_GRACE_MS = 10000;
 const ACTION_SETTLE_GRACE_MS = 5000;
 const ACTION_TIMEOUT_DEFAULTS_MS = Object.freeze({
-  author: 45 * 60 * 1000,
-  revise: 45 * 60 * 1000,
-  "author-all": 12 * 60 * 60 * 1000,
-  build: 30 * 60 * 1000,
-  "build-all": 2 * 60 * 60 * 1000,
+  author: 30 * 60 * 1000,
+  revise: 30 * 60 * 1000,
+  "author-all": 180 * 60 * 1000,
+  build: 20 * 60 * 1000,
+  "build-all": 60 * 60 * 1000,
   catalog: 10 * 60 * 1000,
-  verify: 60 * 60 * 1000,
-  "stage-approval": 60 * 60 * 1000
+  verify: 45 * 60 * 1000
 });
 const ACTION_TIMEOUT_MIN_MS = 2 * 60 * 1000;
-const ACTION_TIMEOUT_MAX_MS = 12 * 60 * 60 * 1000;
+const ACTION_TIMEOUT_MAX_MS = 4 * 60 * 60 * 1000;
 const MAX_CAPTURED_OUTPUT_CHARS = 100000;
-const EXPECTED_RELEASE_APPROVAL_COURSES = 60;
 
 function workspaceCandidates() {
   const home = os.homedir();
@@ -77,84 +66,7 @@ function fileExists(root, ...segments) {
   return fs.existsSync(path.join(root, ...segments));
 }
 
-function defaultReleaseApprovalGate(reason = "release-approval-gate-not-generated") {
-  return {
-    schemaVersion: "1.0",
-    generatedAt: null,
-    ownerIssueNumber: 27,
-    expectedCourses: EXPECTED_RELEASE_APPROVAL_COURSES,
-    discoveredCourses: 0,
-    stagedCourses: 0,
-    blockedCourses: EXPECTED_RELEASE_APPROVAL_COURSES,
-    progressPercent: 0,
-    allStagedForOwnerApproval: false,
-    ownerDecisionRequired: false,
-    ownerAcceptanceRecorded: false,
-    publicationAuthorized: false,
-    checkoutAuthorized: false,
-    stagedCourseIds: [],
-    blockersByFrequency: [{ blocker: reason, count: EXPECTED_RELEASE_APPROVAL_COURSES }],
-    courses: [],
-    nextGovernedAction: "Run the governed Academy release-approval staging gate.",
-    claimBoundary: "No owner release decision may be inferred without a current machine-readable staging gate."
-  };
-}
-
-function readReleaseApprovalGate(root) {
-  const gatePath = path.join(root, "catalog", "academy-release-approval-gate.json");
-  if (!fs.existsSync(gatePath)) return defaultReleaseApprovalGate();
-  try {
-    const gate = readJson(gatePath);
-    const expectedCourses = Number.isInteger(gate.expectedCourses) && gate.expectedCourses > 0
-      ? gate.expectedCourses
-      : EXPECTED_RELEASE_APPROVAL_COURSES;
-    const stagedCourses = Number.isInteger(gate.stagedCourses) && gate.stagedCourses >= 0
-      ? gate.stagedCourses
-      : 0;
-    const discoveredCourses = Number.isInteger(gate.discoveredCourses) && gate.discoveredCourses >= 0
-      ? gate.discoveredCourses
-      : 0;
-    const allStaged = gate.allStagedForOwnerApproval === true
-      && stagedCourses === expectedCourses
-      && discoveredCourses === expectedCourses
-      && gate.publicationAuthorized === false
-      && gate.checkoutAuthorized === false;
-    return {
-      ...gate,
-      expectedCourses,
-      stagedCourses,
-      discoveredCourses,
-      blockedCourses: Number.isInteger(gate.blockedCourses)
-        ? gate.blockedCourses
-        : Math.max(0, expectedCourses - stagedCourses),
-      progressPercent: Number.isFinite(Number(gate.progressPercent))
-        ? Number(gate.progressPercent)
-        : Math.round((stagedCourses / expectedCourses) * 100),
-      allStagedForOwnerApproval: allStaged,
-      ownerDecisionRequired: allStaged,
-      ownerAcceptanceRecorded: false,
-      publicationAuthorized: false,
-      checkoutAuthorized: false,
-      courses: Array.isArray(gate.courses) ? gate.courses : [],
-      blockersByFrequency: Array.isArray(gate.blockersByFrequency) ? gate.blockersByFrequency : []
-    };
-  } catch (error) {
-    return defaultReleaseApprovalGate(`invalid-release-approval-gate-${String(error?.message ?? error).slice(0, 80)}`);
-  }
-}
-
-function releaseCourseRecord(gate, courseId) {
-  return gate.courses.find((course) => course.courseId === courseId) || {
-    courseId,
-    stagedForOwnerApproval: false,
-    blockers: ["release-approval-course-record-not-generated"],
-    publicationAuthorized: false,
-    ownerAcceptanceRequired: true,
-    ownerAcceptanceRecorded: false
-  };
-}
-
-function summarizeCourse(root, courseId, releaseGate) {
+function summarizeCourse(root, courseId) {
   const courseRoot = path.join(root, "courses", assertCourseId(courseId));
   const manifestPath = path.join(courseRoot, "course-manifest.json");
   if (!fs.existsSync(manifestPath)) return null;
@@ -164,13 +76,7 @@ function summarizeCourse(root, courseId, releaseGate) {
   const queue = fs.existsSync(queuePath) ? readJson(queuePath) : null;
   const generatedPackage = path.join(courseRoot, "generated", "authoring", "course-package.json");
   const finalRelease = path.join(root, "releases", courseId, "FINAL", "release-record.json");
-  const requiredArtifacts = queue?.requiredArtifacts || [
-    "instructor-manuscript.md",
-    "learner-guide.md",
-    "workbook.md",
-    "assessment-bank.json",
-    "answer-key.json"
-  ];
+  const requiredArtifacts = queue?.requiredArtifacts || ["instructor-manuscript.md", "learner-guide.md", "assessment-bank.json", "answer-key.json"];
   const artifactStatus = requiredArtifacts.map((artifact) => ({ artifact, present: fileExists(courseRoot, artifact) }));
   const reviewEntries = Object.entries(manifest.reviews || {}).map(([name, review]) => ({
     name,
@@ -180,24 +86,15 @@ function summarizeCourse(root, courseId, releaseGate) {
     reviewedAt: review.reviewedAt || null
   }));
   const requiredReviews = reviewEntries.filter((review) => review.required);
-  const completedReviews = requiredReviews.filter((review) => ["approved", "complete", "completed"].includes(String(review.status).toLowerCase()));
+  const completedReviews = requiredReviews.filter((review) => ["approved", "complete", "completed"].includes(review.status));
   const missingArtifacts = artifactStatus.filter((item) => !item.present).map((item) => item.artifact);
-  const releaseApproval = releaseCourseRecord(releaseGate, courseId);
-  const releaseBlockers = Array.isArray(releaseApproval.blockers) ? releaseApproval.blockers : [];
   const recommendations = [];
 
-  if (!fs.existsSync(generatedPackage)) recommendations.push("Generate the governed cinematic course package.");
-  if (missingArtifacts.length) recommendations.push(`Create missing learner artifacts: ${missingArtifacts.join(", ")}.`);
-  if (completedReviews.length < requiredReviews.length) recommendations.push(`Complete ${requiredReviews.length - completedReviews.length} required pre-owner review(s).`);
-  if (!releaseApproval.stagedForOwnerApproval) {
-    recommendations.push(`Resolve ${releaseBlockers.length} release-approval staging blocker(s).`);
-  }
-  if (manifest.release?.publishToAcademy === true) {
-    recommendations.push("Disable publication until the owner records the separate release decision.");
-  }
-  if (["approved", "published"].includes(String(manifest.release?.status || "draft").toLowerCase()) && !releaseApproval.stagedForOwnerApproval) {
-    recommendations.push("Return the release status to draft or in-review until all staging evidence passes.");
-  }
+  if (!fs.existsSync(generatedPackage)) recommendations.push("Generate the governed AI course package.");
+  if (missingArtifacts.length) recommendations.push(`Create missing release artifacts: ${missingArtifacts.join(", ")}.`);
+  if (completedReviews.length < requiredReviews.length) recommendations.push(`Complete ${requiredReviews.length - completedReviews.length} required review(s).`);
+  if (!manifest.commerce?.stripePriceId && !manifest.commerce?.paymentLink) recommendations.push("Configure a Stripe price or governed payment link before publication.");
+  if (!manifest.release?.publishToAcademy) recommendations.push("Keep publication disabled until generation, review, and release evidence are complete.");
 
   return {
     id: manifest.course.id,
@@ -220,12 +117,6 @@ function summarizeCourse(root, courseId, releaseGate) {
     missingArtifacts,
     reviews: reviewEntries,
     reviewCompletion: requiredReviews.length ? Math.round((completedReviews.length / requiredReviews.length) * 100) : 100,
-    stagedForOwnerApproval: releaseApproval.stagedForOwnerApproval === true,
-    releaseApprovalBlockers: releaseBlockers,
-    releaseApprovalEvidence: releaseApproval.evidenceRecord || null,
-    publicationAuthorized: false,
-    ownerAcceptanceRequired: true,
-    ownerAcceptanceRecorded: false,
     recommendations
   };
 }
@@ -238,39 +129,26 @@ function getStudioSnapshot() {
       mode: "detached",
       root: null,
       courses: [],
-      releaseApprovalGate: defaultReleaseApprovalGate("academy-studio-workspace-unavailable"),
-      summary: {
-        total: 0,
-        generated: 0,
-        published: 0,
-        reviewReady: 0,
-        stagedForOwnerApproval: 0,
-        approvalTarget: EXPECTED_RELEASE_APPROVAL_COURSES,
-        approvalProgressPercent: 0,
-        allStagedForOwnerApproval: false,
-        ownerDecisionRequired: false,
-        gaps: 1
-      },
+      summary: { total: 0, generated: 0, published: 0, reviewReady: 0, gaps: 1 },
       gaps: ["Academy Studio workspace was not found. Set OBSERRA_ACADEMY_STUDIO_ROOT to the local repository path."]
     };
   }
 
-  const releaseApprovalGate = readReleaseApprovalGate(root);
   const courses = fs.readdirSync(path.join(root, "courses"), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .map((entry) => summarizeCourse(root, entry.name, releaseApprovalGate))
+    .map((entry) => summarizeCourse(root, entry.name))
     .filter(Boolean)
     .sort((a, b) => a.title.localeCompare(b.title));
 
   const notGenerated = courses.filter((course) => course.generation !== "generated").length;
   const unpublished = courses.filter((course) => !course.publishToAcademy).length;
-  const unstaged = courses.filter((course) => !course.stagedForOwnerApproval).length;
+  const missingRelease = courses.filter((course) => !course.finalRelease).length;
   const gaps = [];
 
   if (!courses.length) gaps.push("No course manifests are available.");
-  if (notGenerated) gaps.push(`${notGenerated} course(s) have no governed cinematic course package.`);
-  if (unstaged) gaps.push(`${releaseApprovalGate.stagedCourses}/${releaseApprovalGate.expectedCourses} course(s) are staged for owner release approval; ${unstaged} remain blocked.`);
-  if (unpublished !== courses.length) gaps.push("One or more courses have publication enabled before the separate owner release decision.");
+  if (notGenerated) gaps.push(`${notGenerated} course(s) have no governed AI-authored package.`);
+  if (missingRelease) gaps.push(`${missingRelease} course(s) have no FINAL release record.`);
+  if (unpublished) gaps.push(`${unpublished} course(s) are not approved for Academy publication.`);
 
   return {
     available: true,
@@ -278,27 +156,13 @@ function getStudioSnapshot() {
     root,
     checkedAt: new Date().toISOString(),
     courses,
-    releaseApprovalGate,
     summary: {
       total: courses.length,
       generated: courses.filter((course) => course.generation === "generated").length,
-      published: courses.filter((course) => course.publishToAcademy && ["approved", "published"].includes(String(course.releaseStatus).toLowerCase())).length,
-      reviewReady: releaseApprovalGate.stagedCourses,
-      stagedForOwnerApproval: releaseApprovalGate.stagedCourses,
-      blockedFromOwnerApproval: releaseApprovalGate.blockedCourses,
-      approvalTarget: releaseApprovalGate.expectedCourses,
-      approvalProgressPercent: releaseApprovalGate.progressPercent,
-      allStagedForOwnerApproval: releaseApprovalGate.allStagedForOwnerApproval,
-      ownerDecisionRequired: releaseApprovalGate.ownerDecisionRequired,
-      ownerIssueNumber: releaseApprovalGate.ownerIssueNumber || 27,
-      releaseGateGeneratedAt: releaseApprovalGate.generatedAt,
-      publicationAuthorized: false,
-      checkoutAuthorized: false,
+      published: courses.filter((course) => course.publishToAcademy && ["approved", "published"].includes(course.releaseStatus)).length,
+      reviewReady: courses.filter((course) => course.generation === "generated" && course.missingArtifacts.length === 0).length,
       gaps: courses.reduce((count, course) => count + course.recommendations.length, 0)
     },
-    notices: releaseApprovalGate.allStagedForOwnerApproval
-      ? ["All 60 courses are staged for explicit owner release approval. Publication and checkout remain disabled."]
-      : [],
     gaps
   };
 }
@@ -319,18 +183,17 @@ function updateCourseMetadata(payload) {
   if (Number.isFinite(updates.price) && updates.price >= 0) manifest.commerce.price = Number(updates.price);
   if (typeof updates.releaseStatus === "string") {
     if (!ALLOWED_RELEASE_STATUSES.has(updates.releaseStatus)) throw new Error("Unsupported release status");
-    if (["approved", "published"].includes(updates.releaseStatus)) {
-      throw new Error("Release approval must be processed through the separate governed owner approval action.");
-    }
     manifest.release.status = updates.releaseStatus;
   }
-  if (updates.publishToAcademy === true) {
-    throw new Error("Publication cannot be enabled from course metadata. Use the separate owner-approved release workflow after all 60 courses are staged.");
+  if (typeof updates.publishToAcademy === "boolean") {
+    if (updates.publishToAcademy && !["approved", "published"].includes(manifest.release.status)) {
+      throw new Error("Only approved or published courses may be enabled for Academy publication");
+    }
+    manifest.release.publishToAcademy = updates.publishToAcademy;
   }
-  if (updates.publishToAcademy === false) manifest.release.publishToAcademy = false;
 
   atomicWriteJson(manifestPath, manifest);
-  return summarizeCourse(root, courseId, readReleaseApprovalGate(root));
+  return summarizeCourse(root, courseId);
 }
 
 function clampNumber(value, fallback, minimum, maximum) {
@@ -366,8 +229,6 @@ function studioActionArgs(action, courseId) {
       return ["run", "catalog"];
     case "verify":
       return ["run", "verify:70x"];
-    case "stage-approval":
-      return ["run", "stage:release-approval"];
     default:
       throw new Error("Unsupported Studio action");
   }
@@ -492,6 +353,5 @@ module.exports = {
   runStudioAction,
   resolveStudioRoot,
   studioActionArgs,
-  actionTimeoutMs,
-  readReleaseApprovalGate
+  actionTimeoutMs
 };

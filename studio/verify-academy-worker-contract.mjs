@@ -90,6 +90,7 @@ try {
     "studio/author-courses-hollywood-parallel.mjs",
     "studio/materialize-hollywood-course-assets.mjs",
     "studio/validate-academy-hollywood-surge.mjs",
+    "studio/generate-hollywood-learner-catalog.mjs",
     "studio/submit-hollywood-media-jobs.mjs",
     "studio/checkpoint-academy-media-jobs.mjs",
     "studio/reconcile-hollywood-media-results.mjs",
@@ -98,8 +99,11 @@ try {
     "studio/stage-courses-for-release-approval.mjs",
     "studio/preflight-academy-hollywood-provider.mjs",
     ".github/workflows/academy-36-worker-hollywood-production.yml",
-    "owner-command-center/electron/academy-studio.cjs",
-    "owner-command-center/src/academy-batch.js",
+    "owner-command-center/electron/academy-release-approval.cjs",
+    "owner-command-center/electron/academy-github-evidence.cjs",
+    "owner-command-center/electron/academy-production-evidence.cjs",
+    "owner-command-center/electron/main-with-remediation.cjs",
+    "owner-command-center/src/academy-github-evidence.js",
     "docs/ACADEMY-36-WORKER-HOLLYWOOD-PRODUCTION-CONTRACT.md",
     "sources/authoritative-sources.json",
     "package.json",
@@ -153,6 +157,16 @@ try {
     "certificate-runtime-output-not-verified",
     "complianceStagingReadyCourses",
   ]) record(`surge validation requirement ${phrase}`, validation.includes(phrase));
+
+  const protectedCatalog = read("studio/generate-hollywood-learner-catalog.mjs");
+  for (const phrase of [
+    "expectedCourses: 61",
+    "academy-learner-course-catalog.json",
+    "learner-catalog-readiness.json",
+    "60 core Academy courses plus the supplemental PMP course",
+    "publicationAuthorized: false",
+    "checkoutAuthorized: false",
+  ]) record(`protected learner catalog requirement ${phrase}`, protectedCatalog.includes(phrase));
 
   const mediaSubmission = read("studio/submit-hollywood-media-jobs.mjs");
   for (const phrase of [
@@ -211,6 +225,7 @@ try {
 
   const staging = read("studio/stage-courses-for-release-approval.mjs");
   for (const phrase of [
+    "schemaVersion: \"1.1\"",
     "ACADEMY_CORE_COURSE_TARGET || 60",
     "ACADEMY_SUPPLEMENTAL_COURSE_TARGET || 1",
     "60 core Academy courses plus the supplemental PMP course",
@@ -220,15 +235,46 @@ try {
     "ownerAcceptanceRecorded: false",
   ]) record(`release staging requirement ${phrase}`, staging.includes(phrase));
 
-  const commandCenter = read("owner-command-center/electron/academy-studio.cjs");
+  const releaseApproval = read("owner-command-center/electron/academy-release-approval.cjs");
   for (const phrase of [
-    "academy-release-approval-gate.json",
-    "stagedForOwnerApproval",
+    "const GATE_SCHEMA_VERSION = \"1.1\"",
     "allStagedForOwnerApproval",
-    "ownerDecisionRequired",
-    "stage-approval",
-    "Publication cannot be enabled from course metadata",
-  ]) record(`Command Center release gate binding ${phrase}`, commandCenter.includes(phrase));
+    "publicationAuthorized !== false",
+    "checkoutAuthorized !== false",
+    "portfolioWorkerCount",
+    "courseWorkerAllocation",
+    "applicationWorkerAllocation",
+    "interchangeable-course-production",
+    "createHmac(\"sha256\"",
+    "endpointReady",
+    "deviceFingerprint",
+    "APPROVE ${expectedCourses} COURSES FOR RELEASE",
+  ]) record(`device-bound approval requirement ${phrase}`, releaseApproval.includes(phrase));
+
+  const githubEvidence = read("owner-command-center/electron/academy-github-evidence.cjs");
+  for (const phrase of [
+    "DEFAULT_BRANCH = \"agent/academy-36-worker-hollywood-production\"",
+    "DEFAULT_WORKFLOW = \"academy-36-worker-hollywood-production.yml\"",
+    "MAX_ARTIFACT_BYTES",
+    "MAX_SELECTED_BYTES",
+    "DECISION_MARKER",
+    "academy-release-approval-gate.json",
+    "learner-catalog-readiness.json",
+    "GitHub owner token is not configured",
+    "X-GitHub-Api-Version",
+  ]) record(`authenticated GitHub evidence requirement ${phrase}`, githubEvidence.includes(phrase));
+
+  const productionEvidence = read("owner-command-center/electron/academy-production-evidence.cjs");
+  for (const phrase of [
+    "releaseGate: \"academy-release-approval-gate.json\"",
+    "ownerDecision: \"academy-owner-release-decision.json\"",
+    "learnerCatalog: \"learner-catalog-readiness.json\"",
+    "allStagedForOwnerApproval",
+    "ownerDecisionMatchesGate",
+    "controlPlaneOperational",
+    "productionOperational",
+    "publicationLocked",
+  ]) record(`Command Center production evidence requirement ${phrase}`, productionEvidence.includes(phrase));
 
   const workflow = read(".github/workflows/academy-36-worker-hollywood-production.yml");
   for (const phrase of [
@@ -244,10 +290,13 @@ try {
     "Restore protected cinematic media job checkpoints",
     "Materialize protected learner materials, exams, media plans, and certificates",
     "Validate exact 60-course compliance staging contract",
+    "Preserve exact core 60 compliance evidence",
     "Stage exactly 60 protected courses in the LCMS",
+    "Generate protected 61-course learner catalog readiness",
     "Reconcile, assemble, archive, and register final cinematic media",
     "Verify every final module video and accessibility package",
     "Update owner notification issue",
+    "catalog/learner-catalog-readiness.json",
   ]) record(`production workflow requirement ${phrase}`, workflow.includes(phrase));
 
   const packageJson = JSON.parse(read("package.json"));
@@ -257,6 +306,7 @@ try {
   record("parallel authoring uses 36-worker coordinator", scripts["author:parallel:hollywood"] === "node studio/author-courses-hollywood-parallel.mjs", scripts["author:parallel:hollywood"]);
   record("materialization command", scripts["materialize:hollywood"] === "node studio/materialize-hollywood-course-assets.mjs", scripts["materialize:hollywood"]);
   record("exact surge validation command", scripts["validate:hollywood:surge"] === "node studio/validate-academy-hollywood-surge.mjs", scripts["validate:hollywood:surge"]);
+  record("protected learner catalog command", scripts["catalog:hollywood:protected"] === "node studio/generate-hollywood-learner-catalog.mjs", scripts["catalog:hollywood:protected"]);
   record("media checkpoint bootstrap command", scripts["db:bootstrap:hollywood-media-checkpoints"] === "node studio/bootstrap-academy-media-checkpoints.mjs", scripts["db:bootstrap:hollywood-media-checkpoints"]);
   record("media checkpoint restore command", scripts["restore:hollywood-media-checkpoints"] === "node studio/restore-academy-media-checkpoints.mjs", scripts["restore:hollywood-media-checkpoints"]);
   record("media checkpoint persistence command", scripts["checkpoint:hollywood-media"] === "node studio/checkpoint-academy-media-jobs.mjs", scripts["checkpoint:hollywood-media"]);
@@ -271,6 +321,7 @@ try {
     "materialize:hollywood",
     "validate:hollywood:surge",
     "load:hollywood",
+    "catalog:hollywood:protected",
     "media:submit:hollywood",
     "checkpoint:hollywood-media",
     "reconcile:hollywood-media",
@@ -280,8 +331,13 @@ try {
   record("public verification binds worker contract", String(scripts["verify:public"] ?? "").includes("verify:academy-worker-contract"), scripts["verify:public"]);
   record("CI binds worker contract", String(scripts.ci ?? "").includes("verify:academy-worker-contract"), scripts.ci);
 
+  const commandCenterPackage = JSON.parse(read("owner-command-center/package.json"));
+  record("current Command Center generation preserved", commandCenterPackage.version === "0.3.3", commandCenterPackage.version);
+  record("current Command Center verification preserved", String(commandCenterPackage.scripts?.verify ?? "").includes("verify-academy-github-evidence.mjs"), commandCenterPackage.scripts?.verify);
+  record("current device-bound approval verification preserved", String(commandCenterPackage.scripts?.verify ?? "").includes("verify-academy-release-approval.mjs"), commandCenterPackage.scripts?.verify);
+
   const report = {
-    schemaVersion: "2.1",
+    schemaVersion: "2.2",
     verifiedAt: new Date().toISOString(),
     gate: "academy-36-worker-interchangeable-course-production",
     surgePortfolioDefinition: "exactly 60 standard Academy courses",
@@ -296,13 +352,14 @@ try {
     interchangeableRoles: interchangeableCourseRoles.length,
     mandatoryContractDomains: mandatoryContractDomains.length,
     rosterSize: roster.length,
+    commandCenterVersion: commandCenterPackage.version,
     applicationWorkAllowed: false,
     publicationAuthorityGranted: false,
     ready: checks.every((check) => check.passed),
     checkCount: checks.length,
     passedCount: checks.filter((check) => check.passed).length,
     checks,
-    claimBoundary: "This verification proves source-level worker allocation, exact 60-course surge selection, authoritative-source binding, concrete protected asset materialization, resumable provider media jobs, private-storage reconciliation, final media verification, LCMS compliance staging, the separate 61-course owner-release gate, and Command Center visibility. It does not prove provider execution, course generation, media mastering, owner approval, publication, or endpoint installation.",
+    claimBoundary: "This verification proves source-level worker allocation, exact 60-course surge selection, protected 61-course learner-catalog evidence, authoritative-source binding, concrete protected asset materialization, resumable provider media jobs, private-storage reconciliation, final media verification, LCMS compliance staging, the separate 61-course owner-release gate, authenticated GitHub evidence synchronization, and device-bound owner decisions. It does not prove provider execution, course generation, media mastering, owner approval, publication, or endpoint installation.",
   };
   fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
   fs.writeFileSync(path.join(root, "catalog", "academy-worker-contract-verification.json"), `${JSON.stringify(report, null, 2)}\n`);

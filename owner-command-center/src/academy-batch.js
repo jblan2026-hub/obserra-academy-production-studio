@@ -1,7 +1,10 @@
 const batchLog = document.getElementById("academyActionLog");
-const academyMetricsHost = document.getElementById("academyMetrics");
 let batchRunning = false;
-let releaseApprovalRefreshTimer;
+let endpointState = null;
+let academyProductionEvidence = null;
+let academyReleaseApproval = null;
+let operationalRefreshInFlight = false;
+let ownerDecisionInFlight = false;
 
 function writeBatchLog(message, state = "info") {
   const entry = document.createElement("div");
@@ -10,163 +13,325 @@ function writeBatchLog(message, state = "info") {
   batchLog.prepend(entry);
 }
 
-function releaseMetric(label, value) {
+function createMetricCard(label, value, detail = "") {
   const card = document.createElement("div");
   card.className = "metric";
-  const name = document.createElement("span");
-  name.textContent = label;
-  const amount = document.createElement("strong");
-  amount.textContent = String(value);
-  card.append(name, amount);
+  const labelNode = document.createElement("span");
+  labelNode.textContent = label;
+  const valueNode = document.createElement("strong");
+  valueNode.textContent = String(value ?? "Unknown");
+  card.append(labelNode, valueNode);
+  if (detail) {
+    const detailNode = document.createElement("small");
+    detailNode.textContent = detail;
+    card.append(detailNode);
+  }
   return card;
 }
 
-function ensureReleaseApprovalPanel() {
-  let panel = document.getElementById("academyReleaseApprovalGate");
-  if (panel) return panel;
+function ensureOperationalPanels() {
+  const academyPanel = document.querySelector(".academyPanel");
+  if (!academyPanel) return;
 
-  panel = document.createElement("section");
-  panel.id = "academyReleaseApprovalGate";
-  panel.className = "panel";
-
-  const heading = document.createElement("div");
-  heading.className = "sectionTitle";
-  const titleBlock = document.createElement("div");
-  const eyebrow = document.createElement("p");
-  eyebrow.className = "eyebrow";
-  eyebrow.textContent = "60-COURSE RELEASE APPROVAL GATE";
-  const title = document.createElement("h2");
-  title.id = "academyReleaseApprovalTitle";
-  title.textContent = "Reading governed staging evidence…";
-  const detail = document.createElement("p");
-  detail.id = "academyReleaseApprovalDetail";
-  detail.className = "subhead";
-  detail.textContent = "Publication and checkout remain disabled until all pre-owner gates pass and the owner records a separate decision.";
-  titleBlock.append(eyebrow, title, detail);
-
-  const actions = document.createElement("div");
-  actions.className = "actions";
-  const status = document.createElement("span");
-  status.id = "academyReleaseApprovalStatus";
-  status.className = "status unconfigured";
-  status.textContent = "Checking";
-  const refresh = document.createElement("button");
-  refresh.id = "academyReleaseApprovalRefresh";
-  refresh.className = "secondary";
-  refresh.textContent = "Refresh gate";
-  const recalculate = document.createElement("button");
-  recalculate.id = "academyReleaseApprovalRecalculate";
-  recalculate.className = "secondary";
-  recalculate.dataset.batchAction = "true";
-  recalculate.textContent = "Recalculate staging";
-  actions.append(status, refresh, recalculate);
-  heading.append(titleBlock, actions);
-
-  const metrics = document.createElement("section");
-  metrics.id = "academyReleaseApprovalMetrics";
-  metrics.className = "grid metrics academyMetrics";
-  const blockers = document.createElement("div");
-  blockers.id = "academyReleaseApprovalBlockers";
-  blockers.className = "gapList";
-  const nextAction = document.createElement("div");
-  nextAction.id = "academyReleaseApprovalNextAction";
-  nextAction.className = "securitySummary";
-
-  panel.append(heading, metrics, blockers, nextAction);
-  academyMetricsHost.insertAdjacentElement("afterend", panel);
-
-  refresh.addEventListener("click", refreshReleaseApprovalPanel);
-  recalculate.addEventListener("click", () => runBatch("stage-approval", "Release-approval staging calculation"));
-  return panel;
-}
-
-function renderReleaseApprovalPanel(snapshot) {
-  ensureReleaseApprovalPanel();
-  const summary = snapshot?.summary || {};
-  const gate = snapshot?.releaseApprovalGate || {};
-  const expected = Number(summary.approvalTarget ?? gate.expectedCourses ?? 60);
-  const staged = Number(summary.stagedForOwnerApproval ?? gate.stagedCourses ?? 0);
-  const blocked = Number(summary.blockedFromOwnerApproval ?? gate.blockedCourses ?? Math.max(0, expected - staged));
-  const progress = Number(summary.approvalProgressPercent ?? gate.progressPercent ?? Math.round((staged / Math.max(1, expected)) * 100));
-  const allStaged = summary.allStagedForOwnerApproval === true && staged === expected;
-  const issueNumber = summary.ownerIssueNumber ?? gate.ownerIssueNumber ?? 27;
-
-  const title = document.getElementById("academyReleaseApprovalTitle");
-  const detail = document.getElementById("academyReleaseApprovalDetail");
-  const status = document.getElementById("academyReleaseApprovalStatus");
-  const metrics = document.getElementById("academyReleaseApprovalMetrics");
-  const blockers = document.getElementById("academyReleaseApprovalBlockers");
-  const nextAction = document.getElementById("academyReleaseApprovalNextAction");
-
-  title.textContent = allStaged
-    ? "All 60 courses are staged for your release decision."
-    : `${staged} of ${expected} courses are staged for owner approval.`;
-  detail.textContent = allStaged
-    ? `Owner notification issue #${issueNumber} is ready. Publication, checkout, pricing, and learner access remain unchanged until your explicit approval is processed.`
-    : `Owner notification issue #${issueNumber} tracks the same governed count. Staging requires complete instructional, reference, implementation, assessment, media, accessibility, rights, certificate, entitlement, security, recovery, and pre-owner review evidence.`;
-  status.textContent = allStaged ? "READY FOR OWNER APPROVAL" : `${progress}% STAGED`;
-  status.className = `status ${allStaged ? "connected" : blocked > 0 ? "degraded" : "unconfigured"}`;
-
-  metrics.replaceChildren(
-    releaseMetric("Staged", `${staged}/${expected}`),
-    releaseMetric("Blocked", blocked),
-    releaseMetric("Progress", `${progress}%`),
-    releaseMetric("Owner decision", allStaged ? "Required" : "Not yet"),
-    releaseMetric("Publication", "Disabled"),
-    releaseMetric("Checkout", "Disabled")
-  );
-
-  blockers.replaceChildren();
-  const frequent = Array.isArray(gate.blockersByFrequency) ? gate.blockersByFrequency.slice(0, 10) : [];
-  if (allStaged) {
-    const item = document.createElement("article");
-    item.className = "gapItem clear";
-    const strong = document.createElement("strong");
-    strong.textContent = "All pre-owner release gates passed.";
-    const span = document.createElement("span");
-    span.textContent = "Review the exact staged learner packages and record approve, reject, or revise decisions. No release action has been taken automatically.";
-    item.append(strong, span);
-    blockers.append(item);
-  } else if (frequent.length > 0) {
-    for (const entry of frequent) {
-      const item = document.createElement("article");
-      item.className = "gapItem high";
-      const strong = document.createElement("strong");
-      strong.textContent = `${entry.count} course(s) blocked`;
-      const span = document.createElement("span");
-      span.textContent = entry.blocker;
-      item.append(strong, span);
-      blockers.append(item);
-    }
-  } else {
-    const item = document.createElement("article");
-    item.className = "gapItem high";
-    item.textContent = "Release-approval staging evidence has not been generated on this endpoint.";
-    blockers.append(item);
+  if (!document.getElementById("endpointLivePanel")) {
+    const panel = document.createElement("section");
+    panel.className = "panel";
+    panel.id = "endpointLivePanel";
+    panel.innerHTML = `
+      <div class="sectionTitle">
+        <div>
+          <p class="eyebrow">ENDPOINT ENROLLMENT AND LIVE READINESS</p>
+          <h2>Installed owner endpoint health</h2>
+          <p id="endpointLiveSummary" class="subhead">Loading encrypted device identity, bootstrap, heartbeat, and loopback readiness evidence…</p>
+        </div>
+        <div class="actions">
+          <button id="endpointLiveRefresh" class="secondary">Refresh endpoint</button>
+          <button id="endpointLiveEnroll">Enroll this endpoint</button>
+          <button id="endpointLiveRevoke" class="secondary">Revoke endpoint</button>
+        </div>
+      </div>
+      <section id="endpointLiveMetrics" class="grid metrics"></section>
+      <div id="endpointLiveBlockers" class="gapList"></div>
+    `;
+    academyPanel.parentNode.insertBefore(panel, academyPanel);
   }
 
-  nextAction.replaceChildren();
-  const label = document.createElement("strong");
-  label.textContent = "Next governed action: ";
-  nextAction.append(label, document.createTextNode(
-    gate.nextGovernedAction
-      || (allStaged
-        ? "Complete owner review without enabling publication until an explicit approved decision is recorded."
-        : "Continue governed production, resolve blockers, and recalculate the staging gate.")
-  ));
+  if (!document.getElementById("academyProductionEvidencePanel")) {
+    const panel = document.createElement("section");
+    panel.className = "panel";
+    panel.id = "academyProductionEvidencePanel";
+    panel.innerHTML = `
+      <div class="sectionTitle">
+        <div>
+          <p class="eyebrow">ACADEMY PRODUCTION EVIDENCE</p>
+          <h2>36-worker course surge and compliance staging</h2>
+          <p id="academyProductionEvidenceSummary" class="subhead">Loading machine-readable worker, course, media, provider, checkpoint, and publication evidence…</p>
+        </div>
+        <button id="academyProductionEvidenceRefresh" class="secondary">Refresh production evidence</button>
+      </div>
+      <section id="academyProductionEvidenceMetrics" class="grid metrics"></section>
+      <div class="dashboardColumns">
+        <div><h3>Production blockers</h3><div id="academyProductionEvidenceBlockers" class="gapList"></div></div>
+        <div><h3>Evidence sources</h3><div id="academyProductionEvidenceFiles" class="gapList"></div></div>
+      </div>
+    `;
+    academyPanel.parentNode.insertBefore(panel, academyPanel);
+  }
+
+  if (!document.getElementById("academyOwnerReleasePanel")) {
+    const panel = document.createElement("section");
+    panel.className = "panel";
+    panel.id = "academyOwnerReleasePanel";
+    panel.innerHTML = `
+      <div class="sectionTitle">
+        <div>
+          <p class="eyebrow">OWNER RELEASE DECISION</p>
+          <h2>Approve, reject, or return the exact staged portfolio</h2>
+          <p id="academyOwnerReleaseSummary" class="subhead">Loading the device-bound release-approval gate…</p>
+        </div>
+        <button id="academyOwnerReleaseRefresh" class="secondary">Refresh approval gate</button>
+      </div>
+      <section id="academyOwnerReleaseMetrics" class="grid metrics"></section>
+      <div class="dashboardColumns">
+        <div>
+          <h3>Decision controls</h3>
+          <div class="approvalControls">
+            <label for="academyOwnerDecision">Decision</label>
+            <select id="academyOwnerDecision">
+              <option value="approve">Approve staged portfolio</option>
+              <option value="revise">Return portfolio for revision</option>
+              <option value="reject">Reject staged portfolio</option>
+            </select>
+            <label for="academyOwnerConfirmation">Required confirmation</label>
+            <input id="academyOwnerConfirmation" type="text" autocomplete="off" spellcheck="false" />
+            <p id="academyOwnerConfirmationHelp" class="subhead"></p>
+            <label for="academyOwnerDecisionNote">Owner note</label>
+            <textarea id="academyOwnerDecisionNote" rows="4" placeholder="Optional for approval; required for reject or revise."></textarea>
+            <button id="academyOwnerRecordDecision">Record device-bound owner decision</button>
+            <p class="subhead">Recording approval does not publish courses, enable checkout, change pricing, or grant learner access. A separate governed release execution remains required.</p>
+          </div>
+        </div>
+        <div><h3>Decision blockers and evidence</h3><div id="academyOwnerReleaseBlockers" class="gapList"></div></div>
+      </div>
+    `;
+    academyPanel.parentNode.insertBefore(panel, academyPanel);
+  }
+
+  document.getElementById("endpointLiveRefresh")?.addEventListener("click", refreshOperationalPanels);
+  document.getElementById("academyProductionEvidenceRefresh")?.addEventListener("click", refreshOperationalPanels);
+  document.getElementById("academyOwnerReleaseRefresh")?.addEventListener("click", refreshOperationalPanels);
+  document.getElementById("academyOwnerDecision")?.addEventListener("change", renderAcademyReleaseApproval);
+  document.getElementById("academyOwnerRecordDecision")?.addEventListener("click", recordOwnerReleaseDecision);
+  document.getElementById("endpointLiveEnroll")?.addEventListener("click", async () => {
+    if (!window.confirm("Enroll this Windows endpoint using the target-bound bootstrap and Windows encrypted device identity?")) return;
+    try {
+      await window.obserraOwner.enrollEndpoint({ confirmation: "ENROLL THIS ENDPOINT" });
+      writeBatchLog("Endpoint enrollment completed.", "ok");
+      await refreshOperationalPanels();
+    } catch (error) {
+      writeBatchLog(error.message || String(error), "error");
+    }
+  });
+  document.getElementById("endpointLiveRevoke")?.addEventListener("click", async () => {
+    if (!window.confirm("Revoke this endpoint enrollment? The local Command Center will remain installed but will be unable to record owner release decisions.")) return;
+    try {
+      await window.obserraOwner.revokeEndpoint({
+        confirmation: "REVOKE THIS ENDPOINT",
+        reason: "owner-command-center-ui-revocation",
+      });
+      writeBatchLog("Endpoint enrollment revoked.", "ok");
+      await refreshOperationalPanels();
+    } catch (error) {
+      writeBatchLog(error.message || String(error), "error");
+    }
+  });
 }
 
-async function refreshReleaseApprovalPanel() {
+function renderGapList(container, items, emptyMessage, severity = "high") {
+  container.replaceChildren();
+  if (!items?.length) {
+    const clear = document.createElement("article");
+    clear.className = "gapItem clear";
+    const title = document.createElement("strong");
+    title.textContent = emptyMessage;
+    clear.append(title);
+    container.append(clear);
+    return;
+  }
+  for (const text of items) {
+    const item = document.createElement("article");
+    item.className = `gapItem ${severity}`;
+    const detail = document.createElement("span");
+    detail.textContent = String(text);
+    item.append(detail);
+    container.append(item);
+  }
+}
+
+function renderEndpointState() {
+  const summary = document.getElementById("endpointLiveSummary");
+  const metrics = document.getElementById("endpointLiveMetrics");
+  const blockers = document.getElementById("endpointLiveBlockers");
+  if (!summary || !metrics || !blockers) return;
+
+  if (!endpointState) {
+    summary.textContent = "Endpoint status is unavailable.";
+    metrics.replaceChildren();
+    renderGapList(blockers, ["No endpoint receipt was returned by the Electron main process."], "No endpoint blockers.");
+    return;
+  }
+
+  const enrollment = endpointState.enrollment?.state || "not-enrolled";
+  summary.textContent = `${endpointState.hostname} · device ${endpointState.deviceId || "not-created"} · heartbeat ${endpointState.lastHeartbeatAt ? new Date(endpointState.lastHeartbeatAt).toLocaleTimeString() : "unknown"}`;
+  metrics.replaceChildren(
+    createMetricCard("Endpoint ready", endpointState.endpointReady ? "YES" : "NO", "Bootstrap, encryption, identity, enrollment, and loopback health"),
+    createMetricCard("Control plane", endpointState.controlPlaneOperational ? "OPERATIONAL" : "BLOCKED", "Live monitoring and device-bound owner decision controls"),
+    createMetricCard("Enrollment", enrollment.toUpperCase(), endpointState.enrollment?.enrolledAt || endpointState.enrollment?.revokedAt || "No enrollment timestamp"),
+    createMetricCard("Windows encryption", endpointState.windowsEncryption ? "AVAILABLE" : "UNAVAILABLE", "Device-bound credential protection"),
+    createMetricCard("Bootstrap", endpointState.bootstrap?.applied ? "APPLIED" : "NOT APPLIED", endpointState.bootstrap?.profileId || endpointState.bootstrap?.error || "No verified profile"),
+    createMetricCard("Loopback health", endpointState.healthServer?.port ? `127.0.0.1:${endpointState.healthServer.port}` : "OFFLINE", "Read-only local health and readiness"),
+    createMetricCard("Auto start", endpointState.autoStartEnabled ? "ENABLED" : "DISABLED", "Windows login item state"),
+    createMetricCard("Connectors", `${endpointState.connectorSummary?.connected || 0}/${endpointState.connectorSummary?.observed || 0}`, `${endpointState.connectorSummary?.controlEnabled || 0} control-enabled`),
+  );
+  const endpointOnlyBlockers = (endpointState.blockers || []).filter((blocker) => !String(blocker).startsWith("Academy:"));
+  renderGapList(blockers, endpointOnlyBlockers, "Endpoint readiness has no active blockers.");
+}
+
+function renderAcademyProductionEvidence() {
+  const summary = document.getElementById("academyProductionEvidenceSummary");
+  const metrics = document.getElementById("academyProductionEvidenceMetrics");
+  const blockers = document.getElementById("academyProductionEvidenceBlockers");
+  const files = document.getElementById("academyProductionEvidenceFiles");
+  if (!summary || !metrics || !blockers || !files) return;
+
+  if (!academyProductionEvidence) {
+    summary.textContent = "Academy production evidence is unavailable.";
+    metrics.replaceChildren();
+    renderGapList(blockers, ["No authoritative production evidence was returned."], "No Academy blockers.");
+    renderGapList(files, ["No evidence inventory was returned."], "Evidence sources are available.");
+    return;
+  }
+
+  const workers = academyProductionEvidence.workerStatus || {};
+  const courses = academyProductionEvidence.courseStatus || {};
+  const media = academyProductionEvidence.mediaStatus || {};
+  const provider = academyProductionEvidence.providerStatus || {};
+  const approval = academyProductionEvidence.approvalStatus || {};
+  summary.textContent = `${academyProductionEvidence.source} · checked ${new Date(academyProductionEvidence.checkedAt).toLocaleTimeString()} · publication ${academyProductionEvidence.publicationLocked ? "LOCKED" : "UNEXPECTEDLY UNLOCKED"}`;
+  metrics.replaceChildren(
+    createMetricCard("Course worker target", academyProductionEvidence.workerTarget || 36, "Owner-approved Academy surge"),
+    createMetricCard("Configured course workers", workers.configuredCourseWorkers ?? "Unknown", `Application workers ${workers.configuredApplicationWorkers ?? "unknown"}`),
+    createMetricCard("Workers launched", workers.launchedWorkers || 0, `${workers.activeWorkers || 0} active assignments`),
+    createMetricCard("Assignments complete", workers.completedAssignments || 0, `${workers.successfulAssignments || 0} successful · ${workers.failedAssignments || 0} failed`),
+    createMetricCard("Interchangeable roles", workers.interchangeable === true ? "VERIFIED" : "NOT VERIFIED", workers.workerMode || "No worker mode evidence"),
+    createMetricCard("Owner-review courses", courses.ownerReviewEligible || 0, `${courses.discovered || 0} manifests discovered`),
+    createMetricCard("Compliance staged", courses.complianceStagingReady || 0, "Structural instructional and production contract passed"),
+    createMetricCard("Approval staged", `${approval.stagedCourses || 0}/${approval.expectedCourses || courses.ownerReviewEligible || 0}`, `${approval.blockedCourses || 0} blocked`),
+    createMetricCard("Provider", provider.ready ? "READY" : "NOT PROVEN", `${provider.provider || "unknown"} · ${provider.model || "unknown model"}`),
+    createMetricCard("Video jobs", `${media.submittedVideoJobs || 0}/${media.requestedVideoJobs || 0}`, `${media.failedVideoJobs || 0} failed · ${media.configurationRequiredVideoJobs || 0} need configuration`),
+    createMetricCard("Learner catalog", courses.learnerCatalogReady ? "READY" : "BLOCKED", "Protected learner delivery evidence"),
+    createMetricCard("Production ready", academyProductionEvidence.productionOperational ? "YES" : "NO", "Independent from Command Center live status"),
+  );
+  renderGapList(blockers, academyProductionEvidence.blockers || [], "Academy production evidence has no active blockers.");
+
+  const evidenceEntries = Object.entries(academyProductionEvidence.evidence || {}).map(([name, evidence]) => {
+    const suffix = evidence.error ? ` · ${evidence.error}` : "";
+    return `${name}: ${evidence.status} · ${evidence.file}${suffix}`;
+  });
+  renderGapList(files, evidenceEntries, "All required evidence files are available.", "medium");
+}
+
+function renderAcademyReleaseApproval() {
+  const summary = document.getElementById("academyOwnerReleaseSummary");
+  const metrics = document.getElementById("academyOwnerReleaseMetrics");
+  const blockers = document.getElementById("academyOwnerReleaseBlockers");
+  const decisionSelect = document.getElementById("academyOwnerDecision");
+  const confirmationInput = document.getElementById("academyOwnerConfirmation");
+  const confirmationHelp = document.getElementById("academyOwnerConfirmationHelp");
+  const recordButton = document.getElementById("academyOwnerRecordDecision");
+  if (!summary || !metrics || !blockers || !decisionSelect || !confirmationInput || !confirmationHelp || !recordButton) return;
+
+  if (!academyReleaseApproval) {
+    summary.textContent = "Release-approval status is unavailable.";
+    metrics.replaceChildren();
+    renderGapList(blockers, ["No device-bound release-approval snapshot was returned."], "Release decision has no blockers.");
+    recordButton.disabled = true;
+    return;
+  }
+
+  const gate = academyReleaseApproval.gate || {};
+  const endpoint = academyReleaseApproval.endpoint || {};
+  const decision = academyReleaseApproval.decision || null;
+  const selectedDecision = decisionSelect.value || "approve";
+  const requiredConfirmation = academyReleaseApproval.expectedConfirmation?.[selectedDecision] || "Gate must be ready before confirmation is available.";
+  confirmationInput.placeholder = requiredConfirmation;
+  confirmationHelp.textContent = `Enter exactly: ${requiredConfirmation}`;
+  recordButton.disabled = !academyReleaseApproval.canDecide || ownerDecisionInFlight;
+
+  const status = academyReleaseApproval.canDecide
+    ? "READY FOR OWNER DECISION"
+    : decision && academyReleaseApproval.currentDecisionMatchesGate
+      ? `DECISION RECORDED: ${String(decision.decision || "unknown").toUpperCase()}`
+      : "NOT READY FOR OWNER DECISION";
+  summary.textContent = `${status} · exact gate ${academyReleaseApproval.gateHash ? academyReleaseApproval.gateHash.slice(0, 16) : "unavailable"} · publication and checkout remain disabled`;
+  metrics.replaceChildren(
+    createMetricCard("Expected courses", gate.expectedCourses ?? 0, gate.portfolioDefinition || "Complete governed Academy portfolio"),
+    createMetricCard("Staged courses", gate.stagedCourses ?? 0, `${gate.blockedCourses ?? 0} blocked`),
+    createMetricCard("Gate progress", `${gate.progressPercent ?? 0}%`, gate.allStagedForOwnerApproval ? "All course packages staged" : "Production gates remain"),
+    createMetricCard("Owner decision", decision ? String(decision.decision || "unknown").toUpperCase() : "NOT RECORDED", decision?.decidedAt || "Awaiting complete staging"),
+    createMetricCard("Endpoint authority", endpoint.endpointReady ? "VERIFIED" : "BLOCKED", endpoint.deviceFingerprint ? endpoint.deviceFingerprint.slice(0, 16) : "No device fingerprint"),
+    createMetricCard("Publication authority", gate.publicationAuthorized ? "UNEXPECTED" : "NOT GRANTED", "Approval records intent only"),
+    createMetricCard("Checkout authority", gate.checkoutAuthorized ? "UNEXPECTED" : "NOT GRANTED", "Commerce remains disabled"),
+    createMetricCard("Release execution", decision?.releaseExecutionCompleted ? "COMPLETE" : "SEPARATE STEP", "Post-approval governed execution required"),
+  );
+  renderGapList(blockers, academyReleaseApproval.blockers || [], "The exact portfolio is staged and the enrolled endpoint may record your decision.");
+}
+
+async function recordOwnerReleaseDecision() {
+  if (ownerDecisionInFlight || !academyReleaseApproval?.canDecide) return;
+  const decision = document.getElementById("academyOwnerDecision")?.value || "approve";
+  const confirmation = document.getElementById("academyOwnerConfirmation")?.value || "";
+  const note = document.getElementById("academyOwnerDecisionNote")?.value || "";
+  const expected = academyReleaseApproval.expectedConfirmation?.[decision];
+  if (!expected || confirmation.trim() !== expected) {
+    writeBatchLog(`Owner confirmation must exactly match: ${expected || "approval gate not ready"}`, "error");
+    return;
+  }
+  const verb = decision === "approve" ? "approve" : decision === "reject" ? "reject" : "return for revision";
+  if (!window.confirm(`Record a device-bound decision to ${verb} the exact staged Academy portfolio? This will not publish courses or enable checkout.`)) return;
+
+  ownerDecisionInFlight = true;
+  renderAcademyReleaseApproval();
   try {
-    const snapshot = await window.obserraOwner.getAcademySnapshot();
-    renderReleaseApprovalPanel(snapshot);
+    const result = await window.obserraOwner.recordAcademyReleaseDecision({ decision, confirmation, note });
+    writeBatchLog(`Owner ${String(result.decision?.decision || decision).toUpperCase()} decision recorded for gate ${String(result.decision?.gateHash || "").slice(0, 16)}. Publication remains disabled.`, "ok");
+    document.getElementById("academyOwnerConfirmation").value = "";
+    document.getElementById("academyOwnerDecisionNote").value = "";
+    await refreshOperationalPanels();
   } catch (error) {
-    ensureReleaseApprovalPanel();
-    const status = document.getElementById("academyReleaseApprovalStatus");
-    const title = document.getElementById("academyReleaseApprovalTitle");
-    status.textContent = "UNAVAILABLE";
-    status.className = "status failed";
-    title.textContent = error?.message || "Unable to read release-approval staging evidence.";
+    writeBatchLog(error.message || String(error), "error");
+  } finally {
+    ownerDecisionInFlight = false;
+    renderAcademyReleaseApproval();
+  }
+}
+
+async function refreshOperationalPanels() {
+  if (operationalRefreshInFlight) return;
+  operationalRefreshInFlight = true;
+  try {
+    [endpointState, academyProductionEvidence, academyReleaseApproval] = await Promise.all([
+      window.obserraOwner.getEndpointSnapshot(),
+      window.obserraOwner.getAcademyProductionEvidence(),
+      window.obserraOwner.getAcademyReleaseApproval(),
+    ]);
+  } catch (error) {
+    writeBatchLog(`Operational evidence refresh failed: ${error.message || String(error)}`, "error");
+  } finally {
+    operationalRefreshInFlight = false;
+    renderEndpointState();
+    renderAcademyProductionEvidence();
+    renderAcademyReleaseApproval();
   }
 }
 
@@ -182,7 +347,7 @@ async function runBatch(action, label) {
     if (result.stderr) writeBatchLog(result.stderr.slice(-3000), "error");
     if (result.stdout) writeBatchLog(result.stdout.slice(-3000), "info");
     document.getElementById("academyRefresh").click();
-    await refreshReleaseApprovalPanel();
+    await refreshOperationalPanels();
   } catch (error) {
     writeBatchLog(error.message || String(error), "error");
   } finally {
@@ -191,10 +356,9 @@ async function runBatch(action, label) {
   }
 }
 
-document.getElementById("academyGenerateAll").addEventListener("click", () => runBatch("author-all", "Generate all pending cinematic courses"));
-document.getElementById("academyBuildAll").addEventListener("click", () => runBatch("build-all", "Build all structurally ready courses"));
+ensureOperationalPanels();
+void refreshOperationalPanels();
+window.setInterval(() => void refreshOperationalPanels(), 15000);
 
-ensureReleaseApprovalPanel();
-refreshReleaseApprovalPanel();
-releaseApprovalRefreshTimer = setInterval(refreshReleaseApprovalPanel, 30000);
-window.addEventListener("beforeunload", () => clearInterval(releaseApprovalRefreshTimer));
+document.getElementById("academyGenerateAll").addEventListener("click", () => runBatch("author-all", "Generate all pending courses"));
+document.getElementById("academyBuildAll").addEventListener("click", () => runBatch("build-all", "Build all release-ready courses"));

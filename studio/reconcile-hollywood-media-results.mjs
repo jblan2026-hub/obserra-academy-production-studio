@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { Readable } from "node:stream";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -18,16 +18,29 @@ const projectRef = String(process.env.ACADEMY_SUPABASE_PROJECT_REF || "nwxnyqlyz
 const supabaseUrl = String(process.env.SUPABASE_URL || `https://${projectRef}.supabase.co`).trim().replace(/\/$/, "");
 const supabaseSecret = String(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
 const storageBucket = String(process.env.ACADEMY_MEDIA_BUCKET || "academy-course-media").trim();
-const maximumDownloadBytes = Number(process.env.ACADEMY_MEDIA_MAX_DOWNLOAD_BYTES || 2_000_000_000);
-const requestTimeoutMs = Number(process.env.ACADEMY_MEDIA_REQUEST_TIMEOUT_MS || 120_000);
+const maximumDownloadBytes = boundedNumber(process.env.ACADEMY_MEDIA_MAX_DOWNLOAD_BYTES, 2_000_000_000, 10_000_000, 5_000_000_000);
+const requestTimeoutMs = boundedNumber(process.env.ACADEMY_MEDIA_REQUEST_TIMEOUT_MS, 120_000, 10_000, 10 * 60_000);
+const mediaTransferTimeoutMs = boundedNumber(process.env.ACADEMY_MEDIA_TRANSFER_TIMEOUT_MS, 30 * 60_000, 60_000, 2 * 60 * 60_000);
 const portfolio = academySurgePortfolio();
 
 if (!["synthesia", "heygen"].includes(providerName)) throw new Error(`Unsupported Academy video provider: ${providerName}`);
 if (!supabaseSecret) throw new Error("SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY is required to archive final Academy media.");
-if (!Number.isFinite(maximumDownloadBytes) || maximumDownloadBytes < 10_000_000) throw new Error("ACADEMY_MEDIA_MAX_DOWNLOAD_BYTES is invalid.");
+
+function boundedNumber(value, fallback, minimum, maximum) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(minimum, Math.min(maximum, Math.trunc(parsed)));
+}
 
 function stableHash(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+async function sha256File(filePath) {
+  const hash = crypto.createHash("sha256");
+  const input = fs.createReadStream(filePath);
+  for await (const chunk of input) hash.update(chunk);
+  return hash.digest("hex");
 }
 
 function readJson(filePath) {
@@ -50,11 +63,16 @@ function encodedObjectPath(value) {
   return value.split("/").map((segment) => encodeURIComponent(segment)).join("/");
 }
 
-async function fetchWithTimeout(url, init = {}) {
+async function fetchWithTimeout(url, init = {}, timeoutMs = requestTimeoutMs) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), requestTimeoutMs);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted || error?.name === "AbortError") {
+      throw new Error(`Media request timed out after ${Math.round(timeoutMs / 1000)} seconds.`);
+    }
+    throw error;
   } finally {
     clearTimeout(timer);
   }
@@ -70,10 +88,11 @@ async function providerStatus(job) {
     const body = await response.text();
     if (!response.ok) throw new Error(`Synthesia status request failed with ${response.status}: ${body.slice(0, 1000)}`);
     const payload = JSON.parse(body);
-    const status = String(payload.status || payload.generationStatus || "unknown").toLowerCase();
-    const downloadUrl = payload.download || payload.downloadUrl || payload.download_url || payload.videoUrl || payload.video_url || null;
-    const error = payload.error || payload.errorCode || null;
-    return { providerStatus: status, downloadUrl, providerPayload: payload, error };
+    return {
+      providerStatus: String(payload.status || payload.generationStatus || "unknown").toLowerCase(),
+      downloadUrl: payload.download || payload.downloadUrl || payload.download_url || payload.videoUrl || payload.video_url || null,
+      providerError: payload.error || payload.errorCode || null,
+    };
   }
 
   const apiKey = String(process.env.HEYGEN_API_KEY || "").trim();
@@ -84,31 +103,50 @@ async function providerStatus(job) {
   const body = await response.text();
   if (!response.ok) throw new Error(`HeyGen status request failed with ${response.status}: ${body.slice(0, 1000)}`);
   const payload = JSON.parse(body);
-  const status = String(payload?.data?.status || "unknown").toLowerCase();
-  const downloadUrl = payload?.data?.video_url || payload?.data?.videoUrl || null;
-  const error = payload?.data?.error || payload?.error || null;
-  return { providerStatus: status, downloadUrl, providerPayload: payload, error };
+  return {
+    providerStatus: String(payload?.data?.status || "unknown").toLowerCase(),
+    downloadUrl: payload?.data?.video_url || payload?.data?.videoUrl || null,
+    providerError: payload?.data?.error || payload?.error || null,
+  };
 }
 
 async function downloadFile(url, destination) {
-  const response = await fetchWithTimeout(url, { redirect: "follow" });
+  const response = await fetchWithTimeout(url, { redirect: "follow" }, mediaTransferTimeoutMs);
   if (!response.ok || !response.body) throw new Error(`Media download failed with status ${response.status}.`);
-  const length = Number(response.headers.get("content-length") || 0);
-  if (length > maximumDownloadBytes) throw new Error(`Media download exceeds configured maximum of ${maximumDownloadBytes} bytes.`);
+  const declaredLength = Number(response.headers.get("content-length") || 0);
+  if (declaredLength > maximumDownloadBytes) throw new Error(`Media download exceeds the configured maximum of ${maximumDownloadBytes} bytes.`);
+
   fs.mkdirSync(path.dirname(destination), { recursive: true, mode: 0o700 });
   const temporary = `${destination}.${process.pid}.${Date.now()}.partial`;
-  await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(temporary, { mode: 0o600 }));
-  const bytes = fs.statSync(temporary).size;
-  if (bytes < 1000) throw new Error("Downloaded media is unexpectedly small.");
-  if (bytes > maximumDownloadBytes) throw new Error(`Downloaded media exceeds configured maximum of ${maximumDownloadBytes} bytes.`);
-  fs.renameSync(temporary, destination);
-  return { bytes, sha256: stableHash(fs.readFileSync(destination)) };
+  const hash = crypto.createHash("sha256");
+  let bytes = 0;
+  const meter = new Transform({
+    transform(chunk, _encoding, callback) {
+      bytes += chunk.length;
+      if (bytes > maximumDownloadBytes) {
+        callback(new Error(`Downloaded media exceeds the configured maximum of ${maximumDownloadBytes} bytes.`));
+        return;
+      }
+      hash.update(chunk);
+      callback(null, chunk);
+    },
+  });
+
+  try {
+    await pipeline(Readable.fromWeb(response.body), meter, fs.createWriteStream(temporary, { mode: 0o600 }));
+    if (bytes < 1000) throw new Error("Downloaded media is unexpectedly small.");
+    fs.renameSync(temporary, destination);
+    return { bytes, sha256: hash.digest("hex") };
+  } catch (error) {
+    fs.rmSync(temporary, { force: true });
+    throw error;
+  }
 }
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { encoding: "utf8", ...options });
   if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} failed: ${(result.stderr || result.stdout || "").slice(-2000)}`);
+  if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} failed: ${(result.stderr || result.stdout || "").slice(-3000)}`);
   return result;
 }
 
@@ -135,7 +173,7 @@ function concatenateSegments(segmentPaths, outputPath) {
     return;
   }
   const listPath = `${outputPath}.concat.txt`;
-  writeText(listPath, segmentPaths.map((filePath) => `file '${filePath.replaceAll("'", "'\\''")}'`).join("\n") + "\n");
+  writeText(listPath, `${segmentPaths.map((filePath) => `file '${filePath.replaceAll("'", "'\\''")}'`).join("\n")}\n`);
   const copy = spawnSync("ffmpeg", ["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", outputPath], { encoding: "utf8" });
   if (copy.status !== 0) {
     run("ffmpeg", ["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-c:a", "aac", "-b:a", "192k", outputPath]);
@@ -167,26 +205,36 @@ async function ensureStorageBucket() {
 
 async function uploadObject(localPath, objectPath, contentType) {
   const bytes = fs.statSync(localPath).size;
-  const sha256 = stableHash(fs.readFileSync(localPath));
-  const versionedPath = `${objectPath.replace(/\.[^.]+$/, "")}-${sha256.slice(0, 16)}${path.extname(objectPath)}`;
+  if (bytes < 1 || bytes > maximumDownloadBytes) throw new Error(`Media object size ${bytes} is outside the governed range.`);
+  const sha256 = await sha256File(localPath);
+  const extension = path.extname(objectPath);
+  const versionedPath = `${objectPath.slice(0, extension ? -extension.length : undefined)}-${sha256.slice(0, 16)}${extension}`;
   const response = await fetchWithTimeout(`${supabaseUrl}/storage/v1/object/${encodeURIComponent(storageBucket)}/${encodedObjectPath(versionedPath)}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${supabaseSecret}`,
       apikey: supabaseSecret,
       "Content-Type": contentType,
+      "Content-Length": String(bytes),
       "x-upsert": "false",
       "cache-control": "31536000",
       "x-obserra-sha256": sha256,
     },
     body: fs.createReadStream(localPath),
     duplex: "half",
-  });
+  }, mediaTransferTimeoutMs);
   const body = await response.text();
   if (!response.ok && !(response.status === 400 && /exist|duplicate/i.test(body))) {
     throw new Error(`Supabase media upload failed for ${versionedPath}: ${response.status} ${body.slice(0, 1000)}`);
   }
-  return { bucket: storageBucket, objectPath: versionedPath, storageKey: `supabase://${storageBucket}/${versionedPath}`, bytes, sha256, contentType };
+  return {
+    bucket: storageBucket,
+    objectPath: versionedPath,
+    storageKey: `supabase://${storageBucket}/${versionedPath}`,
+    bytes,
+    sha256,
+    contentType,
+  };
 }
 
 function loadSidecars() {
@@ -204,18 +252,24 @@ function loadSidecars() {
 
 async function registerModuleMediaInLcms(courseId, moduleId, receipts, metadata) {
   if (!process.env.DATABASE_URL || !process.env.STUDIO_OWNER_ORGANIZATION_ID) return { registered: false, reason: "database-not-configured" };
-  const module = await import("@prisma/client");
-  const PrismaClient = module.PrismaClient ?? module.default?.PrismaClient;
+  const prismaModule = await import("@prisma/client");
+  const PrismaClient = prismaModule.PrismaClient ?? prismaModule.default?.PrismaClient;
   if (!PrismaClient) throw new Error("PrismaClient is unavailable for media registration.");
   const prisma = new PrismaClient();
   try {
     const organization = await prisma.organization.findUnique({ where: { clerkOrganizationId: process.env.STUDIO_OWNER_ORGANIZATION_ID } });
     if (!organization) return { registered: false, reason: "organization-not-found" };
-    const course = await prisma.course.findUnique({ where: { organizationId_slug: { organizationId: organization.id, slug: courseId } }, include: { lessons: true } });
+    const course = await prisma.course.findUnique({
+      where: { organizationId_slug: { organizationId: organization.id, slug: courseId } },
+      include: { lessons: true },
+    });
     if (!course) return { registered: false, reason: "course-not-found" };
     const lesson = course.lessons.find((candidate) => candidate.content?.manifestModuleId === moduleId);
     if (!lesson) return { registered: false, reason: "lesson-not-found" };
-    await prisma.mediaAsset.deleteMany({ where: { lessonId: lesson.id, type: { in: ["master-video", "captions", "transcript", "audio-description", "media-rights-ledger"] } } });
+
+    await prisma.mediaAsset.deleteMany({
+      where: { lessonId: lesson.id, type: { in: ["master-video", "captions", "transcript", "audio-description", "media-rights-ledger"] } },
+    });
     const typeByContent = {
       "video/mp4": "master-video",
       "text/vtt": "captions",
@@ -259,8 +313,7 @@ const entries = loadSidecars();
 if (entries.length === 0) throw new Error("No protected cinematic media job checkpoints were restored.");
 const statusResults = [];
 
-for (const entry of entries) {
-  const { job, sidecarPath, item } = entry;
+for (const { job, sidecarPath, item } of entries) {
   if (job.provider !== providerName) {
     statusResults.push({ courseId: job.courseId, segmentId: job.segmentId, status: "provider-mismatch", expectedProvider: providerName, checkpointProvider: job.provider });
     continue;
@@ -271,33 +324,32 @@ for (const entry of entries) {
   }
   try {
     const status = await providerStatus(job);
-    const normalized = status.providerStatus;
-    const complete = ["complete", "completed"].includes(normalized);
-    const failed = ["failed", "error"].includes(normalized);
+    const complete = ["complete", "completed"].includes(status.providerStatus);
+    const failed = ["failed", "error"].includes(status.providerStatus);
     if (failed) {
-      const updated = { ...job, status: "provider-failed", providerStatus: normalized, providerError: status.error, reconciledAt: new Date().toISOString(), publicationAuthorized: false };
+      const updated = { ...job, status: "provider-failed", providerStatus: status.providerStatus, providerError: status.providerError, reconciledAt: new Date().toISOString(), publicationAuthorized: false };
       writeJson(sidecarPath, updated);
       await persistMediaJobCheckpoint(updated);
-      statusResults.push({ courseId: job.courseId, segmentId: job.segmentId, status: "provider-failed", error: status.error });
+      statusResults.push({ courseId: job.courseId, segmentId: job.segmentId, status: "provider-failed", error: status.providerError });
       continue;
     }
     if (!complete || !status.downloadUrl) {
-      const updated = { ...job, status: "provider-processing", providerStatus: normalized, reconciledAt: new Date().toISOString(), publicationAuthorized: false };
+      const updated = { ...job, status: "provider-processing", providerStatus: status.providerStatus, reconciledAt: new Date().toISOString(), publicationAuthorized: false };
       writeJson(sidecarPath, updated);
       await persistMediaJobCheckpoint(updated);
-      statusResults.push({ courseId: job.courseId, segmentId: job.segmentId, status: "provider-processing", providerStatus: normalized });
+      statusResults.push({ courseId: job.courseId, segmentId: job.segmentId, status: "provider-processing", providerStatus: status.providerStatus });
       continue;
     }
 
     const segmentPath = path.join(item.courseDir, "generated", "final-media", "segments", `${job.segmentId}.mp4`);
     const download = fs.existsSync(segmentPath)
-      ? { bytes: fs.statSync(segmentPath).size, sha256: stableHash(fs.readFileSync(segmentPath)) }
+      ? { bytes: fs.statSync(segmentPath).size, sha256: await sha256File(segmentPath) }
       : await downloadFile(status.downloadUrl, segmentPath);
     const receipt = await uploadObject(segmentPath, `courses/${job.courseId}/${job.moduleId}/segments/${job.segmentId}.mp4`, "video/mp4");
     const updated = {
       ...job,
       status: "complete-archived",
-      providerStatus: normalized,
+      providerStatus: status.providerStatus,
       reconciledAt: new Date().toISOString(),
       localSegmentPath: path.relative(root, segmentPath).replaceAll("\\", "/"),
       segmentBytes: download.bytes,
@@ -327,9 +379,16 @@ for (const [key, moduleEntries] of byModule.entries()) {
   const [courseId, moduleId] = key.split("::");
   const complete = moduleEntries.every((entry) => entry.job.status === "complete-archived" && entry.job.localSegmentPath);
   if (!complete) {
-    moduleResults.push({ courseId, moduleId, status: "segments-incomplete", completeSegments: moduleEntries.filter((entry) => entry.job.status === "complete-archived").length, expectedSegments: moduleEntries.length });
+    moduleResults.push({
+      courseId,
+      moduleId,
+      status: "segments-incomplete",
+      completeSegments: moduleEntries.filter((entry) => entry.job.status === "complete-archived").length,
+      expectedSegments: moduleEntries.length,
+    });
     continue;
   }
+
   try {
     const outputDir = path.join(root, "releases", courseId, "FINAL", "media");
     const moduleVideoPath = path.join(outputDir, `${moduleId}.mp4`);
@@ -341,6 +400,7 @@ for (const [key, moduleEntries] of byModule.entries()) {
     const transcriptLines = [`# ${moduleEntries[0].job.moduleTitle || moduleId} Transcript`, "", "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.", ""];
     const audioDescriptionLines = [`# ${moduleEntries[0].job.moduleTitle || moduleId} Audio Description Script`, "", "This script requires accessibility review and final synchronization before publication.", ""];
     const sourceIds = new Set();
+
     for (let segmentIndex = 0; segmentIndex < moduleEntries.length; segmentIndex += 1) {
       const entry = moduleEntries[segmentIndex].job;
       const duration = durations[segmentIndex];
@@ -360,6 +420,7 @@ for (const [key, moduleEntries] of byModule.entries()) {
       for (const sourceId of entry.sourceIds ?? []) sourceIds.add(sourceId);
       absoluteTime += duration;
     }
+
     const captionsPath = path.join(outputDir, `${moduleId}.vtt`);
     const transcriptPath = path.join(outputDir, `${moduleId}-transcript.md`);
     const audioDescriptionPath = path.join(outputDir, `${moduleId}-audio-description.md`);
@@ -382,6 +443,7 @@ for (const [key, moduleEntries] of byModule.entries()) {
       thirdPartyAssetClearanceRequired: true,
       publicationAuthorized: false,
     });
+
     const receipts = [
       await uploadObject(moduleVideoPath, `courses/${courseId}/${moduleId}/master.mp4`, "video/mp4"),
       await uploadObject(captionsPath, `courses/${courseId}/${moduleId}/captions.vtt`, "text/vtt"),
@@ -409,10 +471,17 @@ const archivedJobs = refreshed.filter((entry) => entry.job.status === "complete-
 const expectedModules = byModule.size;
 const assembledModules = moduleResults.filter((result) => result.status === "assembled-archived").length;
 const report = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
   provider: providerName,
-  storage: { supabaseUrlFingerprint: stableHash(supabaseUrl).slice(0, 16), bucket: storageBucket, privateBucketRequired: true },
+  storage: {
+    supabaseUrlFingerprint: stableHash(supabaseUrl).slice(0, 16),
+    bucket: storageBucket,
+    privateBucketRequired: true,
+    streamingSha256: true,
+    streamingUpload: true,
+    mediaTransferTimeoutMs,
+  },
   expectedCourses: portfolio.expectedCourses,
   expectedJobs,
   archivedJobs,
@@ -423,9 +492,13 @@ const report = {
   publicationAuthorized: false,
   statusResults,
   moduleResults,
-  claimBoundary: "Archived and assembled media proves provider completion, protected retrieval, private object storage, module assembly, and generated accessibility artifacts. Captions, transcripts, audio descriptions, visual composition, source cards, provider terms, and rights still require governed quality review before publication.",
+  claimBoundary: "Archived and assembled media proves provider completion, protected retrieval, streamed integrity verification, private object storage, module assembly, and generated accessibility artifacts. Captions, transcripts, audio descriptions, visual composition, source cards, provider terms, and rights still require governed quality review before publication.",
 };
 fs.mkdirSync(catalogRoot, { recursive: true });
 writeJson(reportPath, report);
 console.log(`[Academy Studio] Media reconciliation archived ${archivedJobs}/${expectedJobs} segment(s) and assembled ${assembledModules}/${expectedModules} module video(s).`);
-if (strict && (!report.allJobsArchived || !report.allModulesAssembled || statusResults.some((result) => ["provider-failed", "reconciliation-error", "provider-mismatch", "missing-external-id"].includes(result.status)))) process.exit(2);
+if (strict && (
+  !report.allJobsArchived
+  || !report.allModulesAssembled
+  || statusResults.some((result) => ["provider-failed", "reconciliation-error", "provider-mismatch", "missing-external-id"].includes(result.status))
+)) process.exit(2);
