@@ -21,8 +21,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: command-center-live-endpoint-${{ github.ref }}
-  cancel-in-progress: true
+  group: command-center-live-endpoint-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   endpoint-contract:
