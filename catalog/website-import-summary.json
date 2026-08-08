@@ -1,5 +1,5 @@
 {
-  "importedAt": "2026-08-07T09:43:03.021Z",
+  "importedAt": "2026-08-08T08:21:42.171Z",
   "sourcePath": "/home/runner/work/obserra-academy-production-studio/obserra-academy-production-studio/tmp/courseData.ts",
   "courses": [
     {
@@ -8,239 +8,239 @@
     },
     {
       "id": "generative-ai-business-leaders",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "llms-for-leaders",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "security-awareness-high-risk",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "executive-travel-risk",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "digital-exposure-executive-privacy",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "ai-ready-workforce",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "coding-for-cyber-leaders",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "python-security-automation",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "api-security-integration",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "prompt-engineering-secure-workflows",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "zero-trust-strategy",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "cloud-security-executives",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "identity-security-access-governance",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "vulnerability-management",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "executive-protection-fundamentals",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "insider-threat-awareness",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "low-code-security-automation",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "cybersecurity-governance-policy",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "ai-executive-decision-making",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "ai-data-privacy-ip",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "executive-dashboards-data-ai",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "cybersecurity-business-leaders",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "building-trusted-teams",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "security-intelligence-careers",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "secure-enterprise-llm-deployment",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "ai-risk-ethics-governance",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "ai-policy-responsible-use",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "secure-ai-native-apps",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "secure-software-development-lifecycle",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "cloud-native-app-security",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "devsecops-enterprise-teams",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "incident-response-leadership",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "ransomware-readiness",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "digital-forensics-evidence",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "protective-intelligence-corporate-security",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "third-party-cyber-risk",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "business-continuity-cyber-resilience",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "crisis-communications-executives",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "executive-threat-assessment",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "ai-red-teaming-model-risk",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "cyber-risk-assessment",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "enterprise-risk-technology",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "building-security-program",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "crisis-leadership-cisos",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "board-communication-cybersecurity",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "cybersecurity-executive-metrics",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "workplace-violence-threat-management",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "family-security-digital-safety",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "regulatory-readiness-security",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "cybersecurity-budget-business-case",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "ciso-leadership-playbook",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "becoming-a-strategic-ciso",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "ciso-career-executive-presence",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "eios-enterprise-intelligence-overview",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "executive-decision-making-pressure",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "ethical-leadership-ai",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "leading-through-cyber-crisis",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "custom-ai-native-app-strategy",
-      "status": "created"
+      "status": "preserved-existing"
     },
     {
       "id": "data-driven-risk-intelligence",
-      "status": "created"
+      "status": "preserved-existing"
     }
   ]
 }
