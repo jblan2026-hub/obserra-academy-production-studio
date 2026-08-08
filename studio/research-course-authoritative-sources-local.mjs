@@ -1,3 +1,5 @@
+import "./academy-zero-cost-lock.mjs";
+
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -9,7 +11,9 @@ const arg = (name) => {
   return index >= 0 ? process.argv[index + 1] : null;
 };
 const courseId = arg("--course");
-if (!courseId || !/^[a-z0-9][a-z0-9-]{1,120}$/.test(courseId)) throw new Error("Usage: node studio/research-course-authoritative-sources-local.mjs --course <course-id>");
+if (!courseId || !/^[a-z0-9][a-z0-9-]{1,120}$/.test(courseId)) {
+  throw new Error("Usage: node studio/research-course-authoritative-sources-local.mjs --course <course-id>");
+}
 
 const courseDir = path.join(root, "courses", courseId);
 const manifestPath = path.join(courseDir, "course-manifest.json");
@@ -19,39 +23,108 @@ const freeContextPath = path.join(courseDir, "generated", "research", "free-sour
 if (!fs.existsSync(manifestPath)) throw new Error(`Course manifest not found for ${courseId}.`);
 if (!fs.existsSync(registryPath)) throw new Error("Governed authoritative source registry is missing.");
 if (!fs.existsSync(casesPath)) throw new Error("Governed documented-case registry is missing.");
+
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
 const caseRegistry = JSON.parse(fs.readFileSync(casesPath, "utf8"));
-const freeContext = fs.existsSync(freeContextPath) ? JSON.parse(fs.readFileSync(freeContextPath, "utf8")) : null;
+const freeContext = fs.existsSync(freeContextPath)
+  ? JSON.parse(fs.readFileSync(freeContextPath, "utf8"))
+  : null;
 const course = manifest.course || {};
-const excerptLimit = Math.max(2_000, Math.min(12_000, Number(process.env.ACADEMY_LOCAL_RESEARCH_EXCERPT_CHARS || 8_000)));
-const sourceTarget = Math.max(4, Math.min(8, Number(process.env.ACADEMY_DIRECT_SOURCE_TARGET || 6)));
-const caseTarget = Math.max(2, Math.min(5, Number(process.env.ACADEMY_DOCUMENTED_CASE_TARGET || 3)));
+const modules = Array.isArray(course.modules) ? course.modules : [];
+const excerptLimit = Math.max(
+  1_500,
+  Math.min(6_000, Number(process.env.ACADEMY_LOCAL_RESEARCH_EXCERPT_CHARS || 3_000)),
+);
+const sourceTarget = Math.max(
+  4,
+  Math.min(8, Number(process.env.ACADEMY_DIRECT_SOURCE_TARGET || 6)),
+);
+const caseTarget = Math.max(
+  2,
+  Math.min(5, Number(process.env.ACADEMY_DOCUMENTED_CASE_TARGET || 3)),
+);
 
 const allowedPrimaryDomains = [
-  ".gov", ".mil", ".int", "nist.gov", "csrc.nist.gov", "sec.gov", "ecfr.gov", "federalregister.gov",
-  "fda.gov", "hhs.gov", "cms.gov", "ftc.gov", "dfs.ny.gov", "dol.gov", "osha.gov", "acquisition.gov",
-  "defense.gov", "dodcio.defense.gov", "state.gov", "justice.gov", "congress.gov", "uscode.house.gov",
-  "iso.org", "iec.ch", "pcisecuritystandards.org", "cisecurity.org", "pmi.org", "owasp.org", "cloudsecurityalliance.org"
+  ".gov",
+  ".mil",
+  ".int",
+  "nist.gov",
+  "csrc.nist.gov",
+  "sec.gov",
+  "ecfr.gov",
+  "federalregister.gov",
+  "fda.gov",
+  "hhs.gov",
+  "cms.gov",
+  "ftc.gov",
+  "dfs.ny.gov",
+  "dol.gov",
+  "osha.gov",
+  "acquisition.gov",
+  "defense.gov",
+  "dodcio.defense.gov",
+  "state.gov",
+  "justice.gov",
+  "congress.gov",
+  "uscode.house.gov",
+  "iso.org",
+  "iec.ch",
+  "pcisecuritystandards.org",
+  "cisecurity.org",
+  "pmi.org",
+  "owasp.org",
+  "cloudsecurityalliance.org",
 ];
 
-function stableHash(value) { return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex"); }
+function stableHash(value) {
+  return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
 function writeJsonAtomic(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
   const temporary = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-  fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+  fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, {
+    encoding: "utf8",
+    mode: 0o600,
+  });
   fs.renameSync(temporary, filePath);
 }
-function hostname(url) { try { return new URL(url).hostname.toLowerCase(); } catch { return ""; } }
+
+function hostname(url) {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
 function primaryDomainAllowed(url) {
   const host = hostname(url);
-  return Boolean(host && allowedPrimaryDomains.some((domain) => domain.startsWith(".") ? host.endsWith(domain) : host === domain || host.endsWith(`.${domain}`)));
+  return Boolean(
+    host &&
+      allowedPrimaryDomains.some((domain) =>
+        domain.startsWith(".")
+          ? host.endsWith(domain)
+          : host === domain || host.endsWith(`.${domain}`),
+      ),
+  );
 }
+
+function words(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length >= 4);
+}
+
 function tokens(value) {
-  return new Set(String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").split(/\s+/).filter((word) => word.length >= 4));
+  return new Set(words(value));
 }
-function overlapScore(record, queryTokens) {
-  const recordTokens = tokens([
+
+function recordText(record) {
+  return [
     record.title,
     record.publication,
     record.issuer,
@@ -59,13 +132,24 @@ function overlapScore(record, queryTokens) {
     record.sourceAuthority,
     ...(record.topics || []),
     ...(record.factsSupported || []),
-  ].join(" "));
+    ...(record.lessonsLearned || []),
+    ...(record.implementationRecommendations || []),
+  ].join(" ");
+}
+
+function overlapScore(record, queryTokens) {
+  const recordTokens = tokens(recordText(record));
   let score = 0;
   for (const word of queryTokens) if (recordTokens.has(word)) score += 1;
   if (record.binding) score += 0.25;
   if (record.status && record.status !== "draft") score += 0.1;
   return score;
 }
+
+function uniqueStrings(values) {
+  return [...new Set((values || []).map((value) => String(value || "").trim()).filter(Boolean))];
+}
+
 function stripHtml(raw) {
   return String(raw || "")
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
@@ -79,9 +163,11 @@ function stripHtml(raw) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
 function recordUrl(record, kind) {
   return kind === "documented-case" ? record.primarySourceUrl : record.canonicalUrl;
 }
+
 function cachedPrimaryRecord(record, kind) {
   const canonicalUrl = recordUrl(record, kind);
   const excerpt = String(record.cachedExcerpt || "").trim().slice(0, excerptLimit);
@@ -91,7 +177,9 @@ function cachedPrimaryRecord(record, kind) {
     excerpt.length < 200 ||
     !canonicalUrl ||
     !primaryDomainAllowed(canonicalUrl)
-  ) return null;
+  ) {
+    return null;
+  }
   return {
     record,
     kind,
@@ -105,25 +193,51 @@ function cachedPrimaryRecord(record, kind) {
     excerpt,
   };
 }
+
 async function fetchPrimaryRecord(record, kind) {
   const cached = cachedPrimaryRecord(record, kind);
   if (cached) return cached;
 
   const canonicalUrl = recordUrl(record, kind);
-  if (!canonicalUrl || !primaryDomainAllowed(canonicalUrl)) return { record, kind, verified: false, cacheHit: false, error: "invalid-or-non-primary-url" };
+  if (!canonicalUrl || !primaryDomainAllowed(canonicalUrl)) {
+    return {
+      record,
+      kind,
+      verified: false,
+      cacheHit: false,
+      error: "invalid-or-non-primary-url",
+    };
+  }
+
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), Number(process.env.ACADEMY_DIRECT_SOURCE_TIMEOUT_MS || 25_000));
+  const timeout = setTimeout(
+    () => controller.abort(),
+    Number(process.env.ACADEMY_DIRECT_SOURCE_TIMEOUT_MS || 25_000),
+  );
   try {
     const response = await fetch(canonicalUrl, {
       redirect: "follow",
       signal: controller.signal,
       headers: {
-        "User-Agent": "Obserra-Academy-Source-Verification/1.2 (+primary-source-validation)",
-        Accept: "text/html,application/xhtml+xml,application/json,text/plain,application/pdf;q=0.8,*/*;q=0.5",
+        "User-Agent": "Obserra-Academy-Source-Verification/1.3 (+primary-source-validation)",
+        Accept:
+          "text/html,application/xhtml+xml,application/json,text/plain,application/pdf;q=0.8,*/*;q=0.5",
       },
     });
     const contentType = response.headers.get("content-type") || "";
-    if (!response.ok) return { record, kind, verified: false, cacheHit: false, status: response.status, finalUrl: response.url, contentType, error: `http-${response.status}` };
+    if (!response.ok) {
+      return {
+        record,
+        kind,
+        verified: false,
+        cacheHit: false,
+        status: response.status,
+        finalUrl: response.url,
+        contentType,
+        error: `http-${response.status}`,
+      };
+    }
+
     let excerpt = "";
     let sha256 = null;
     if (!contentType.toLowerCase().includes("application/pdf")) {
@@ -145,99 +259,154 @@ async function fetchPrimaryRecord(record, kind) {
       error: excerpt.length >= 200 ? null : "primary-source-text-unavailable",
     };
   } catch (error) {
-    return { record, kind, verified: false, cacheHit: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      record,
+      kind,
+      verified: false,
+      cacheHit: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   } finally {
     clearTimeout(timeout);
   }
 }
 
-function extractJsonObject(text) {
-  const trimmed = String(text || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-  try { return JSON.parse(trimmed); } catch {}
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new Error("Local research model returned no JSON object.");
-  return JSON.parse(trimmed.slice(start, end + 1));
+function courseQueryTokens() {
+  return tokens(
+    [
+      course.title,
+      course.department,
+      course.track,
+      course.description,
+      ...(course.outcomes || []),
+      ...(manifest.tags?.frameworks || []),
+      ...modules.flatMap((module) => [module.title, module.description, module.format]),
+    ].join(" "),
+  );
 }
 
-async function callLocal(prompt) {
-  const baseUrl = String(process.env.LOCAL_AI_BASE_URL || "http://127.0.0.1:11434").replace(/\/$/, "");
-  const model = String(process.env.LOCAL_RESEARCH_MODEL || process.env.LOCAL_AI_MODEL || "qwen2.5:14b-instruct").trim();
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), Number(process.env.LOCAL_RESEARCH_TIMEOUT_MS || 900_000));
-  try {
-    const response = await fetch(`${baseUrl}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model,
-        stream: false,
-        format: "json",
-        options: { temperature: 0.05, num_ctx: Number(process.env.LOCAL_AI_NUM_CTX || 65_536) },
-        messages: [
-          { role: "system", content: "Return only valid JSON. Use only supplied verified primary-source metadata and excerpts. Never use model memory to invent current law, clauses, dates, URLs, cases, statistics, quotations, or authority." },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
-    const raw = await response.text();
-    if (!response.ok) throw new Error(`Local research model failed with ${response.status}: ${raw.slice(0, 3000)}`);
-    const payload = JSON.parse(raw);
-    const content = payload?.message?.content;
-    if (!content) throw new Error("Local research model returned no message content.");
-    return content;
-  } finally {
-    clearTimeout(timeout);
-  }
+function moduleQueryTokens(module) {
+  return tokens(
+    [
+      course.title,
+      course.description,
+      ...(course.outcomes || []),
+      module.title,
+      module.description,
+      module.format,
+    ].join(" "),
+  );
 }
 
-const queryTokens = tokens([
-  course.title, course.department, course.track, course.description,
-  ...(course.outcomes || []), ...(manifest.tags?.frameworks || []),
-  ...(course.modules || []).flatMap((module) => [module.title, module.description, module.format]),
-].join(" "));
+function rankedForModule(records, module) {
+  const query = moduleQueryTokens(module);
+  return [...records].sort((left, right) => {
+    const rightScore = overlapScore(right.record, query);
+    const leftScore = overlapScore(left.record, query);
+    if (rightScore !== leftScore) return rightScore - leftScore;
+    return String(left.record.id).localeCompare(String(right.record.id));
+  });
+}
 
-const rankedSources = Array.isArray(freeContext?.matchedSources) && freeContext.courseId === courseId
-  ? freeContext.matchedSources
-  : (registry.sources || [])
-      .filter((source) => source.canonicalUrl && primaryDomainAllowed(source.canonicalUrl))
-      .map((source) => ({ ...source, matchScore: overlapScore(source, queryTokens) }))
-      .sort((left, right) => Number(right.matchScore || 0) - Number(left.matchScore || 0));
-const rankedCases = Array.isArray(freeContext?.matchedCases) && freeContext.courseId === courseId
-  ? freeContext.matchedCases
-  : (caseRegistry.cases || [])
-      .filter((item) => item.primarySourceUrl && primaryDomainAllowed(item.primarySourceUrl))
-      .map((item) => ({ ...item, matchScore: overlapScore(item, queryTokens) }))
-      .sort((left, right) => Number(right.matchScore || 0) - Number(left.matchScore || 0));
+function sourceApplicability(source) {
+  const authorityClass = source.binding ? "binding authority" : "nonbinding guidance or standard";
+  return `Use ${source.title} as ${authorityClass} only after confirming that its jurisdiction, sector, data, system, product, contract, and activity scope apply to the learner's organization and decision.`;
+}
 
-const sourceCandidates = rankedSources.slice(0, Math.max(8, Number(process.env.ACADEMY_DIRECT_SOURCE_CANDIDATES || 10)));
-const caseCandidates = rankedCases.slice(0, Math.max(4, Number(process.env.ACADEMY_DOCUMENTED_CASE_CANDIDATES || 6)));
-const sourceVerification = [];
-for (const source of sourceCandidates) sourceVerification.push(await fetchPrimaryRecord(source, "authority"));
-const caseVerification = [];
-for (const item of caseCandidates) caseVerification.push(await fetchPrimaryRecord(item, "documented-case"));
+function sourceAppliesWhen(source) {
+  return uniqueStrings([
+    ...(source.appliesWhen || []),
+    `The organization or use case falls within the documented scope of ${source.issuingAuthority || source.issuer || "the issuing authority"}.`,
+    `The current version, effective status, jurisdiction, and organization-specific applicability of ${source.title} have been verified before implementation.`,
+  ]);
+}
+
+function sourceDoesNotApplyWhen(source) {
+  return uniqueStrings([
+    ...(source.doesNotApplyWhen || []),
+    "The organization, jurisdiction, sector, data, product, contract, or activity is outside the source's documented scope.",
+    ...(source.binding
+      ? []
+      : ["The source is being treated as a mandatory legal requirement without separate binding authority or contractual adoption."]),
+  ]);
+}
+
+function sourceLimitations(source) {
+  return uniqueStrings([
+    ...(source.limitations || []),
+    "This course uses the source for instruction and does not make a legal, regulatory, certification, audit, or compliance determination.",
+    ...(String(source.status || "").toLowerCase() === "draft"
+      ? ["The source is a draft and may change before final publication."]
+      : []),
+  ]);
+}
+
+const queryTokens = courseQueryTokens();
+const rankedSources =
+  Array.isArray(freeContext?.matchedSources) && freeContext.courseId === courseId
+    ? freeContext.matchedSources
+    : (registry.sources || [])
+        .filter((source) => source.canonicalUrl && primaryDomainAllowed(source.canonicalUrl))
+        .map((source) => ({ ...source, matchScore: overlapScore(source, queryTokens) }))
+        .sort(
+          (left, right) =>
+            Number(right.matchScore || 0) - Number(left.matchScore || 0) ||
+            String(left.id).localeCompare(String(right.id)),
+        );
+const rankedCases =
+  Array.isArray(freeContext?.matchedCases) && freeContext.courseId === courseId
+    ? freeContext.matchedCases
+    : (caseRegistry.cases || [])
+        .filter((item) => item.primarySourceUrl && primaryDomainAllowed(item.primarySourceUrl))
+        .map((item) => ({ ...item, matchScore: overlapScore(item, queryTokens) }))
+        .sort(
+          (left, right) =>
+            Number(right.matchScore || 0) - Number(left.matchScore || 0) ||
+            String(left.id).localeCompare(String(right.id)),
+        );
+
+const sourceCandidates = rankedSources.slice(
+  0,
+  Math.max(8, Number(process.env.ACADEMY_DIRECT_SOURCE_CANDIDATES || 10)),
+);
+const caseCandidates = rankedCases.slice(
+  0,
+  Math.max(4, Number(process.env.ACADEMY_DOCUMENTED_CASE_CANDIDATES || 6)),
+);
+const sourceVerification = await Promise.all(
+  sourceCandidates.map((source) => fetchPrimaryRecord(source, "authority")),
+);
+const caseVerification = await Promise.all(
+  caseCandidates.map((item) => fetchPrimaryRecord(item, "documented-case")),
+);
 const verifiedSources = sourceVerification.filter((item) => item.verified).slice(0, sourceTarget);
 const verifiedCases = caseVerification.filter((item) => item.verified).slice(0, caseTarget);
 
 if (verifiedSources.length < 4 || verifiedCases.length < 2) {
+  const unresolvedTopics = [
+    ...(verifiedSources.length < 4
+      ? [`Only ${verifiedSources.length} usable governed primary authorities were available; minimum 4 required.`]
+      : []),
+    ...(verifiedCases.length < 2
+      ? [`Only ${verifiedCases.length} usable documented primary-source cases were available; minimum 2 required.`]
+      : []),
+  ];
   const evidence = {
-    schemaVersion: "2.1",
+    schemaVersion: "2.2",
     generatedAt: new Date().toISOString(),
     courseId,
     manifestHash: stableHash(manifest),
     provider: "local",
-    model: String(process.env.LOCAL_RESEARCH_MODEL || process.env.LOCAL_AI_MODEL || "qwen2.5:14b-instruct").trim(),
+    model: "deterministic-governed-primary-source-synthesis-v1",
     estimatedModelCostUsd: 0,
     primaryCacheUsed: [...sourceVerification, ...caseVerification].some((item) => item.cacheHit),
-    directPrimaryFetchUsed: [...sourceVerification, ...caseVerification].some((item) => !item.cacheHit),
+    directPrimaryFetchUsed: [...sourceVerification, ...caseVerification].some(
+      (item) => !item.cacheHit,
+    ),
     webSearchUsed: false,
     sourceCount: verifiedSources.length,
     documentedCaseCount: verifiedCases.length,
-    unresolvedTopics: [
-      `Only ${verifiedSources.length} usable governed primary authorities were available; minimum 4 required.`,
-      `Only ${verifiedCases.length} usable documented primary-source cases were available; minimum 2 required.`,
-    ],
+    unresolvedTopics,
     findings: [
       ...(verifiedSources.length < 4 ? ["insufficient-governed-primary-authorities"] : []),
       ...(verifiedCases.length < 2 ? ["insufficient-governed-documented-cases"] : []),
@@ -247,141 +416,249 @@ if (verifiedSources.length < 4 || verifiedCases.length < 2) {
     caseVerification: caseVerification.map(({ excerpt, ...item }) => item),
     research: null,
   };
-  writeJsonAtomic(path.join(courseDir, "generated", "research", "authoritative-source-research.json"), evidence);
-  console.error(`[Academy Studio] Zero-cost governed research FAILED for ${courseId}: ${verifiedSources.length} authorities and ${verifiedCases.length} documented cases.`);
+  writeJsonAtomic(
+    path.join(courseDir, "generated", "research", "authoritative-source-research.json"),
+    evidence,
+  );
+  console.error(
+    `[Academy Studio] Zero-cost governed research FAILED for ${courseId}: ${verifiedSources.length} authorities and ${verifiedCases.length} documented cases.`,
+  );
   process.exit(2);
 }
 
-const sourceContext = verifiedSources.map((item) => ({
-  id: item.record.id,
-  title: item.record.title,
-  issuingAuthority: item.record.issuer,
-  publication: item.record.publication || "",
-  sourceType: item.record.authorityType,
-  publicationDate: item.record.published || null,
-  status: item.record.status,
-  binding: Boolean(item.record.binding),
-  canonicalUrl: item.record.canonicalUrl,
-  topics: item.record.topics || [],
-  observedAt: item.observedAt,
-  finalUrl: item.finalUrl,
-  contentType: item.contentType,
-  contentSha256: item.sha256,
-  excerpt: item.excerpt,
-}));
-const caseContext = verifiedCases.map((item) => ({
-  id: item.record.id,
-  title: item.record.title,
-  organizationOrEvent: item.record.organizationOrEvent,
-  date: item.record.date || null,
-  primarySourceUrl: item.record.primarySourceUrl,
-  sourceAuthority: item.record.sourceAuthority,
-  topics: item.record.topics || [],
-  governedFactsSupported: item.record.factsSupported || [],
-  governedLessonsLearned: item.record.lessonsLearned || [],
-  governedImplementationRecommendations: item.record.implementationRecommendations || [],
-  governedLimitations: item.record.limitations || [],
-  observedAt: item.observedAt,
-  finalUrl: item.finalUrl,
-  contentType: item.contentType,
-  contentSha256: item.sha256,
-  excerpt: item.excerpt,
-}));
+const sourceModuleMap = new Map(verifiedSources.map((item) => [String(item.record.id), new Set()]));
+const caseModuleMap = new Map(verifiedCases.map((item) => [String(item.record.id), new Set()]));
+const moduleResearch = modules.map((module) => {
+  const selectedSources = rankedForModule(verifiedSources, module).slice(
+    0,
+    Math.min(4, verifiedSources.length),
+  );
+  const selectedCases = rankedForModule(verifiedCases, module).slice(
+    0,
+    Math.min(2, verifiedCases.length),
+  );
+  for (const source of selectedSources) sourceModuleMap.get(String(source.record.id))?.add(module.id);
+  for (const item of selectedCases) caseModuleMap.get(String(item.record.id))?.add(module.id);
 
-const prompt = `Create a conservative authoritative research package for this Obserra Academy course using ONLY the governed primary-source authority and documented-case records below. Do not add sources, cases, facts, dates, or URLs. If an excerpt does not support a detailed claim, keep the claim general and explicitly bounded.
+  const factualClaimsToTeach = uniqueStrings([
+    ...selectedSources.map((item) => {
+      const source = item.record;
+      const topics = uniqueStrings(source.topics || []).slice(0, 4).join(", ");
+      return `${source.title}${source.publication ? ` (${source.publication})` : ""} is classified in the governed registry as ${source.binding ? "binding" : "nonbinding"} ${source.authorityType || "authority"}${topics ? ` addressing ${topics}` : ""}; instruction must preserve that status and its applicability limits.`;
+    }),
+    ...selectedCases.flatMap((item) => (item.record.factsSupported || []).slice(0, 2)),
+  ]);
+  const lessonsLearned = uniqueStrings([
+    ...selectedCases.flatMap((item) => item.record.lessonsLearned || []),
+    "Defensible decisions distinguish verified authority, nonbinding guidance, documented case facts, organizational policy, and original instructional judgment.",
+  ]);
+  const implementationRecommendations = uniqueStrings([
+    ...selectedCases.flatMap((item) => item.record.implementationRecommendations || []),
+    ...selectedSources.slice(0, 2).map(
+      (item) =>
+        `Document applicability, accountable owner, evidence, review date, exceptions, and escalation before translating ${item.record.title} into organizational policy, process, or control design.`,
+    ),
+  ]);
 
-Course ID: ${courseId}
-Course: ${JSON.stringify(course)}
-Framework tags: ${JSON.stringify(manifest.tags?.frameworks || [])}
-Verified primary authorities: ${JSON.stringify(sourceContext)}
-Verified documented cases: ${JSON.stringify(caseContext)}
+  return {
+    moduleId: module.id,
+    sourceIds: selectedSources.map((item) => item.record.id),
+    caseIds: selectedCases.map((item) => item.record.id),
+    factualClaimsToTeach,
+    lessonsLearned,
+    implementationRecommendations,
+  };
+});
 
-Return exactly one JSON object:
-{"courseId":"${courseId}","researchDate":"YYYY-MM-DD","authoritativeSources":[{"id":"","title":"","issuingAuthority":"","sourceType":"statute|regulation|final-rule|contract-clause|official-guidance|official-advisory|government-publication|consensus-standard|professional-standard","publication":"","publicationDate":null,"status":"final|current-regulation|current-statute|current-clause|current-guidance|draft","binding":false,"canonicalUrl":"https://...","specificReferences":[],"moduleIds":[],"claimTopics":[],"applicability":"","appliesWhen":[],"doesNotApplyWhen":[],"limitations":[],"verificationNotes":""}],"documentedCases":[{"id":"","title":"","organizationOrEvent":"","date":null,"primarySourceUrl":"https://...","sourceAuthority":"","moduleIds":[],"factsSupported":[],"lessonsLearned":[],"implementationRecommendations":[],"limitations":[]}],"moduleResearch":[{"moduleId":"","sourceIds":[],"caseIds":[],"factualClaimsToTeach":[],"lessonsLearned":[],"implementationRecommendations":[]}],"unresolvedTopics":[]}
+for (const item of verifiedSources) {
+  const key = String(item.record.id);
+  if ((sourceModuleMap.get(key)?.size || 0) === 0 && modules[0]) sourceModuleMap.get(key).add(modules[0].id);
+}
+for (const item of verifiedCases) {
+  const key = String(item.record.id);
+  if ((caseModuleMap.get(key)?.size || 0) === 0 && modules[0]) caseModuleMap.get(key).add(modules[0].id);
+}
 
-Rules: use every manifest module exactly once in moduleResearch. Use at least four supplied authorities and at least two supplied documented cases. Preserve all source and case identifiers, exact titles, authorities, organizations, dates, publication identifiers, binding status, status, and canonical URLs. specificReferences may use only supplied publication identifiers, titles, or section or control identifiers visibly present in excerpts. applicability must be conservative. appliesWhen, doesNotApplyWhen, and limitations must be populated. Case facts must remain within the governed facts and primary excerpt. Lessons learned and implementation recommendations must be practical and clearly instructional. Each documented case must map to at least one relevant module. Each moduleResearch record must include sourceIds and should include a relevant caseId where the supplied cases support the module. unresolvedTopics must contain only material course topics that cannot be responsibly supported by the supplied records.`;
+const authoritativeSources = verifiedSources.map((item) => {
+  const source = item.record;
+  return {
+    id: source.id,
+    title: source.title,
+    issuingAuthority: source.issuer,
+    sourceType: source.authorityType || "official-guidance",
+    publication: source.publication || source.title,
+    publicationDate: source.published || null,
+    status: source.status || "current-guidance",
+    binding: Boolean(source.binding),
+    canonicalUrl: source.canonicalUrl,
+    specificReferences: uniqueStrings([source.publication, source.title]),
+    moduleIds: [...sourceModuleMap.get(String(source.id))],
+    claimTopics: uniqueStrings(source.topics || []),
+    applicability: sourceApplicability(source),
+    appliesWhen: sourceAppliesWhen(source),
+    doesNotApplyWhen: sourceDoesNotApplyWhen(source),
+    limitations: sourceLimitations(source),
+    verificationNotes: `Verified from the governed primary-source cache or direct primary-source retrieval. Observed ${item.observedAt || "during the current production run"}; content SHA-256 ${item.sha256 || "not available for this content type"}.`,
+  };
+});
 
-const text = await callLocal(prompt);
-const research = extractJsonObject(text);
-if (!research || typeof research !== "object" || Array.isArray(research)) throw new Error("Local authoritative research output must be one JSON object.");
-if (research.courseId !== courseId) throw new Error(`Local authoritative research identity mismatch: expected ${courseId}, received ${research.courseId || "missing"}.`);
+const documentedCases = verifiedCases.map((item) => {
+  const record = item.record;
+  return {
+    id: record.id,
+    title: record.title,
+    organizationOrEvent: record.organizationOrEvent,
+    date: record.date || null,
+    primarySourceUrl: record.primarySourceUrl,
+    sourceAuthority: record.sourceAuthority,
+    moduleIds: [...caseModuleMap.get(String(record.id))],
+    factsSupported: uniqueStrings(record.factsSupported || []),
+    lessonsLearned: uniqueStrings(record.lessonsLearned || []),
+    implementationRecommendations: uniqueStrings(record.implementationRecommendations || []),
+    limitations: uniqueStrings([
+      ...(record.limitations || []),
+      "Use this documented event as an instructional case only; do not generalize its facts or legal posture beyond the primary source and applicable context.",
+    ]),
+  };
+});
 
-const suppliedById = new Map(sourceContext.map((source) => [String(source.id), source]));
-const suppliedCasesById = new Map(caseContext.map((item) => [String(item.id), item]));
-const modules = Array.isArray(course.modules) ? course.modules : [];
+const research = {
+  courseId,
+  researchDate: new Date().toISOString().slice(0, 10),
+  authoritativeSources,
+  documentedCases,
+  moduleResearch,
+  unresolvedTopics: [],
+};
+
+const suppliedById = new Map(authoritativeSources.map((source) => [String(source.id), source]));
+const suppliedCasesById = new Map(documentedCases.map((item) => [String(item.id), item]));
 const moduleIds = new Set(modules.map((module) => String(module.id)));
 const findings = [];
-const sources = Array.isArray(research.authoritativeSources) ? research.authoritativeSources : [];
-const cases = Array.isArray(research.documentedCases) ? research.documentedCases : [];
-if (sources.length < 4) findings.push(`authoritative-source-count-${sources.length}-minimum-4`);
-if (cases.length < 2) findings.push(`documented-case-count-${cases.length}-minimum-2`);
-for (const [index, source] of sources.entries()) {
+if (authoritativeSources.length < 4) {
+  findings.push(`authoritative-source-count-${authoritativeSources.length}-minimum-4`);
+}
+if (documentedCases.length < 2) {
+  findings.push(`documented-case-count-${documentedCases.length}-minimum-2`);
+}
+for (const [index, source] of authoritativeSources.entries()) {
   const prefix = `source-${index + 1}`;
-  const supplied = suppliedById.get(String(source.id));
-  if (!supplied) { findings.push(`${prefix}-not-in-governed-source-set`); continue; }
-  if (source.canonicalUrl !== supplied.canonicalUrl) findings.push(`${prefix}-canonical-url-changed`);
-  if (source.title !== supplied.title) findings.push(`${prefix}-title-changed`);
-  if (source.issuingAuthority !== supplied.issuingAuthority) findings.push(`${prefix}-authority-changed`);
-  if (Boolean(source.binding) !== Boolean(supplied.binding)) findings.push(`${prefix}-binding-status-changed`);
-  if (!Array.isArray(source.moduleIds) || source.moduleIds.length === 0) findings.push(`${prefix}-missing-module-ids`);
-  for (const moduleId of source.moduleIds || []) if (!moduleIds.has(String(moduleId))) findings.push(`${prefix}-unknown-module-${moduleId}`);
-  if (!Array.isArray(source.specificReferences) || source.specificReferences.length === 0) findings.push(`${prefix}-missing-specific-references`);
-  if (!Array.isArray(source.appliesWhen) || source.appliesWhen.length === 0) findings.push(`${prefix}-missing-applies-when`);
-  if (!Array.isArray(source.doesNotApplyWhen) || source.doesNotApplyWhen.length === 0) findings.push(`${prefix}-missing-does-not-apply-when`);
-  if (!Array.isArray(source.limitations) || source.limitations.length === 0) findings.push(`${prefix}-missing-limitations`);
+  if (!source.canonicalUrl || !primaryDomainAllowed(source.canonicalUrl)) {
+    findings.push(`${prefix}-canonical-url-invalid`);
+  }
+  if (!Array.isArray(source.moduleIds) || source.moduleIds.length === 0) {
+    findings.push(`${prefix}-missing-module-ids`);
+  }
+  for (const moduleId of source.moduleIds || []) {
+    if (!moduleIds.has(String(moduleId))) findings.push(`${prefix}-unknown-module-${moduleId}`);
+  }
+  if (!Array.isArray(source.specificReferences) || source.specificReferences.length === 0) {
+    findings.push(`${prefix}-missing-specific-references`);
+  }
+  if (!Array.isArray(source.appliesWhen) || source.appliesWhen.length === 0) {
+    findings.push(`${prefix}-missing-applies-when`);
+  }
+  if (!Array.isArray(source.doesNotApplyWhen) || source.doesNotApplyWhen.length === 0) {
+    findings.push(`${prefix}-missing-does-not-apply-when`);
+  }
+  if (!Array.isArray(source.limitations) || source.limitations.length === 0) {
+    findings.push(`${prefix}-missing-limitations`);
+  }
 }
-for (const [index, item] of cases.entries()) {
+for (const [index, item] of documentedCases.entries()) {
   const prefix = `case-${index + 1}`;
-  const supplied = suppliedCasesById.get(String(item.id));
-  if (!supplied) { findings.push(`${prefix}-not-in-governed-case-set`); continue; }
-  if (item.primarySourceUrl !== supplied.primarySourceUrl) findings.push(`${prefix}-primary-source-url-changed`);
-  if (item.title !== supplied.title) findings.push(`${prefix}-title-changed`);
-  if (item.organizationOrEvent !== supplied.organizationOrEvent) findings.push(`${prefix}-organization-changed`);
-  if (item.sourceAuthority !== supplied.sourceAuthority) findings.push(`${prefix}-source-authority-changed`);
-  if (!Array.isArray(item.moduleIds) || item.moduleIds.length === 0) findings.push(`${prefix}-missing-module-ids`);
-  for (const moduleId of item.moduleIds || []) if (!moduleIds.has(String(moduleId))) findings.push(`${prefix}-unknown-module-${moduleId}`);
-  if (!Array.isArray(item.factsSupported) || item.factsSupported.length === 0) findings.push(`${prefix}-missing-supported-facts`);
-  if (!Array.isArray(item.lessonsLearned) || item.lessonsLearned.length === 0) findings.push(`${prefix}-missing-lessons-learned`);
-  if (!Array.isArray(item.implementationRecommendations) || item.implementationRecommendations.length === 0) findings.push(`${prefix}-missing-implementation-recommendations`);
-  if (!Array.isArray(item.limitations) || item.limitations.length === 0) findings.push(`${prefix}-missing-limitations`);
+  if (!item.primarySourceUrl || !primaryDomainAllowed(item.primarySourceUrl)) {
+    findings.push(`${prefix}-primary-source-url-invalid`);
+  }
+  if (!Array.isArray(item.moduleIds) || item.moduleIds.length === 0) {
+    findings.push(`${prefix}-missing-module-ids`);
+  }
+  for (const moduleId of item.moduleIds || []) {
+    if (!moduleIds.has(String(moduleId))) findings.push(`${prefix}-unknown-module-${moduleId}`);
+  }
+  if (!Array.isArray(item.factsSupported) || item.factsSupported.length === 0) {
+    findings.push(`${prefix}-missing-supported-facts`);
+  }
+  if (!Array.isArray(item.lessonsLearned) || item.lessonsLearned.length === 0) {
+    findings.push(`${prefix}-missing-lessons-learned`);
+  }
+  if (
+    !Array.isArray(item.implementationRecommendations) ||
+    item.implementationRecommendations.length === 0
+  ) {
+    findings.push(`${prefix}-missing-implementation-recommendations`);
+  }
+  if (!Array.isArray(item.limitations) || item.limitations.length === 0) {
+    findings.push(`${prefix}-missing-limitations`);
+  }
 }
-const moduleResearch = Array.isArray(research.moduleResearch) ? research.moduleResearch : [];
 const researchByModule = new Map(moduleResearch.map((item) => [String(item.moduleId), item]));
 for (const module of modules) {
   const item = researchByModule.get(String(module.id));
-  if (!item) { findings.push(`module-${module.id}-missing-research`); continue; }
-  if (!Array.isArray(item.sourceIds) || item.sourceIds.length === 0) findings.push(`module-${module.id}-missing-source-ids`);
-  for (const sourceId of item.sourceIds || []) if (!suppliedById.has(String(sourceId))) findings.push(`module-${module.id}-unknown-source-${sourceId}`);
-  for (const caseId of item.caseIds || []) if (!suppliedCasesById.has(String(caseId))) findings.push(`module-${module.id}-unknown-case-${caseId}`);
-  if (!Array.isArray(item.factualClaimsToTeach) || item.factualClaimsToTeach.length === 0) findings.push(`module-${module.id}-missing-factual-claims`);
-  if (!Array.isArray(item.lessonsLearned) || item.lessonsLearned.length === 0) findings.push(`module-${module.id}-missing-lessons-learned`);
-  if (!Array.isArray(item.implementationRecommendations) || item.implementationRecommendations.length === 0) findings.push(`module-${module.id}-missing-implementation-recommendations`);
+  if (!item) {
+    findings.push(`module-${module.id}-missing-research`);
+    continue;
+  }
+  if (!Array.isArray(item.sourceIds) || item.sourceIds.length === 0) {
+    findings.push(`module-${module.id}-missing-source-ids`);
+  }
+  for (const sourceId of item.sourceIds || []) {
+    if (!suppliedById.has(String(sourceId))) {
+      findings.push(`module-${module.id}-unknown-source-${sourceId}`);
+    }
+  }
+  for (const caseId of item.caseIds || []) {
+    if (!suppliedCasesById.has(String(caseId))) {
+      findings.push(`module-${module.id}-unknown-case-${caseId}`);
+    }
+  }
+  if (!Array.isArray(item.factualClaimsToTeach) || item.factualClaimsToTeach.length === 0) {
+    findings.push(`module-${module.id}-missing-factual-claims`);
+  }
+  if (!Array.isArray(item.lessonsLearned) || item.lessonsLearned.length === 0) {
+    findings.push(`module-${module.id}-missing-lessons-learned`);
+  }
+  if (
+    !Array.isArray(item.implementationRecommendations) ||
+    item.implementationRecommendations.length === 0
+  ) {
+    findings.push(`module-${module.id}-missing-implementation-recommendations`);
+  }
 }
-const unresolvedTopics = Array.isArray(research.unresolvedTopics) ? research.unresolvedTopics : [];
+
 const evidence = {
-  schemaVersion: "2.1",
+  schemaVersion: "2.2",
   generatedAt: new Date().toISOString(),
   courseId,
   manifestHash: stableHash(manifest),
   provider: "local",
-  model: String(process.env.LOCAL_RESEARCH_MODEL || process.env.LOCAL_AI_MODEL || "qwen2.5:14b-instruct").trim(),
+  model: "deterministic-governed-primary-source-synthesis-v1",
   estimatedModelCostUsd: 0,
   webSearchUsed: false,
   primaryCacheUsed: [...sourceVerification, ...caseVerification].some((item) => item.cacheHit),
-  directPrimaryFetchUsed: [...sourceVerification, ...caseVerification].some((item) => !item.cacheHit),
-  responseMode: "governed-primary-cache-plus-local-validated-json",
+  directPrimaryFetchUsed: [...sourceVerification, ...caseVerification].some(
+    (item) => !item.cacheHit,
+  ),
+  responseMode: "deterministic-governed-primary-source-synthesis",
   primarySourcePolicy: allowedPrimaryDomains,
-  sourceCount: sources.length,
-  documentedCaseCount: cases.length,
-  unresolvedTopics,
+  sourceCount: authoritativeSources.length,
+  documentedCaseCount: documentedCases.length,
+  unresolvedTopics: [],
   findings,
-  passed: findings.length === 0 && unresolvedTopics.length === 0,
+  passed: findings.length === 0,
   sourceVerification: sourceVerification.map(({ excerpt, ...item }) => item),
   caseVerification: caseVerification.map(({ excerpt, ...item }) => item),
   research,
 };
-const evidencePath = path.join(courseDir, "generated", "research", "authoritative-source-research.json");
+const evidencePath = path.join(
+  courseDir,
+  "generated",
+  "research",
+  "authoritative-source-research.json",
+);
 writeJsonAtomic(evidencePath, evidence);
 writeJsonAtomic(path.join(courseDir, "authoritative-sources.generated.json"), research);
-console.log(`[Academy Studio] Zero-cost governed research ${evidence.passed ? "PASSED" : "FAILED"} for ${courseId}: ${sources.length} authorities, ${cases.length} documented cases, ${findings.length} finding(s), ${unresolvedTopics.length} unresolved topic(s), ${evidence.primaryCacheUsed ? "cache-first" : "network-only"}.`);
+console.log(
+  `[Academy Studio] Zero-cost deterministic research ${evidence.passed ? "PASSED" : "FAILED"} for ${courseId}: ${authoritativeSources.length} authorities, ${documentedCases.length} documented cases, ${findings.length} finding(s), ${evidence.primaryCacheUsed ? "cache-first" : "direct-primary-source"}.`,
+);
 if (!evidence.passed) process.exit(2);
