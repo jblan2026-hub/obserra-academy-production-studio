@@ -58,6 +58,7 @@ export function persistAuthoringCheckpoint(input: {
       packageHash: string;
       contractHash: string;
       productionStandardHash: string;
+      transport: "github-oidc-supabase" | "direct-postgresql";
     }
 >;
 
@@ -68,6 +69,7 @@ export function restoreAuthoringCheckpoints(): Promise<{
   evaluated: number;
   skipped: boolean;
   reason?: string;
+  transport?: "github-oidc-supabase" | "direct-postgresql";
   authoringPolicyVersion?: string;
   contractId?: string;
   contractHash?: string;
