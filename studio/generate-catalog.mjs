@@ -1,7 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
 import { assertBrandAndTags, officialBrand } from "./brand-policy.mjs";
+import {
+  commercialProductionStandard,
+  commercialProductionStandardHash,
+  contractHash,
+  workerPoolContract,
+} from "./worker-pool-contract.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
@@ -107,7 +114,9 @@ function learnerCourse(manifest, authored) {
     },
     learnerExperience: {
       courseSummary: authoredContent.courseSummary ?? null,
+      courseProductionBible: authoredContent.courseProductionBible ?? null,
       sourceRegister: authoredContent.sourceRegister ?? [],
+      referenceApplicabilityMatrix: authoredContent.referenceApplicabilityMatrix ?? [],
       frameworkAlignment: authoredContent.frameworkAlignment ?? [],
       assessmentBlueprint: authoredContent.assessmentBlueprint ?? null,
       modules: manifest.course.modules.map((module, index) => {
@@ -123,16 +132,20 @@ function learnerCourse(manifest, authored) {
           learningObjectives: lesson.learningObjectives ?? [],
           openingContext: lesson.openingContext ?? "",
           lessonNarrative: lesson.lessonNarrative ?? "",
+          claimRegister: lesson.claimRegister ?? [],
           keyConcepts: lesson.keyConcepts ?? [],
-          executiveExample: lesson.executiveExample ?? "",
-          operationalExample: lesson.operationalExample ?? "",
+          executiveExample: lesson.executiveExample ?? null,
+          operationalExample: lesson.operationalExample ?? null,
           scenario: lesson.scenario ?? null,
           exercise: lesson.exercise ?? null,
           knowledgeChecks: lesson.knowledgeChecks ?? [],
+          creativeTreatment: lesson.creativeTreatment ?? null,
+          productionPlan: lesson.productionPlan ?? null,
           slideNarrative: lesson.slideNarrative ?? [],
           videoScript: lesson.videoScript ?? null,
           accessibilityNotes: lesson.accessibilityNotes ?? [],
           sourcePlaceholders: lesson.sourcePlaceholders ?? [],
+          referenceApplicationNotes: lesson.referenceApplicationNotes ?? [],
           workbook: learnerWorkbook,
         };
       }),
@@ -142,12 +155,16 @@ function learnerCourse(manifest, authored) {
     },
     authoring: {
       available: Boolean(authored),
+      envelopeSchemaVersion: authored?.schemaVersion ?? null,
       reviewStatus: authored?.reviewStatus ?? "missing",
+      commercialQualityStatus: authored?.commercialQualityStatus ?? "missing",
       provider: authored?.provider ?? null,
       model: authored?.model ?? null,
       authoringPolicyVersion: authored?.authoringPolicyVersion ?? null,
       generatedAt: authored?.generatedAt ?? null,
       sourceManifestHash: authored?.sourceManifestHash ?? null,
+      workerContract: authored?.workerContract ?? null,
+      productionStandard: authored?.productionStandard ?? null,
     },
     certificateReview: {
       enabled: manifest.completion.certificateIssued === true,
@@ -191,8 +208,20 @@ const shared = {
 
 fs.writeFileSync(publicCatalogPath, `${JSON.stringify({ schemaVersion: "1.4", ...shared, courses: publicCourses }, null, 2)}\n`);
 fs.writeFileSync(learnerCatalogPath, `${JSON.stringify({
-  schemaVersion: "1.2",
+  schemaVersion: "1.3",
   ...shared,
+  workerContract: {
+    contractId: workerPoolContract.contractId,
+    contractHash: contractHash(),
+    assignmentMode: workerPoolContract.assignmentMode,
+  },
+  productionStandard: {
+    standardId: commercialProductionStandard.standardId,
+    standardHash: commercialProductionStandardHash(),
+    qualityTier: commercialProductionStandard.qualityTier,
+    qualityClaimAllowedOnlyAfterAcceptance:
+      commercialProductionStandard.claimPolicy.qualityClaimAllowedOnlyAfterAcceptance,
+  },
   accessClassification: "protected-owner-review-and-learner-content",
   ownerReviewSupported: true,
   productionPublicationIndependent: true,
@@ -200,10 +229,23 @@ fs.writeFileSync(learnerCatalogPath, `${JSON.stringify({
 }, null, 2)}\n`);
 
 const learnerReady = learnerCourses.filter((course) =>
-  course.authoring.available &&
-  course.learnerExperience.assessmentBlueprint &&
-  Array.isArray(course.learnerExperience.sourceRegister) &&
-  course.learnerExperience.modules.every((module) => module.lessonNarrative && module.knowledgeChecks.length > 0),
+  course.authoring.available
+  && course.authoring.envelopeSchemaVersion === "1.3"
+  && course.authoring.productionStandard?.standardId === commercialProductionStandard.standardId
+  && course.learnerExperience.courseProductionBible
+  && course.learnerExperience.assessmentBlueprint
+  && Array.isArray(course.learnerExperience.sourceRegister)
+  && course.learnerExperience.sourceRegister.length > 0
+  && Array.isArray(course.learnerExperience.referenceApplicabilityMatrix)
+  && course.learnerExperience.referenceApplicabilityMatrix.length > 0
+  && course.learnerExperience.modules.every((module) =>
+    module.lessonNarrative
+    && module.claimRegister.length >= 6
+    && module.knowledgeChecks.length >= 5
+    && module.creativeTreatment
+    && module.productionPlan
+    && module.videoScript
+  ),
 ).length;
 console.log(`[Academy Studio] Generated governed public catalog with ${publicCourses.length} publication-approved course(s).`);
-console.log(`[Academy Studio] Generated protected owner-review learner catalog with ${learnerCourses.length} course(s), ${learnerReady} learner-content-ready.`);
+console.log(`[Academy Studio] Generated protected detailed cinematic owner-review catalog with ${learnerCourses.length} course(s), ${learnerReady} structurally learner-content-ready under production standard ${commercialProductionStandard.standardId}.`);
