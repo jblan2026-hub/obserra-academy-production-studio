@@ -1,0 +1,127 @@
+name: Academy Performance Output Gate
+run-name: Academy performance output • ${{ github.ref_name }} • ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/academy-performance-output-optimization
+    paths:
+      - "studio/academy-authoring-performance.mjs"
+      - "studio/author-courses-hollywood-parallel.mjs"
+      - "tests/academy-authoring-performance.test.ts"
+      - "docs/operations/ACADEMY-PERFORMANCE-OUTPUT-OPTIMIZATION.md"
+      - ".github/workflows/academy-performance-output-gate.yml"
+  pull_request:
+    branches:
+      - agent/academy-36-worker-hollywood-production-reconciled
+    paths:
+      - "studio/academy-authoring-performance.mjs"
+      - "studio/author-courses-hollywood-parallel.mjs"
+      - "tests/academy-authoring-performance.test.ts"
+      - "docs/operations/ACADEMY-PERFORMANCE-OUTPUT-OPTIMIZATION.md"
+      - ".github/workflows/academy-performance-output-gate.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: academy-performance-output-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_URL: postgresql://validation:validation@127.0.0.1:5432/academy_performance_validation?schema=public
+  OBSERRA_PORTFOLIO_WORKER_COUNT: 36
+  OBSERRA_APPLICATION_WORKER_COUNT: 0
+  ACADEMY_COURSE_WORKER_COUNT: 36
+  ACADEMY_AUTHORING_CONCURRENCY: 36
+  ACADEMY_WORKER_MODE: interchangeable-course-production
+  ACADEMY_EXPECTED_SURGE_COURSES: 60
+  ACADEMY_SURGE_EXCLUDED_COURSE_IDS: pmp-exam-prep-business-application
+  ACADEMY_EXPECTED_REVIEW_COURSES: 61
+
+jobs:
+  performance-contract:
+    name: Scheduling, retry, throughput, and output evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install repository dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Validate optimized coordinator syntax
+        run: |
+          node --check studio/academy-authoring-performance.mjs
+          node --check studio/author-courses-hollywood-parallel.mjs
+
+      - name: Run repository regression tests
+        run: npm test
+
+      - name: Validate Prisma contract without production credentials
+        run: |
+          npm run db:generate
+          npm run db:validate
+
+      - name: Verify exact Academy portfolio and worker contract
+        run: |
+          npm run verify:academy-worker-contract
+          npm run prepare:sources:hollywood
+          npm run audit:hollywood
+
+      - name: Verify performance controls remain fail closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'longest-estimated-work-first' studio/author-courses-hollywood-parallel.mjs
+          grep -F 'bounded deterministic jitter' studio/author-courses-hollywood-parallel.mjs
+          grep -F 'buildAuthoringPerformanceMetrics' studio/author-courses-hollywood-parallel.mjs
+          grep -F 'provider_request_invalid' studio/authoring-provider-errors.mjs
+          if grep -A 12 'function shouldHaltPortfolio' studio/author-courses-hollywood-parallel.mjs | grep -F 'provider_request_invalid'; then
+            echo "A course-specific invalid request must not halt unrelated course workers."
+            exit 1
+          fi
+          grep -F 'checkpointPersistenceRequired' studio/author-courses-hollywood-parallel.mjs
+          grep -F 'publication authority=false' studio/author-courses-hollywood-parallel.mjs
+
+      - name: Generate synthetic performance evidence
+        run: |
+          mkdir -p reports
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { buildAuthoringPerformanceMetrics, retryDelayMs } from './studio/academy-authoring-performance.mjs';
+          const results = Array.from({ length: 36 }, (_, index) => ({
+            ok: true,
+            attempt: index % 9 === 0 ? 2 : 1,
+            elapsedMs: 900000 + (index * 10000),
+            outputBytes: 250000 + (index * 1000),
+          }));
+          const evidence = {
+            schemaVersion: '1.0',
+            generatedAt: new Date().toISOString(),
+            fixtureOnly: true,
+            purpose: 'Verify performance math and evidence schema without invoking a provider or representing live throughput.',
+            metrics: buildAuthoringPerformanceMetrics({
+              results,
+              elapsedMs: 3600000,
+              launchedWorkerCount: 36,
+              requestedCourses: 36,
+            }),
+            retryJitterSamplesMs: [1, 2, 3].map((attempt) => retryDelayMs(5000, attempt, 'fixture-course')),
+            claimBoundary: 'Synthetic evidence validates calculations only. It is not a production course build result.',
+          };
+          fs.writeFileSync('reports/academy-performance-output-evidence.json', `${JSON.stringify(evidence, null, 2)}\n`);
+          console.log(JSON.stringify(evidence.metrics, null, 2));
+          NODE
+
+      - name: Upload performance contract evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-performance-output-${{ github.sha }}
+          path: reports/academy-performance-output-evidence.json
+          if-no-files-found: error
+          retention-days: 90
