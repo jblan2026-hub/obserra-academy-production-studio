@@ -1,6 +1,6 @@
 {
   "name": "obserra-academy-production-studio",
-  "version": "1.0.0-alpha.10",
+  "version": "1.0.0-alpha.11",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,6 +20,7 @@
     "validate:hollywood": "node studio/validate-hollywood-course-contract.mjs",
     "validate:hollywood:surge": "node studio/validate-academy-hollywood-surge.mjs",
     "verify:media-audio": "node studio/verify-media-audio.mjs",
+    "verify:hollywood-final-media": "node studio/verify-hollywood-final-media.mjs",
     "preflight:hollywood": "node studio/preflight-academy-hollywood-provider.mjs",
     "db:bootstrap:hollywood-checkpoints": "node studio/bootstrap-academy-hollywood-checkpoints.mjs",
     "db:bootstrap:hollywood-media-checkpoints": "node studio/bootstrap-academy-media-checkpoints.mjs",
@@ -33,7 +34,7 @@
     "materialize:hollywood": "node studio/materialize-hollywood-course-assets.mjs",
     "build:course": "npm run apply:course-policy && node studio/build-course.mjs && node studio/enforce-course-legal-assets.mjs",
     "build:all": "npm run apply:course-policy && node studio/build-all-courses.mjs && node studio/enforce-course-legal-assets.mjs",
-    "build:all:hollywood": "npm run verify:academy-worker-contract && npm run apply:course-policy && npm run prepare:sources:hollywood && npm run db:generate && npm run db:bootstrap:protected && npm run db:bootstrap:hollywood-checkpoints && npm run db:bootstrap:hollywood-media-checkpoints && npm run restore:hollywood-checkpoints && npm run restore:hollywood-media-checkpoints && npm run audit:hollywood && npm run preflight:hollywood && npm run author:parallel:hollywood && npm run audit:hollywood && npm run materialize:hollywood && npm run validate:hollywood:surge && npm run media:submit:hollywood && npm run checkpoint:hollywood-media && npm run reconcile:hollywood-media && npm run checkpoint:hollywood-media && npm run verify:media-audio && npm run load:hollywood:check && npm run load:hollywood && npm run stage:release-approval",
+    "build:all:hollywood": "npm run verify:academy-worker-contract && npm run apply:course-policy && npm run prepare:sources:hollywood && npm run db:generate && npm run db:bootstrap:protected && npm run db:bootstrap:hollywood-checkpoints && npm run db:bootstrap:hollywood-media-checkpoints && npm run restore:hollywood-checkpoints && npm run restore:hollywood-media-checkpoints && npm run audit:hollywood && npm run preflight:hollywood && npm run author:parallel:hollywood && npm run audit:hollywood && npm run materialize:hollywood && npm run validate:hollywood:surge && npm run load:hollywood:check && npm run load:hollywood && npm run media:submit:hollywood && npm run checkpoint:hollywood-media && npm run reconcile:hollywood-media && npm run checkpoint:hollywood-media && npm run verify:hollywood-final-media && npm run stage:release-approval",
     "catalog": "npm run apply:course-policy && node studio/generate-catalog.mjs",
     "validate:learner-catalog": "node studio/validate-learner-catalog.mjs",
     "collect:sources": "node studio/collect-authoritative-sources.mjs",
