@@ -17,6 +17,9 @@ for (const [marker, description] of [
   ["second-instance", "existing-window focus handling"],
   ["app.setAppUserModelId", "stable Windows application identity"],
   ["runtime-evidence.jsonl", "owner-local runtime evidence"],
+  ["MAX_RUNTIME_EVIDENCE_BYTES", "bounded runtime evidence retention"],
+  ["rotateRuntimeEvidence", "runtime evidence rotation"],
+  ["fs.renameSync", "atomic local evidence rotation"],
   ["uncaughtExceptionMonitor", "main-process exception evidence"],
   ["unhandledRejection", "unhandled rejection fail-closed handling"],
   ["app.exit(1)", "fail-closed rejection exit"],
@@ -58,4 +61,4 @@ if (packageJson.build?.appId !== "com.obserra.ownercommandcenter") {
   throw new Error("Command Center application identity is inconsistent with the runtime AppUserModelID.");
 }
 
-console.log("[Owner Command Center] Single-instance startup, fail-closed runtime evidence, secret redaction, and deterministic build identity verified.");
+console.log("[Owner Command Center] Single-instance startup, fail-closed bounded runtime evidence, secret redaction, and deterministic build identity verified.");
