@@ -9,6 +9,7 @@ on:
     paths:
       - ".github/workflows/academy-zero-cost-sharded-completion.yml"
       - ".github/scripts/run-academy-zero-cost-shard.mjs"
+      - ".github/scripts/validate-zero-cost-course.mjs"
       - "studio/research-course-authoritative-sources.mjs"
       - "studio/author-course-hollywood.mjs"
       - "studio/author-course-hollywood-with-checkpoint.mjs"
