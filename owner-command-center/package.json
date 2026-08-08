@@ -9,7 +9,7 @@
     "name": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
     "email": "info@obserrallc.com"
   },
-  "main": "electron/entrypoint.cjs",
+  "main": "electron/bootstrap-main.cjs",
   "type": "module",
   "scripts": {
     "start": "electron .",
