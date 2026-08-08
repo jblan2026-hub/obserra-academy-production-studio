@@ -7,7 +7,7 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
 const catalogRoot = path.join(root, "catalog");
 
-export const AUTHORING_POLICY_VERSION = "2026.08.08.1";
+export const AUTHORING_POLICY_VERSION = "2026.08.08.2";
 export const PRODUCTION_CONTRACT_VERSION = "academy-hollywood-production-contract-1.0";
 const COURSE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{1,120}$/;
 const REQUIRED_VALUES = new Set(["1", "true", "yes", "on"]);
@@ -233,92 +233,93 @@ function atomicWritePrivateJson(filePath, value) {
 }
 
 async function fetchGatewayCheckpoint(courseId, manifest) {
-  const identity = validateHollywoodEnvelope;
   const sourceManifestHash = authoringSourceHash(manifest);
   const result = await gatewayRequest({
     action: "fetch",
     organizationKey: organizationKey(),
-    courseSlug: courseId,
+    courseSlug: courseSlug(courseId),
     sourceManifestHash,
     authoringPolicyVersion: AUTHORING_POLICY_VERSION,
     productionContractVersion: PRODUCTION_CONTRACT_VERSION,
   });
-  if (!result?.checkpoint) return null;
-  const envelope = result.checkpoint.package;
-  const validated = identity({ courseId, envelope, manifest });
-  if (result.checkpoint.packageHash !== validated.packageHash) throw new Error(`Stored checkpoint hash mismatch for ${courseId}.`);
-  return envelope;
+  return result?.checkpoint ?? null;
 }
 
 export async function restoreHollywoodCheckpoints() {
+  const selected = fs.readdirSync(coursesRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((courseId) => fs.existsSync(path.join(coursesRoot, courseId, "course-manifest.json")))
+    .sort();
   const restoredCourseIds = [];
   let evaluated = 0;
-
-  if (checkpointGatewayUrl()) {
-    const entries = fs.readdirSync(coursesRoot, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && COURSE_ID_PATTERN.test(entry.name))
-      .sort((left, right) => left.name.localeCompare(right.name));
-    for (const entry of entries) {
-      const manifestPath = path.join(coursesRoot, entry.name, "course-manifest.json");
-      if (!fs.existsSync(manifestPath)) continue;
-      evaluated += 1;
-      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-      const envelope = await fetchGatewayCheckpoint(entry.name, manifest);
-      if (!envelope) continue;
-      atomicWritePrivateJson(path.join(coursesRoot, entry.name, "generated", "authoring", "course-package.json"), envelope);
-      restoredCourseIds.push(entry.name);
-    }
-  } else {
-    const prisma = await createPrismaClient();
-    if (!prisma) {
-      const summary = { schemaVersion: "1.0", checkedAt: new Date().toISOString(), restored: 0, evaluated: 0, skipped: true, reason: "database-not-configured" };
-      fs.mkdirSync(catalogRoot, { recursive: true });
-      fs.writeFileSync(path.join(catalogRoot, "academy-hollywood-checkpoint-restore.json"), `${JSON.stringify(summary, null, 2)}\n`);
-      return summary;
-    }
-    const ownerOrganization = organizationKey();
-    try {
-      const entries = fs.readdirSync(coursesRoot, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory() && COURSE_ID_PATTERN.test(entry.name))
-        .sort((left, right) => left.name.localeCompare(right.name));
-      for (const entry of entries) {
-        const manifestPath = path.join(coursesRoot, entry.name, "course-manifest.json");
-        if (!fs.existsSync(manifestPath)) continue;
-        evaluated += 1;
-        const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-        const sourceManifestHash = authoringSourceHash(manifest);
-        const rows = await prisma.$queryRawUnsafe(
-          `SELECT "package", "packageHash" FROM "AcademyHollywoodAuthoringCheckpoint"
+  let restored = 0;
+  for (const courseId of selected) {
+    const manifest = JSON.parse(fs.readFileSync(path.join(coursesRoot, courseId, "course-manifest.json"), "utf8"));
+    evaluated += 1;
+    let checkpoint = null;
+    if (checkpointGatewayUrl()) {
+      checkpoint = await fetchGatewayCheckpoint(courseId, manifest);
+    } else {
+      const prisma = await createPrismaClient();
+      if (!prisma) continue;
+      try {
+        checkpoint = await prisma.$queryRawUnsafe(
+          `SELECT "package", "packageHash", "provider", "model", "reviewStatus", "updatedAt"
+           FROM "AcademyHollywoodAuthoringCheckpoint"
            WHERE "organizationKey" = $1 AND "courseSlug" = $2 AND "sourceManifestHash" = $3
              AND "authoringPolicyVersion" = $4 AND "productionContractVersion" = $5
            ORDER BY "updatedAt" DESC LIMIT 1`,
-          ownerOrganization, entry.name, sourceManifestHash, AUTHORING_POLICY_VERSION, PRODUCTION_CONTRACT_VERSION,
+          organizationKey(), courseId, authoringSourceHash(manifest), AUTHORING_POLICY_VERSION, PRODUCTION_CONTRACT_VERSION,
         );
-        if (!Array.isArray(rows) || rows.length === 0) continue;
-        const envelope = rows[0].package;
-        const validated = validateHollywoodEnvelope({ courseId: entry.name, envelope, manifest });
-        if (rows[0].packageHash !== validated.packageHash) throw new Error(`Stored checkpoint hash mismatch for ${entry.name}.`);
-        atomicWritePrivateJson(path.join(coursesRoot, entry.name, "generated", "authoring", "course-package.json"), envelope);
-        restoredCourseIds.push(entry.name);
+        checkpoint = checkpoint?.[0] ?? null;
+      } finally {
+        await prisma.$disconnect();
       }
-    } finally {
-      await prisma.$disconnect();
     }
+    if (!checkpoint?.package) continue;
+    const envelope = typeof checkpoint.package === "string" ? JSON.parse(checkpoint.package) : checkpoint.package;
+    const identity = validateHollywoodEnvelope({ courseId, envelope, manifest });
+    if (checkpoint.packageHash !== identity.packageHash) throw new Error(`Protected checkpoint hash mismatch for ${courseId}.`);
+    const packagePath = path.join(coursesRoot, courseId, "generated", "authoring", "course-package.json");
+    atomicWritePrivateJson(packagePath, envelope);
+    restored += 1;
+    restoredCourseIds.push(courseId);
   }
-
   const summary = {
-    schemaVersion: "1.0",
-    checkedAt: new Date().toISOString(),
+    schemaVersion: "1.1",
+    generatedAt: new Date().toISOString(),
     authoringPolicyVersion: AUTHORING_POLICY_VERSION,
     productionContractVersion: PRODUCTION_CONTRACT_VERSION,
     evaluated,
-    restored: restoredCourseIds.length,
+    restored,
     restoredCourseIds,
-    skipped: false,
-    transport: checkpointGatewayUrl() ? "github-oidc-supabase" : "postgresql",
-    claimBoundary: "Restoration proves matching protected checkpoint retrieval and package integrity only. It does not establish review approval, mastered media, or publication readiness.",
   };
   fs.mkdirSync(catalogRoot, { recursive: true });
   fs.writeFileSync(path.join(catalogRoot, "academy-hollywood-checkpoint-restore.json"), `${JSON.stringify(summary, null, 2)}\n`);
   return summary;
+}
+
+export async function countHollywoodCheckpoints() {
+  if (checkpointGatewayUrl()) {
+    const result = await gatewayRequest({
+      action: "count",
+      organizationKey: organizationKey(),
+      authoringPolicyVersion: AUTHORING_POLICY_VERSION,
+      productionContractVersion: PRODUCTION_CONTRACT_VERSION,
+    });
+    return { count: Number(result?.count ?? 0), courseSlugs: Array.isArray(result?.courseSlugs) ? result.courseSlugs : [], transport: "github-oidc-supabase" };
+  }
+  const prisma = await createPrismaClient();
+  if (!prisma) return { count: 0, courseSlugs: [], transport: "none" };
+  try {
+    const rows = await prisma.$queryRawUnsafe(
+      `SELECT "courseSlug" FROM "AcademyHollywoodAuthoringCheckpoint"
+       WHERE "organizationKey" = $1 AND "authoringPolicyVersion" = $2 AND "productionContractVersion" = $3`,
+      organizationKey(), AUTHORING_POLICY_VERSION, PRODUCTION_CONTRACT_VERSION,
+    );
+    return { count: rows.length, courseSlugs: [...new Set(rows.map((row) => row.courseSlug))].sort(), transport: "postgresql" };
+  } finally {
+    await prisma.$disconnect();
+  }
 }
