@@ -72,6 +72,9 @@ services:
       BACKEND_COST_MODE: free-first
       STUDIO_AUTH_PROVIDER: ${STUDIO_AUTH_PROVIDER:-machine-only}
       STUDIO_MACHINE_TOKEN: ${STUDIO_MACHINE_TOKEN:?Set STUDIO_MACHINE_TOKEN in your local environment}
+      STUDIO_OIDC_ISSUER: ${STUDIO_OIDC_ISSUER:-}
+      STUDIO_OIDC_AUDIENCE: ${STUDIO_OIDC_AUDIENCE:-}
+      STUDIO_OIDC_JWKS_URL: ${STUDIO_OIDC_JWKS_URL:-}
       STUDIO_OWNER_ORGANIZATION_ID: ${STUDIO_OWNER_ORGANIZATION_ID:-org_obserra_academy}
       STUDIO_AUTH_DEFAULT_ORGANIZATION_ID: ${STUDIO_AUTH_DEFAULT_ORGANIZATION_ID:-org_obserra_academy}
       STUDIO_STORAGE_PROVIDER: local
@@ -79,10 +82,14 @@ services:
       STUDIO_QUEUE_PROVIDER: postgres
       STUDIO_AI_PROVIDER: local
       STUDIO_ALLOW_PAID_AI: "false"
+      STUDIO_PAID_AI_DAILY_CALL_BUDGET: "1"
+      STUDIO_PAID_AI_PER_RUN_CALL_BUDGET: "1"
       LOCAL_AI_BASE_URL: http://ollama:11434
       LOCAL_AI_MODEL: ${LOCAL_AI_MODEL:-qwen2.5:7b-instruct}
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZHVtbXktZnJlZS1iYWNrZW5kLWJ1aWxk
       CLERK_SECRET_KEY: sk_test_ZHVtbXktZnJlZS1iYWNrZW5kLWJ1aWxk
+      OPENAI_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
     volumes:
       - academy_private_storage:/data/private
     ports:
@@ -109,9 +116,13 @@ services:
       STUDIO_QUEUE_PROVIDER: postgres
       STUDIO_AI_PROVIDER: local
       STUDIO_ALLOW_PAID_AI: "false"
+      STUDIO_PAID_AI_DAILY_CALL_BUDGET: "1"
+      STUDIO_PAID_AI_PER_RUN_CALL_BUDGET: "1"
       LOCAL_AI_BASE_URL: http://ollama:11434
       LOCAL_AI_MODEL: ${LOCAL_AI_MODEL:-qwen2.5:7b-instruct}
       STUDIO_FREE_WORKER_BATCH_SIZE: ${STUDIO_FREE_WORKER_BATCH_SIZE:-10}
+      OPENAI_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
     volumes:
       - academy_private_storage:/data/private
     entrypoint: ["/bin/sh", "-c"]
