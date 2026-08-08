@@ -152,7 +152,7 @@
 
     el.detail.innerHTML = `
       <div class="courseHero"><div><p class="eyebrow">${esc(course.department || "OBSERRA ACADEMY")}</p><h2>${esc(course.title)}</h2><p>${esc(course.description || "No description recorded.")}</p></div><span class="statusPill large ${cls(current)}">${esc(current)}</span></div>
-      <div class="facts"><div><span>Course ID</span><strong>${esc(course.id)}</strong></div><div><span>Version</span><strong>v${esc(version(course))}</strong></div><div><span>Generation</span><strong>${esc(generation(course))}</strong></div><div><span>Release</span><strong>${esc(release(course))}</strong></div><div><span>Modules</span><strong>${esc(course.moduleCount ?? "-")}</strong></div><div><span>Price</span><strong>${esc(commerce.currency || "USD")} ${esc(commerce.price ?? course.price ?? "-")}</strong></div></div>
+      <div class="facts"><div><span>Course ID</span><strong>${esc(course.id)}</strong></div><div><span>Course Version</span><strong>v${esc(version(course))}</strong></div><div><span>Generation</span><strong>${esc(generation(course))}</strong></div><div><span>Release</span><strong>${esc(release(course))}</strong></div><div><span>Modules</span><strong>${esc(course.moduleCount ?? "-")}</strong></div><div><span>Price</span><strong>${esc(commerce.currency || "USD")} ${esc(commerce.price ?? course.price ?? "-")}</strong></div></div>
 
       <section><div class="sectionTitle"><div><p class="eyebrow">LEARNER PREVIEW</p><h3>Review what will go live</h3></div></div><div class="actions"><button data-preview="course">Preview course</button><button class="secondary" data-preview="materials">Preview materials</button><button class="secondary" data-preview="certificate">Preview certificate</button></div></section>
 
