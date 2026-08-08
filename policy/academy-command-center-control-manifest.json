@@ -88,10 +88,14 @@
     {
       "id": "ACC-017",
       "name": "Product pricing source of truth",
-      "implementation": ["studio/generate-catalog.mjs"],
+      "implementation": [
+        "policy/academy-pricing-policy.json",
+        "studio/generate-catalog.mjs"
+      ],
       "verification": [],
       "required": true,
-      "status": "pricing-normalization-in-progress"
+      "status": "website-parity-implemented-validation-pending",
+      "externalImplementation": "jblan2026-hub/obserra-website:app/academy/courseData.ts"
     },
     {
       "id": "ACC-020",
@@ -102,6 +106,7 @@
         "owner-command-center/scripts/verify-payment-control-behavior.mjs",
         "owner-command-center/scripts/verify-credential-encryption-controls.mjs",
         "owner-command-center/scripts/verify-academy-website-retrieval.mjs",
+        "owner-command-center/scripts/sync-control-documentation.mjs",
         "owner-command-center/scripts/verify-control-manifest.mjs",
         "owner-command-center/scripts/verify-green-path-locks.mjs"
       ],
@@ -146,6 +151,22 @@
       "required": true,
       "state": "enabled",
       "rule": "The machine-readable control manifest is authoritative. The generated control table in the audit register must be synchronized from it, and CI fails when generated documentation differs from the committed register."
+    },
+    {
+      "id": "ACC-024",
+      "name": "Canonical course identity, versioning, and certificate alignment",
+      "implementation": [
+        "policy/academy-course-versioning.json",
+        "policy/academy-course-identity-and-certificate-naming.json",
+        "studio/initialize-course-versions.mjs",
+        "studio/verify-course-versioning.mjs",
+        "studio/generate-catalog.mjs"
+      ],
+      "verification": ["studio/verify-course-versioning.mjs"],
+      "required": true,
+      "state": "implemented-validation-pending",
+      "externalImplementation": "jblan2026-hub/obserra-website:lib/certificate-signing.ts; app/academy/certificate/[courseId]/page.tsx; app/api/academy/certificate/verify/route.ts; app/api/academy/checkout/route.ts",
+      "rule": "All current courses begin at 1.0.0. Canonical title and semantic version flow unchanged through catalog, website, checkout metadata, completion records, and newly issued signed certificates. Historical certificate claims retain their original signed title/version."
     }
   ]
 }
