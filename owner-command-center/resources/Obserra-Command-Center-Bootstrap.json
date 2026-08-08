@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0",
+  "profileId": "obserra-owner-command-center-generic-desktop",
+  "targetHostname": "*",
+  "generatedAt": "2026-08-08T00:00:00.000Z",
+  "localOnly": true,
+  "requireEnrollment": true,
+  "autoEnroll": false,
+  "autoStart": true,
+  "heartbeatIntervalSeconds": 15,
+  "enrollmentMode": "explicit-owner-device-enrollment",
+  "supportedDesktopPlatforms": [
+    "windows-x64",
+    "windows-arm64",
+    "macos-universal",
+    "linux-x64",
+    "linux-arm64"
+  ],
+  "expectedCourseWorkerTarget": 16,
+  "expectedApplicationWorkerAllocation": 20,
+  "expectedTotalWorkerAllocation": 36,
+  "requiredWorkerMode": "segmented-production-workforce",
+  "publicationAuthorityGranted": false,
+  "connectors": [
+    {
+      "id": "lcms",
+      "url": "https://www.obserrallc.com"
+    },
+    {
+      "id": "academy",
+      "url": "https://www.obserrallc.com"
+    },
+    {
+      "id": "website",
+      "url": "https://www.obserrallc.com"
+    },
+    {
+      "id": "store",
+      "url": "https://www.obserrallc.com"
+    },
+    {
+      "id": "eios",
+      "url": "https://owner.obserrallc.com"
+    },
+    {
+      "id": "stripe",
+      "url": "https://api.stripe.com"
+    },
+    {
+      "id": "github",
+      "url": "https://api.github.com"
+    },
+    {
+      "id": "vercel",
+      "url": "https://api.vercel.com"
+    },
+    {
+      "id": "clerk",
+      "url": "https://api.clerk.com"
+    },
+    {
+      "id": "localAi",
+      "url": "http://127.0.0.1:11434"
+    }
+  ]
+}
