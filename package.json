@@ -22,7 +22,7 @@
     "build:course": "npm run apply:course-policy && node studio/build-course.mjs && node studio/enforce-course-legal-assets.mjs",
     "build:all": "npm run apply:course-policy && node studio/build-all-courses.mjs && node studio/enforce-course-legal-assets.mjs",
     "catalog": "npm run apply:course-policy && node studio/generate-catalog.mjs",
-    "validate:learner-catalog": "node studio/validate-learner-catalog.mjs",
+    "validate:learner-catalog": "node studio/validate-learner-catalog.mjs && node studio/validate-commercial-implementation-guidance.mjs",
     "collect:sources": "node studio/collect-authoritative-sources.mjs",
     "import:website": "node studio/import-website-courses.mjs",
     "media:course": "npm run apply:course-policy && node studio/generate-media.mjs",
