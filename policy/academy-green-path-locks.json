@@ -11,5 +11,38 @@
     "previousLockRetainedInGitHistory": true,
     "silentHashRefreshForbidden": true
   },
-  "locks": []
+  "locks": [
+    {
+      "id": "ACC-024",
+      "name": "Canonical course identity, versioning, and certificate alignment",
+      "state": "frozen",
+      "greenCommit": "6f5008b1d68ee5176b729b953c47ba1cde11a16e",
+      "verificationEvidence": "GitHub Actions Validate Academy Production Studio run 31270740987, run number 892, conclusion success",
+      "ownerApprovalReference": "Owner directive in ChatGPT on 2026-08-08: once a path is green, lock it so it cannot change",
+      "reason": "Freeze the verified v1 course identity/versioning and catalog certificate-alignment baseline after successful Production Studio validation.",
+      "lockedAt": "2026-08-08T17:59:30Z",
+      "files": [
+        {
+          "path": "policy/academy-course-versioning.json",
+          "sha256": "395c22c13389bc68d9525ca6576ccb46f65c43c3dd864a6e01707f33a6d409d5"
+        },
+        {
+          "path": "policy/academy-course-identity-and-certificate-naming.json",
+          "sha256": "4fe85750daf2fb975a07fd3f0ca3c37ace1b176313af411db09c7afe09f35e42"
+        },
+        {
+          "path": "studio/initialize-course-versions.mjs",
+          "sha256": "779be8bca3769d75aae0ba1ac328b318d4653d290918908d3b4f2fdd3dde18ee"
+        },
+        {
+          "path": "studio/verify-course-versioning.mjs",
+          "sha256": "38739a380af67368f66518a493c537a6a882b30fbc4a6f9dc23513043ee1d10c"
+        },
+        {
+          "path": "studio/generate-catalog.mjs",
+          "sha256": "b6aecd0f6d0303f4e66bd10ab3037e8db47a43142702e833fcef02e798cd575c"
+        }
+      ]
+    }
+  ]
 }
