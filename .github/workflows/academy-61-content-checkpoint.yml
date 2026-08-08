@@ -38,7 +38,9 @@ env:
   ACADEMY_SURGE_EXCLUDED_COURSE_IDS: __none__
   ACADEMY_MINIMUM_LESSON_WORDS: "1200"
   ACADEMY_MINIMUM_EXACT_SOURCES_PER_COURSE: "2"
-  ACADEMY_AUTHORING_PROVIDER: openai
+  ACADEMY_AUTHORING_PROVIDER: anthropic
+  ACADEMY_RESEARCH_PROVIDER: anthropic
+  ACADEMY_REVIEW_PROVIDER: anthropic
   ACADEMY_AUTHORING_MAX_ATTEMPTS: "3"
   ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: "2700000"
   ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: "1800000"
@@ -50,6 +52,11 @@ env:
   OPENAI_REVIEW_REASONING_EFFORT: high
   OPENAI_RESEARCH_MAX_OUTPUT_TOKENS: "20000"
   OPENAI_REVIEW_MAX_OUTPUT_TOKENS: "16000"
+  ANTHROPIC_AUTHORING_MODEL: claude-sonnet-4-5
+  ANTHROPIC_RESEARCH_MODEL: claude-sonnet-4-5
+  ANTHROPIC_REVIEW_MODEL: claude-sonnet-4-5
+  ANTHROPIC_RESEARCH_MAX_TOKENS: "20000"
+  ANTHROPIC_REVIEW_MAX_TOKENS: "16000"
   STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
   ACADEMY_CHECKPOINT_GATEWAY_URL: https://nwxnyqlyzyufgoadtqxs.supabase.co/functions/v1/academy-checkpoint-gateway
 
@@ -62,6 +69,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
       OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - name: Checkout course production source
         uses: actions/checkout@v4
@@ -76,14 +84,23 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Require OpenAI credential
+      - name: Require governed model credential
         shell: bash
         run: |
-          if [ -z "${OPENAI_API_KEY}" ]; then
-            echo "OPENAI_API_KEY is required."
-            exit 2
+          if [ "${ACADEMY_RESEARCH_PROVIDER}" = "anthropic" ] || [ "${ACADEMY_AUTHORING_PROVIDER}" = "anthropic" ] || [ "${ACADEMY_REVIEW_PROVIDER}" = "anthropic" ]; then
+            if [ -z "${ANTHROPIC_API_KEY}" ]; then
+              echo "ANTHROPIC_API_KEY is required for the selected Academy production provider."
+              exit 2
+            fi
+            echo "[Academy Studio] Anthropic production credential available; OpenAI remains configured only as a secondary provider."
+          else
+            if [ -z "${OPENAI_API_KEY}" ]; then
+              echo "OPENAI_API_KEY is required for the selected Academy production provider."
+              exit 2
+            fi
+            echo "[Academy Studio] OpenAI production credential available."
           fi
-          echo "[Academy Studio] OpenAI credential available; protected persistence uses GitHub OIDC."
+          echo "[Academy Studio] Protected persistence uses GitHub OIDC."
 
       - name: Verify all 36 workers are assigned to the 61-course Academy objective
         run: node studio/verify-academy-61-worker-contract.mjs
