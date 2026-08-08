@@ -131,6 +131,21 @@
       "verification": ["owner-command-center/scripts/verify-credential-encryption-controls.mjs"],
       "required": true,
       "runtimeEvidence": "Windows BitLocker status for the volume containing C:\\ObserraAcademyProduction; recovery material must never be captured."
+    },
+    {
+      "id": "ACC-023",
+      "name": "Automatic control-documentation synchronization",
+      "implementation": [
+        "owner-command-center/scripts/sync-control-documentation.mjs",
+        "docs/ACADEMY-COMMAND-CENTER-AUDIT-REGISTER.md"
+      ],
+      "verification": [
+        "owner-command-center/scripts/sync-control-documentation.mjs",
+        "owner-command-center/scripts/verify-control-manifest.mjs"
+      ],
+      "required": true,
+      "state": "enabled",
+      "rule": "The machine-readable control manifest is authoritative. The generated control table in the audit register must be synchronized from it, and CI fails when generated documentation differs from the committed register."
     }
   ]
 }
