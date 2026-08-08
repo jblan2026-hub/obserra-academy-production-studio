@@ -58,7 +58,7 @@ for (const requiredTerm of [
   "Assert-PackageIntegrity",
   "Assert-TargetProfile",
   "endpoint-status.json",
-  "installation-receipt.json",
+  "installer-verification.json",
   "Test-Obserra-Command-Center-Endpoint.ps1",
   "RequireControlPlaneOperational",
   "Get-FileHash",
@@ -66,6 +66,7 @@ for (const requiredTerm of [
   if (!installScript.includes(requiredTerm)) throw new Error(`Endpoint installer is missing required behavior: ${requiredTerm}`);
 }
 for (const requiredTerm of [
+  "installation-receipt.json",
   "endpointReady",
   "controlPlaneOperational",
   "windowsEncryption",
