@@ -100,8 +100,8 @@ jobs:
           console.log('[Academy Studio] OpenAI and protected database credentials are available.');
           NODE
 
-      - name: Verify all 36 workers are assigned to Academy only
-        run: npm run verify:academy-worker-contract
+      - name: Verify all 36 workers are assigned to the 61-course Academy objective
+        run: node studio/verify-academy-61-worker-contract.mjs
 
       - name: Generate Prisma client
         run: npm run db:generate
