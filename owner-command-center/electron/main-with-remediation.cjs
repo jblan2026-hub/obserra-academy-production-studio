@@ -1,3 +1,5 @@
+const fs = require("node:fs");
+const path = require("node:path");
 const { app, ipcMain, safeStorage } = require("electron");
 const Store = require("electron-store");
 const { createRemediationQueue } = require("./remediation-queue.cjs");
@@ -47,6 +49,47 @@ function assertFindingEvidenceMatch(requestFinding, verifiedFinding) {
   }
 }
 
+function atomicWriteJson(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
+  const temporaryPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+  fs.renameSync(temporaryPath, filePath);
+}
+
+async function waitForBootstrapProfile(timeoutMs = 10000) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const profilePath = store.get("bootstrap.profilePath");
+    if (profilePath && fs.existsSync(profilePath)) return profilePath;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return null;
+}
+
+function promoteEndpointBootstrapProfile(profilePath) {
+  if (!profilePath || !fs.existsSync(profilePath)) return null;
+  const profile = JSON.parse(fs.readFileSync(profilePath, "utf8"));
+  if (!["1.0", "2.0"].includes(profile.schemaVersion)) {
+    throw new Error("Unsupported Command Center bootstrap profile for endpoint enrollment");
+  }
+  const endpointProfile = {
+    ...profile,
+    schemaVersion: "2.0",
+    localOnly: true,
+    requireEnrollment: true,
+    autoEnroll: profile.autoEnroll !== false,
+    autoStart: profile.autoStart !== false,
+    heartbeatIntervalSeconds: Number(profile.heartbeatIntervalSeconds || 15),
+    endpointProfileGeneratedAt: new Date().toISOString(),
+  };
+  const endpointPath = path.join(path.dirname(profilePath), "Obserra-Command-Center-Endpoint-Bootstrap.json");
+  atomicWriteJson(endpointPath, endpointProfile);
+  store.set("bootstrap.originalProfilePath", profilePath);
+  store.set("bootstrap.endpointProfilePath", endpointPath);
+  store.set("bootstrap.profilePath", endpointPath);
+  return endpointPath;
+}
+
 app.whenReady().then(async () => {
   ipcMain.handle("remediation:getSnapshot", async () => remediationQueue.snapshot());
   ipcMain.handle("remediation:propose", async (_event, payload) => {
@@ -68,6 +111,8 @@ app.whenReady().then(async () => {
   ipcMain.handle("academy:getProductionEvidence", async () => getAcademyProductionEvidence());
 
   try {
+    const profilePath = await waitForBootstrapProfile();
+    if (profilePath) promoteEndpointBootstrapProfile(profilePath);
     await endpointRuntime.start();
   } catch (error) {
     store.set("endpoint.startupFailure", {
