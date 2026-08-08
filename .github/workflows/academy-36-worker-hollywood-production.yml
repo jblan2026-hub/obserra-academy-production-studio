@@ -1,0 +1,254 @@
+name: Academy 36 Worker Hollywood Production
+run-name: Academy 36-worker cinematic build • ${{ github.ref_name }} • ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/academy-36-worker-hollywood-production
+    paths:
+      - ".github/workflows/academy-36-worker-hollywood-production.yml"
+      - "package.json"
+      - "studio/academy-worker-contract.mjs"
+      - "studio/academy-hollywood-checkpoints.mjs"
+      - "studio/audit-hollywood-course-readiness.mjs"
+      - "studio/author-course-hollywood.mjs"
+      - "studio/author-course-hollywood-with-checkpoint.mjs"
+      - "studio/author-courses-hollywood-parallel.mjs"
+      - "studio/preflight-academy-hollywood-provider.mjs"
+      - "studio/submit-hollywood-media-jobs.mjs"
+      - "studio/validate-hollywood-course-contract.mjs"
+      - "studio/stage-courses-for-release-approval.mjs"
+      - "studio/verify-academy-worker-contract.mjs"
+      - "courses/**"
+      - "releases/**"
+  schedule:
+    - cron: "17 */3 * * *"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: academy-36-worker-hollywood-production-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  produce-stage-and-notify:
+    name: Build and stage 60 commercial cinematic courses
+    runs-on: ubuntu-latest
+    timeout-minutes: 720
+    env:
+      OBSERRA_PORTFOLIO_WORKER_COUNT: 36
+      OBSERRA_APPLICATION_WORKER_COUNT: 0
+      ACADEMY_COURSE_WORKER_COUNT: 36
+      ACADEMY_AUTHORING_CONCURRENCY: 36
+      ACADEMY_WORKER_MODE: interchangeable-course-production
+      ACADEMY_EXPECTED_REVIEW_COURSES: 60
+      ACADEMY_MINIMUM_REVIEW_COURSES: 60
+      ACADEMY_MINIMUM_LESSON_WORDS: 1200
+      ACADEMY_RELEASE_APPROVAL_ISSUE: 27
+      ACADEMY_AUTHORING_PROVIDER: openai
+      ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
+      ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
+      ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: 1800000
+      ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: 2400000
+      ACADEMY_AUTHORING_PREFLIGHT_TIMEOUT_MS: 120000
+      ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: true
+      ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: true
+      ACADEMY_VIDEO_PROVIDER: synthesia
+      ACADEMY_MEDIA_SUBMISSION_REQUIRED: true
+      STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
+      STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
+      DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
+      OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
+      OPENAI_AUTHORING_MODEL: gpt-5
+      SYNTHESIA_API_KEY: ${{ secrets.SYNTHESIA_API_KEY }}
+      SYNTHESIA_TEMPLATE_ID: ${{ secrets.SYNTHESIA_TEMPLATE_ID }}
+      SYNTHESIA_TEST_MODE: false
+      HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
+      HEYGEN_AVATAR_ID: ${{ secrets.HEYGEN_AVATAR_ID }}
+      HEYGEN_VOICE_ID: ${{ secrets.HEYGEN_VOICE_ID }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout governed Academy source
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Normalize protected secrets without logging values
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const output = process.env.GITHUB_ENV;
+          if (!output) throw new Error('GITHUB_ENV is unavailable.');
+          const names = [
+            'DATABASE_URL', 'OPENAI_API_KEY', 'OPENAI_ORGANIZATION', 'OPENAI_PROJECT',
+            'SYNTHESIA_API_KEY', 'SYNTHESIA_TEMPLATE_ID',
+            'HEYGEN_API_KEY', 'HEYGEN_AVATAR_ID', 'HEYGEN_VOICE_ID'
+          ];
+          for (const name of names) {
+            let value = String(process.env[name] ?? '').trim();
+            const quoted = (value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"));
+            if (quoted) value = value.slice(1, -1).trim();
+            if (/\r|\n/.test(value)) throw new Error(`${name} contains an unexpected newline.`);
+            if (value) fs.appendFileSync(output, `${name}=${value}\n`);
+          }
+          console.log('[Academy Studio] Protected values normalized; values were not printed.');
+          NODE
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Verify the 36-worker interchangeable Academy contract
+        id: worker_contract
+        continue-on-error: true
+        run: npm run verify:academy-worker-contract
+
+      - name: Generate Prisma Client
+        id: prisma_generate
+        continue-on-error: true
+        run: npm run db:generate
+
+      - name: Apply governed course policy
+        id: course_policy
+        continue-on-error: true
+        run: npm run apply:course-policy
+
+      - name: Verify authoring provider authentication and model access
+        id: provider_preflight
+        continue-on-error: true
+        run: npm run preflight:hollywood
+
+      - name: Bootstrap protected cinematic checkpoint storage
+        id: database_bootstrap
+        continue-on-error: true
+        run: npm run db:bootstrap:hollywood-checkpoints
+
+      - name: Restore protected cinematic authoring checkpoints
+        id: checkpoint_restore
+        if: steps.database_bootstrap.outcome == 'success'
+        continue-on-error: true
+        run: npm run restore:hollywood-checkpoints
+
+      - name: Audit all governed course manifests and select production work
+        id: course_audit
+        continue-on-error: true
+        run: npm run audit:hollywood
+
+      - name: Launch up to 36 interchangeable course workers
+        id: protected_authoring
+        if: >-
+          steps.worker_contract.outcome == 'success' &&
+          steps.prisma_generate.outcome == 'success' &&
+          steps.course_policy.outcome == 'success' &&
+          steps.provider_preflight.outcome == 'success' &&
+          steps.database_bootstrap.outcome == 'success' &&
+          steps.checkpoint_restore.outcome == 'success' &&
+          steps.course_audit.outcome == 'success'
+        continue-on-error: true
+        run: npm run author:parallel:hollywood
+
+      - name: Validate instructional, reference, assessment, cinematic, accessibility, rights, and certificate contracts
+        id: cinematic_validation
+        if: always()
+        continue-on-error: true
+        run: npm run validate:hollywood
+
+      - name: Submit governed cinematic media jobs
+        id: media_submission
+        if: steps.cinematic_validation.outcome == 'success'
+        continue-on-error: true
+        run: npm run media:submit:hollywood
+
+      - name: Calculate the 60-course owner release-approval staging gate
+        id: release_stage
+        if: always()
+        run: npm run stage:release-approval
+
+      - name: Update owner notification issue
+        if: always()
+        shell: bash
+        run: |
+          if [ ! -f catalog/academy-release-approval-notification.md ]; then
+            echo "Release approval notification file was not generated."
+            exit 1
+          fi
+
+          CURRENT_TITLE="$(gh issue view 27 --json title --jq .title 2>/dev/null || true)"
+          if [ "${{ steps.release_stage.outputs.all_staged }}" = "true" ]; then
+            TITLE="[READY FOR OWNER APPROVAL] Academy 60-course release gate"
+            if [[ "$CURRENT_TITLE" != "[READY FOR OWNER APPROVAL]"* ]]; then
+              gh issue comment 27 --body "All 60 governed Academy courses have reached the pre-owner release-approval staging gate. Publication and checkout remain disabled pending your explicit decision. Review the updated issue body and Command Center evidence."
+            fi
+          else
+            TITLE="Academy release approval staging gate — ${{ steps.release_stage.outputs.staged_courses || '0' }}/${{ steps.release_stage.outputs.expected_courses || '60' }} staged"
+          fi
+          gh issue edit 27 --title "$TITLE" --body-file catalog/academy-release-approval-notification.md --add-assignee jblan2026-hub
+
+      - name: Update protected database blocker issue
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.database_bootstrap.outcome }}" = "success" ]; then
+            BODY="Protected Academy PostgreSQL authentication and cinematic checkpoint bootstrap succeeded for workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. The course-production pipeline proceeded according to its downstream gates. This issue may remain open only if another protected database defect is documented."
+          else
+            BODY="Protected Academy PostgreSQL authentication or cinematic checkpoint bootstrap failed before the 36-worker authoring surge could launch. No publication or checkout action was attempted. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Update the protected ACADEMY_DATABASE_URL secret with the valid Supavisor session-mode credential and rerun."
+          fi
+          gh issue edit 17 --body "$BODY" || true
+
+      - name: Upload governed production and staging evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-36-worker-production-${{ github.run_id }}
+          path: |
+            catalog/academy-hollywood-provider-preflight.json
+            catalog/academy-hollywood-course-audit.json
+            catalog/academy-hollywood-checkpoint-restore.json
+            catalog/academy-hollywood-parallel-summary.json
+            catalog/academy-hollywood-compliance-staging.json
+            catalog/academy-hollywood-media-submission.json
+            catalog/academy-release-approval-gate.json
+            catalog/academy-release-approval-notification.md
+            courses/*/generated/validation/hollywood-contract-validation.json
+            courses/*/generated/release/owner-approval-staging-record.json
+          if-no-files-found: warn
+          retention-days: 365
+
+      - name: Enforce the final governed result
+        if: always()
+        shell: bash
+        run: |
+          failures=0
+          for outcome in \
+            "${{ steps.worker_contract.outcome }}" \
+            "${{ steps.prisma_generate.outcome }}" \
+            "${{ steps.course_policy.outcome }}" \
+            "${{ steps.provider_preflight.outcome }}" \
+            "${{ steps.database_bootstrap.outcome }}" \
+            "${{ steps.checkpoint_restore.outcome }}" \
+            "${{ steps.course_audit.outcome }}" \
+            "${{ steps.protected_authoring.outcome }}" \
+            "${{ steps.cinematic_validation.outcome }}" \
+            "${{ steps.media_submission.outcome }}"; do
+            if [ "$outcome" != "success" ]; then failures=$((failures + 1)); fi
+          done
+
+          if [ "$failures" -gt 0 ]; then
+            echo "$failures governed production stage(s) did not succeed. Review the issue and uploaded evidence."
+            exit 1
+          fi
+          if [ "${{ steps.release_stage.outputs.all_staged }}" != "true" ]; then
+            echo "Production stages completed, but not all 60 courses are staged for owner release approval."
+            exit 2
+          fi
+          echo "All 60 courses are staged for explicit owner release approval. Publication remains disabled."
