@@ -25,6 +25,25 @@ test("OpenAI insufficient quota is non-retryable", () => {
   assert.equal(result.exitCode, AUTHORING_EXIT_CODES.PROVIDER_QUOTA_EXHAUSTED);
 });
 
+test("OpenAI exhausted credit balance is non-retryable", () => {
+  const result = classifyProviderHttpFailure({
+    provider: "openai",
+    status: 429,
+    body: JSON.stringify({
+      error: {
+        message: "You have no credits remaining. Add credits to continue using the API.",
+        type: "insufficient_quota",
+        code: "credit_balance_exhausted",
+      },
+    }),
+  });
+
+  assert.equal(result.category, "provider_quota_exhausted");
+  assert.equal(result.retryable, false);
+  assert.equal(result.exitCode, AUTHORING_EXIT_CODES.PROVIDER_QUOTA_EXHAUSTED);
+  assert.equal(result.providerCode, "credit_balance_exhausted");
+});
+
 test("transient 429 rate limit remains retryable", () => {
   const result = classifyProviderHttpFailure({
     provider: "openai",
