@@ -27,26 +27,69 @@ requireText(preview, '"generated", "authoring", "course-package.json"', "Course 
 requireText(preview, "previewMaterials", "Course preview");
 requireText(preview, "previewCertificate", "Course preview");
 
-const controlUi = read("src/academy-control-ui.js");
+const ui = read("src/academy-reset-ui.js");
 for (const label of [
+  "Preview course",
+  "Preview materials",
+  "Preview certificate",
+  "Load published website course",
+  "Load certificate verification",
   "Approve release",
   "Publish live",
   "Request changes",
   "Reject",
-  "Verify paid access end to end",
+  "Verify paid access",
+  "Approval does not publish",
+  "Course Version",
 ]) {
-  requireText(controlUi, label, "Academy lifecycle UI");
+  requireText(ui, label, "Academy reset lifecycle UI");
+}
+for (const api of [
+  "getAcademyControlSnapshot",
+  "updateAcademyReview",
+  "transitionAcademyCourse",
+  "verifyAcademyPurchase",
+  "retrieveWebsiteAcademyCourse",
+  "retrieveWebsiteAcademyCertificate",
+]) {
+  requireText(ui, api, "Academy reset lifecycle UI");
 }
 
 const index = read("src/index.html");
 for (const contract of [
-  "ACADEMY OPERATIONS CENTER",
-  "ACADEMY COURSE LIFECYCLE COMMAND",
-  "academy-preview-ui.js",
-  "academy-control-ui.js",
+  "Academy Command Center",
+  "Private owner review, release, and publication control plane",
+  "61-course release queue",
+  "Privacy boundary",
+  "Redacted by default",
+  "academy-reset-ui.js",
+  "academy-reset.css",
+  "connect-src 'none'",
 ]) {
   requireText(index, contract, "Owner Command Center shell");
 }
+if (/academy-control-ui\.js|academy-preview-ui\.js|ACADEMY OPERATIONS CENTER|ACADEMY COURSE LIFECYCLE COMMAND/.test(index)) {
+  throw new Error("Owner Command Center shell still contains legacy pre-reset Academy UI contracts.");
+}
+
+const preload = read("electron/preload.cjs");
+for (const contract of [
+  "previewAcademyCourse",
+  "previewAcademyMaterials",
+  "previewAcademyCertificate",
+  "retrieveWebsiteAcademyCourse",
+  "retrieveWebsiteAcademyCertificate",
+  "verifyAcademyPurchase",
+]) requireText(preload, contract, "Preload review contract");
+
+const retrieval = read("electron/academy-website-retrieval.cjs");
+for (const contract of [
+  'parsed.protocol !== "https:"',
+  'redirect: "error"',
+  "MAX_RESPONSE_BYTES",
+  "certificate-contract-mismatch",
+  "courseVersion",
+]) requireText(retrieval, contract, "Website readback contract");
 
 const launcherPath = path.join(repositoryRoot, "scripts", "Start-ObserraAcademyReviewDashboard.ps1");
 if (!fs.existsSync(launcherPath)) {
@@ -78,12 +121,16 @@ console.log(
   JSON.stringify(
     {
       ok: true,
-      contract: "local-academy-review-dashboard",
+      contract: "local-academy-review-dashboard-reset-v2",
       isolatedDashboardCheckout: true,
       localStudioBinding: true,
       coursePreview: true,
       ownerReviewDecisions: true,
       explicitPublishConfirmation: true,
+      websiteCourseReadback: true,
+      websiteCertificateReadback: true,
+      securePurchaseVerification: true,
+      courseVersionVisible: true,
       providerReadbackRequired: true,
       activeCourseBuildCheckoutMutation: false,
     },
