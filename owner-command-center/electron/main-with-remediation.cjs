@@ -1,9 +1,18 @@
-const { app, ipcMain } = require("electron");
+const { app, ipcMain, safeStorage } = require("electron");
 const Store = require("electron-store");
 const { createRemediationQueue } = require("./remediation-queue.cjs");
+const { getAcademyProductionEvidence } = require("./academy-production-evidence.cjs");
+const { createEndpointEnrollmentRuntime } = require("./endpoint-enrollment.cjs");
 
 const store = new Store({ name: "owner-command-center" });
 const remediationQueue = createRemediationQueue(store);
+const endpointRuntime = createEndpointEnrollmentRuntime({
+  store,
+  app,
+  safeStorage,
+  ipcMain,
+  academyEvidenceProvider: () => getAcademyProductionEvidence(),
+});
 
 function requireObject(value, name) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`${name} is required`);
@@ -38,7 +47,7 @@ function assertFindingEvidenceMatch(requestFinding, verifiedFinding) {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   ipcMain.handle("remediation:getSnapshot", async () => remediationQueue.snapshot());
   ipcMain.handle("remediation:propose", async (_event, payload) => {
     const request = requireObject(payload, "Remediation proposal");
@@ -56,6 +65,20 @@ app.whenReady().then(() => {
     return remediationQueue.decide(String(request.proposalId || ""), String(request.decision || ""), String(request.note || ""));
   });
   ipcMain.handle("remediation:execute", async (_event, proposalId) => remediationQueue.execute(String(proposalId || "")));
+  ipcMain.handle("academy:getProductionEvidence", async () => getAcademyProductionEvidence());
+
+  try {
+    await endpointRuntime.start();
+  } catch (error) {
+    store.set("endpoint.startupFailure", {
+      at: new Date().toISOString(),
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+app.on("before-quit", () => {
+  endpointRuntime.stop().catch(() => {});
 });
 
 require("./main.cjs");
