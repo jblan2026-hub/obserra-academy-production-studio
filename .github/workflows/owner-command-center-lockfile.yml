@@ -15,7 +15,7 @@ on:
       - ".github/workflows/owner-command-center-lockfile.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: owner-command-center-lockfile-${{ github.ref }}
@@ -32,6 +32,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Configure Node.js
         uses: actions/setup-node@v4
@@ -48,6 +50,35 @@ jobs:
         shell: pwsh
         run: |
           node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); const l=JSON.parse(fs.readFileSync('package-lock.json','utf8')); if(l.name!==p.name||l.version!==p.version) throw new Error('Lockfile identity mismatch'); if(Number(l.lockfileVersion)<3) throw new Error('npm lockfileVersion 3 or later is required'); const root=l.packages?.['']; if(!root) throw new Error('Lockfile root package is missing'); for(const group of ['dependencies','devDependencies']) for(const name of Object.keys(p[group]||{})) if(!(name in (root[group]||{}))) throw new Error('Lockfile root is missing '+group+' entry '+name); console.log('Command Center lockfile identity and direct dependency coverage passed.');"
+
+      - name: Require committed lockfile to remain current on pull requests
+        if: github.event_name == 'pull_request'
+        shell: pwsh
+        run: |
+          $status = git status --porcelain -- package-lock.json
+          if ($status) {
+            Write-Host $status
+            git diff -- package-lock.json
+            throw "owner-command-center/package-lock.json is missing or stale. Regenerate it through the governed lockfile workflow."
+          }
+
+      - name: Commit validated lockfile to governed branch
+        if: github.event_name == 'push' && github.ref_name == 'agent/academy-36-worker-course-surge'
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Command Center lockfile is already current."
+            exit 0
+          }
+          git commit -m "Lock Command Center dependencies"
+          if ($LASTEXITCODE -ne 0) { throw "Unable to commit the validated Command Center lockfile." }
+          git push origin "HEAD:$env:GITHUB_REF_NAME"
+          if ($LASTEXITCODE -ne 0) { throw "Unable to push the validated Command Center lockfile." }
 
       - name: Upload validated lockfile
         uses: actions/upload-artifact@v4
