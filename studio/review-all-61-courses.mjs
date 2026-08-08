@@ -5,14 +5,13 @@ import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
-const concurrency = Math.max(1, Math.min(36, Number(process.env.ACADEMY_REVIEW_CONCURRENCY || process.env.ACADEMY_PAID_REVIEW_CONCURRENCY || 2)));
+const concurrency = Math.max(1, Math.min(8, Number(process.env.ACADEMY_REVIEW_CONCURRENCY || 1)));
 const maxAttempts = Math.max(1, Math.min(3, Number(process.env.ACADEMY_REVIEW_MAX_ATTEMPTS || 2)));
 
 function readJson(filePath) {
   if (!fs.existsSync(filePath)) return null;
   try { return JSON.parse(fs.readFileSync(filePath, "utf8")); } catch { return null; }
 }
-
 function reusableReview(courseId) {
   const evidence = readJson(path.join(coursesRoot, courseId, "generated", "quality", "independent-course-quality-review.json"));
   const scores = Object.values(evidence?.review?.scores || {});
@@ -50,10 +49,10 @@ function run(courseId, attempt) {
 async function runWithRetry(courseId) {
   let last = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    console.log(`[Academy Studio] Zero-cost local independent review starting ${courseId}, attempt ${attempt}/${maxAttempts}.`);
     last = await run(courseId, attempt);
     if (last.ok) return last;
-    if ([42, 43, 44].includes(last.code)) return last;
-    if (attempt < maxAttempts) await delay(4000 * attempt);
+    if (attempt < maxAttempts) await delay(3000 * attempt);
   }
   return last;
 }
@@ -67,28 +66,30 @@ async function worker(workerId) {
   while (queue.length && !circuitOpen) {
     const courseId = queue.shift();
     if (!courseId) return;
-    console.log(`[Academy Studio] Paid review slot ${workerId}/${concurrency} assigned ${courseId}.`);
+    console.log(`[Academy Studio] Zero-cost local review worker ${workerId}/${concurrency} assigned ${courseId}.`);
     const result = await runWithRetry(courseId);
     results.push({ workerId, ...result, reused: false });
-    if ([42, 43].includes(result.code)) {
+    if (!result.ok) {
       circuitOpen = true;
-      console.error(`[Academy Studio] Paid review circuit opened after nonretryable provider failure on ${courseId}; remaining reviews will not consume credits.`);
+      console.error(`[Academy Studio] Local review circuit opened after failure on ${courseId}; no paid reviewer model will be invoked.`);
     }
   }
 }
 await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(1, queue.length)) }, (_, index) => worker(index + 1)));
 for (const courseId of queue.splice(0)) {
-  results.push({ courseId, attempt: 0, ok: false, reused: false, code: 42, error: "not-started-provider-circuit-open" });
+  results.push({ courseId, attempt: 0, ok: false, reused: false, code: null, error: "not-started-local-review-circuit-open" });
 }
 
 const failed = results.filter((result) => !result.ok);
 const summary = {
-  schemaVersion: "1.1",
+  schemaVersion: "2.0",
   generatedAt: new Date().toISOString(),
   expectedCourses: 61,
   logicalReviewerWorkers: 36,
-  paidReviewConcurrency: concurrency,
+  localReviewConcurrency: concurrency,
   applicationWorkers: 0,
+  estimatedApiCostUsd: 0,
+  externalPaidApiAllowed: false,
   reusedReviews: results.filter((result) => result.reused).length,
   newlyReviewed: results.filter((result) => result.ok && !result.reused).length,
   passedCourses: results.filter((result) => result.ok).length,
@@ -98,5 +99,5 @@ const summary = {
 };
 fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
 fs.writeFileSync(path.join(root, "catalog", "academy-61-independent-review-summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
-console.log(`[Academy Studio] Independent content review ready ${summary.passedCourses}/61: ${summary.reusedReviews} reused, ${summary.newlyReviewed} newly reviewed.`);
+console.log(`[Academy Studio] Local zero-cost independent review ready ${summary.passedCourses}/61: ${summary.reusedReviews} reused, ${summary.newlyReviewed} newly reviewed.`);
 if (failed.length) process.exit(2);
