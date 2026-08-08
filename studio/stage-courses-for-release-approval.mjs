@@ -11,10 +11,19 @@ const releasesRoot = path.join(root, "releases");
 const compliancePath = path.join(catalogRoot, "academy-hollywood-compliance-staging.json");
 const gatePath = path.join(catalogRoot, "academy-release-approval-gate.json");
 const notificationPath = path.join(catalogRoot, "academy-release-approval-notification.md");
-const expectedCourses = Number(process.env.ACADEMY_EXPECTED_REVIEW_COURSES || 60);
+const coreCourseTarget = Number(process.env.ACADEMY_CORE_COURSE_TARGET || 60);
+const supplementalCourseTarget = Number(process.env.ACADEMY_SUPPLEMENTAL_COURSE_TARGET || 1);
+const expectedCourses = Number(process.env.ACADEMY_EXPECTED_REVIEW_COURSES || (coreCourseTarget + supplementalCourseTarget));
 const ownerIssueNumber = Number(process.env.ACADEMY_RELEASE_APPROVAL_ISSUE || 27);
 const requireAll = process.argv.includes("--require-all");
 const allocation = assertAcademyWorkerAllocation();
+const supplementalCourseIds = new Set(["pmp-exam-prep-business-application"]);
+
+if (!Number.isInteger(coreCourseTarget) || coreCourseTarget < 1) throw new Error("ACADEMY_CORE_COURSE_TARGET must be a positive integer.");
+if (!Number.isInteger(supplementalCourseTarget) || supplementalCourseTarget < 0) throw new Error("ACADEMY_SUPPLEMENTAL_COURSE_TARGET must be a nonnegative integer.");
+if (!Number.isInteger(expectedCourses) || expectedCourses !== coreCourseTarget + supplementalCourseTarget) {
+  throw new Error("ACADEMY_EXPECTED_REVIEW_COURSES must equal the core plus supplemental course targets.");
+}
 
 const expectedOwnerDecisionBlockers = new Set([
   "publication-not-owner-enabled",
@@ -191,12 +200,14 @@ for (const course of compliance.courses ?? []) {
   if (!manifest.publicationDisabled) blockers.push("governance:publication-must-remain-disabled");
   if (!manifest.statusAllowed) blockers.push(`governance:release-status-must-remain-draft-or-in-review-current-${manifest.status}`);
 
+  const courseClass = supplementalCourseIds.has(course.courseId) ? "supplemental" : "core";
   const stagedForOwnerApproval = blockers.length === 0;
   const stagingRecord = {
-    schemaVersion: "1.0",
+    schemaVersion: "1.1",
     generatedAt: new Date().toISOString(),
     courseId: course.courseId,
     title: course.title,
+    courseClass,
     stagedForOwnerApproval,
     structuralReady: course.structuralReady === true,
     instructionalArtifactsComplete: artifacts.complete,
@@ -221,22 +232,39 @@ for (const course of compliance.courses ?? []) {
   courses.push(stagingRecord);
 }
 
+const coreCourses = courses.filter((course) => course.courseClass === "core");
+const supplementalCourses = courses.filter((course) => course.courseClass === "supplemental");
 const stagedCourses = courses.filter((course) => course.stagedForOwnerApproval);
+const stagedCoreCourses = coreCourses.filter((course) => course.stagedForOwnerApproval);
+const stagedSupplementalCourses = supplementalCourses.filter((course) => course.stagedForOwnerApproval);
 const blockedCourses = courses.filter((course) => !course.stagedForOwnerApproval);
 const discoveredCourses = courses.length;
-const allStagedForOwnerApproval = discoveredCourses === expectedCourses && stagedCourses.length === expectedCourses;
+const portfolioCountMatches = discoveredCourses === expectedCourses
+  && coreCourses.length === coreCourseTarget
+  && supplementalCourses.length === supplementalCourseTarget;
+const allStagedForOwnerApproval = portfolioCountMatches
+  && stagedCoreCourses.length === coreCourseTarget
+  && stagedSupplementalCourses.length === supplementalCourseTarget;
 const blockersByFrequency = blockerHistogram(blockedCourses);
 const progressPercent = expectedCourses > 0 ? Math.round((stagedCourses.length / expectedCourses) * 100) : 0;
 
 const gate = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
   ownerIssueNumber,
+  portfolioDefinition: "60 core Academy courses plus the supplemental PMP course",
   expectedCourses,
+  coreCourseTarget,
+  supplementalCourseTarget,
   discoveredCourses,
+  discoveredCoreCourses: coreCourses.length,
+  discoveredSupplementalCourses: supplementalCourses.length,
   stagedCourses: stagedCourses.length,
+  stagedCoreCourses: stagedCoreCourses.length,
+  stagedSupplementalCourses: stagedSupplementalCourses.length,
   blockedCourses: blockedCourses.length,
   progressPercent,
+  portfolioCountMatches,
   allStagedForOwnerApproval,
   ownerDecisionRequired: allStagedForOwnerApproval,
   ownerAcceptanceRecorded: false,
@@ -249,7 +277,7 @@ const gate = {
   nextGovernedAction: allStagedForOwnerApproval
     ? "Owner reviews the exact staged learner packages and records approve, reject, or revise decisions. Publication and checkout remain disabled until an explicit approved decision is processed by a separate governed release action."
     : "Complete the listed course blockers, regenerate the gate, and preserve publication and checkout as disabled.",
-  claimBoundary: "This portfolio gate notifies the owner only when all 60 courses satisfy the pre-owner release evidence contract. It never publishes, enables checkout, changes pricing, or records owner acceptance automatically.",
+  claimBoundary: "This portfolio gate notifies the owner only when all 60 core courses and the supplemental PMP course satisfy the pre-owner release evidence contract. It never publishes, enables checkout, changes pricing, or records owner acceptance automatically.",
 };
 
 fs.mkdirSync(catalogRoot, { recursive: true });
@@ -258,18 +286,22 @@ atomicWrite(gatePath, `${JSON.stringify(gate, null, 2)}\n`);
 const topBlockers = blockersByFrequency.slice(0, 20);
 const blockedPreview = blockedCourses.slice(0, 20);
 const heading = allStagedForOwnerApproval
-  ? "# READY FOR OWNER APPROVAL: All 60 Academy courses are staged"
+  ? "# READY FOR OWNER APPROVAL: Complete Academy portfolio is staged"
   : `# Academy release approval staging: ${stagedCourses.length}/${expectedCourses}`;
 const body = [
   heading,
   "",
   "## Governed status",
   "",
-  `- Expected courses: **${expectedCourses}**`,
-  `- Discovered courses: **${discoveredCourses}**`,
-  `- Staged for owner approval: **${stagedCourses.length}**`,
+  `- Portfolio: **60 core Academy courses plus the PMP course**`,
+  `- Expected total courses: **${expectedCourses}**`,
+  `- Discovered total courses: **${discoveredCourses}**`,
+  `- Core courses staged: **${stagedCoreCourses.length}/${coreCourseTarget}**`,
+  `- Supplemental PMP staged: **${stagedSupplementalCourses.length}/${supplementalCourseTarget}**`,
+  `- Total staged for owner approval: **${stagedCourses.length}**`,
   `- Blocked: **${blockedCourses.length}**`,
   `- Progress: **${progressPercent}%**`,
+  `- Portfolio count reconciled: **${portfolioCountMatches ? "YES" : "NO"}**`,
   `- All staged: **${allStagedForOwnerApproval ? "YES" : "NO"}**`,
   "- Owner acceptance recorded: **NO**",
   "- Publication authorized: **NO**",
@@ -305,6 +337,8 @@ atomicWrite(notificationPath, body);
 
 writeGithubOutput("all_staged", String(allStagedForOwnerApproval));
 writeGithubOutput("staged_courses", String(stagedCourses.length));
+writeGithubOutput("staged_core_courses", String(stagedCoreCourses.length));
+writeGithubOutput("staged_supplemental_courses", String(stagedSupplementalCourses.length));
 writeGithubOutput("blocked_courses", String(blockedCourses.length));
 writeGithubOutput("expected_courses", String(expectedCourses));
 writeGithubOutput("progress_percent", String(progressPercent));
@@ -314,5 +348,5 @@ if (process.env.GITHUB_STEP_SUMMARY) {
   fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${body}\n`);
 }
 
-console.log(`[Academy Studio] Release approval staging gate: ${stagedCourses.length}/${expectedCourses} staged, ${blockedCourses.length} blocked, allStaged=${allStagedForOwnerApproval}.`);
+console.log(`[Academy Studio] Release approval staging gate: ${stagedCourses.length}/${expectedCourses} staged (${stagedCoreCourses.length}/${coreCourseTarget} core, ${stagedSupplementalCourses.length}/${supplementalCourseTarget} supplemental), ${blockedCourses.length} blocked, allStaged=${allStagedForOwnerApproval}.`);
 if (requireAll && !allStagedForOwnerApproval) process.exit(2);
