@@ -1,0 +1,512 @@
+name: Academy 36 Worker Hollywood Production
+run-name: Academy 36-worker cinematic build • ${{ github.ref_name }} • ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/academy-36-worker-hollywood-production
+    paths:
+      - ".github/workflows/academy-36-worker-hollywood-production.yml"
+      - ".gitignore"
+      - "package.json"
+      - "sources/**"
+      - "studio/academy-course-portfolio.mjs"
+      - "studio/academy-worker-contract.mjs"
+      - "studio/academy-hollywood-checkpoints.mjs"
+      - "studio/academy-media-checkpoints.mjs"
+      - "studio/audit-hollywood-course-readiness.mjs"
+      - "studio/author-course-hollywood.mjs"
+      - "studio/author-course-hollywood-with-checkpoint.mjs"
+      - "studio/author-courses-hollywood-parallel.mjs"
+      - "studio/bootstrap-academy-hollywood-checkpoints.mjs"
+      - "studio/bootstrap-academy-media-checkpoints.mjs"
+      - "studio/checkpoint-academy-media-jobs.mjs"
+      - "studio/load-academy-hollywood-surge-to-lcms.mjs"
+      - "studio/materialize-hollywood-course-assets.mjs"
+      - "studio/prepare-hollywood-source-context.mjs"
+      - "studio/preflight-academy-hollywood-provider.mjs"
+      - "studio/reconcile-hollywood-media-results.mjs"
+      - "studio/restore-academy-hollywood-checkpoints.mjs"
+      - "studio/restore-academy-media-checkpoints.mjs"
+      - "studio/stage-courses-for-release-approval.mjs"
+      - "studio/submit-hollywood-media-jobs.mjs"
+      - "studio/validate-academy-hollywood-surge.mjs"
+      - "studio/verify-academy-worker-contract.mjs"
+      - "studio/verify-hollywood-final-media.mjs"
+      - "courses/**"
+      - "releases/**"
+  schedule:
+    - cron: "17 */3 * * *"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: academy-36-worker-hollywood-production-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  produce-stage-and-notify:
+    name: Build and stage the governed Academy portfolio
+    runs-on: ubuntu-latest
+    timeout-minutes: 720
+    env:
+      OBSERRA_PORTFOLIO_WORKER_COUNT: 36
+      OBSERRA_APPLICATION_WORKER_COUNT: 0
+      ACADEMY_COURSE_WORKER_COUNT: 36
+      ACADEMY_AUTHORING_CONCURRENCY: 36
+      ACADEMY_WORKER_MODE: interchangeable-course-production
+      ACADEMY_EXPECTED_SURGE_COURSES: 60
+      ACADEMY_SURGE_EXCLUDED_COURSE_IDS: pmp-exam-prep-business-application
+      ACADEMY_EXPECTED_REVIEW_COURSES: 61
+      ACADEMY_CORE_COURSE_TARGET: 60
+      ACADEMY_SUPPLEMENTAL_COURSE_TARGET: 1
+      ACADEMY_MINIMUM_REVIEW_COURSES: 60
+      ACADEMY_MINIMUM_LESSON_WORDS: 1200
+      ACADEMY_MINIMUM_EXACT_SOURCES_PER_COURSE: 2
+      ACADEMY_RELEASE_APPROVAL_ISSUE: 27
+      ACADEMY_AUTHORING_PROVIDER: openai
+      ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
+      ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
+      ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: 1800000
+      ACADEMY_AUTHORING_PROCESS_TIMEOUT_MS: 2700000
+      ACADEMY_AUTHORING_PREFLIGHT_TIMEOUT_MS: 120000
+      ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: true
+      ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: true
+      ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
+      ACADEMY_SUPABASE_REGION: us-east-1
+      SUPABASE_URL: https://nwxnyqlyzyufgoadtqxs.supabase.co
+      ACADEMY_MEDIA_BUCKET: academy-course-media
+      ACADEMY_VIDEO_PROVIDER: ${{ vars.ACADEMY_VIDEO_PROVIDER || 'synthesia' }}
+      ACADEMY_CINEMATIC_TEMPLATE_APPROVED: ${{ vars.ACADEMY_CINEMATIC_TEMPLATE_APPROVED || 'false' }}
+      ACADEMY_MEDIA_SUBMISSION_REQUIRED: true
+      ACADEMY_MEDIA_RECONCILIATION_REQUIRED: true
+      ACADEMY_MEDIA_SUBMISSION_CONCURRENCY: 12
+      ACADEMY_MEDIA_MAX_SCRIPT_CHARS: 12000
+      ACADEMY_MEDIA_REQUEST_TIMEOUT_MS: 120000
+      ACADEMY_MEDIA_MAX_DOWNLOAD_BYTES: 2000000000
+      STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
+      STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
+      DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_ORGANIZATION: ${{ secrets.OPENAI_ORGANIZATION }}
+      OPENAI_PROJECT: ${{ secrets.OPENAI_PROJECT }}
+      OPENAI_AUTHORING_MODEL: gpt-5
+      SYNTHESIA_API_KEY: ${{ secrets.SYNTHESIA_API_KEY }}
+      SYNTHESIA_TEMPLATE_ID: ${{ secrets.SYNTHESIA_TEMPLATE_ID }}
+      SYNTHESIA_TEST_MODE: false
+      HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
+      HEYGEN_AVATAR_ID: ${{ secrets.HEYGEN_AVATAR_ID }}
+      HEYGEN_VOICE_ID: ${{ secrets.HEYGEN_VOICE_ID }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout governed Academy source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Normalize protected secrets without logging values
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const output = process.env.GITHUB_ENV;
+          if (!output) throw new Error('GITHUB_ENV is unavailable.');
+
+          function trimOuterQuotes(value) {
+            const normalized = String(value ?? '').trim();
+            const quoted = (normalized.startsWith('"') && normalized.endsWith('"'))
+              || (normalized.startsWith("'") && normalized.endsWith("'"));
+            return quoted ? normalized.slice(1, -1).trim() : normalized;
+          }
+
+          function stripDatabaseAssignment(value) {
+            const match = value.match(/^(?:ACADEMY_DATABASE_URL|DATABASE_URL)\s*=\s*(.+)$/is);
+            return match ? trimOuterQuotes(match[1]) : value;
+          }
+
+          function normalizeDatabaseUrl(raw) {
+            let value = stripDatabaseAssignment(trimOuterQuotes(raw));
+            if (!value) return '';
+            if (/\r|\n/.test(value)) throw new Error('DATABASE_URL contains an unexpected newline.');
+
+            const projectRef = String(process.env.ACADEMY_SUPABASE_PROJECT_REF || '').trim();
+            const region = String(process.env.ACADEMY_SUPABASE_REGION || '').trim();
+            if (!/^postgres(?:ql)?:\/\//i.test(value)) {
+              if (!projectRef || !region) throw new Error('Supabase project metadata is required when the database secret contains only a password.');
+              value = `postgresql://${encodeURIComponent(`postgres.${projectRef}`)}:${encodeURIComponent(value)}@aws-0-${region}.pooler.supabase.com:5432/postgres?schema=public&sslmode=require&connect_timeout=30`;
+            }
+
+            try {
+              const parsed = new URL(value);
+              if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+              return parsed.toString();
+            } catch {
+              const schemeEnd = value.indexOf('://');
+              const remainder = value.slice(schemeEnd + 3);
+              const at = remainder.lastIndexOf('@');
+              const credentials = remainder.slice(0, at);
+              const hostAndPath = remainder.slice(at + 1);
+              const colon = credentials.indexOf(':');
+              if (schemeEnd < 0 || at <= 0 || colon <= 0) throw new Error('DATABASE_URL must include PostgreSQL credentials and a host.');
+              const username = credentials.slice(0, colon);
+              const password = credentials.slice(colon + 1);
+              let decodedPassword = password;
+              try { decodedPassword = decodeURIComponent(password); } catch {}
+              const candidate = `${value.slice(0, schemeEnd + 3)}${encodeURIComponent(username)}:${encodeURIComponent(decodedPassword)}@${hostAndPath}`;
+              return new URL(candidate).toString();
+            }
+          }
+
+          function append(name, value) {
+            const normalized = trimOuterQuotes(value);
+            if (!normalized) return false;
+            if (/\r|\n/.test(normalized)) throw new Error(`${name} contains an unexpected newline.`);
+            fs.appendFileSync(output, `${name}=${normalized}\n`);
+            return true;
+          }
+
+          const databaseUrl = normalizeDatabaseUrl(process.env.DATABASE_URL);
+          if (databaseUrl) fs.appendFileSync(output, `DATABASE_URL=${databaseUrl}\n`);
+          const names = [
+            'SUPABASE_SECRET_KEY',
+            'OPENAI_API_KEY', 'OPENAI_ORGANIZATION', 'OPENAI_PROJECT',
+            'SYNTHESIA_API_KEY', 'SYNTHESIA_TEMPLATE_ID',
+            'HEYGEN_API_KEY', 'HEYGEN_AVATAR_ID', 'HEYGEN_VOICE_ID'
+          ];
+          const present = Object.fromEntries(names.map((name) => [name, append(name, process.env[name])]));
+          console.log(`[Academy Studio] Protected values normalized. databaseCredential=${Boolean(databaseUrl)} providerCredential=${present.OPENAI_API_KEY} mediaStorageCredential=${present.SUPABASE_SECRET_KEY} videoCredential=${present.SYNTHESIA_API_KEY || present.HEYGEN_API_KEY}`);
+          NODE
+
+      - name: Validate new production source syntax
+        id: source_syntax
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            studio/academy-course-portfolio.mjs \
+            studio/academy-worker-contract.mjs \
+            studio/academy-hollywood-checkpoints.mjs \
+            studio/academy-media-checkpoints.mjs \
+            studio/audit-hollywood-course-readiness.mjs \
+            studio/author-course-hollywood.mjs \
+            studio/author-course-hollywood-with-checkpoint.mjs \
+            studio/author-courses-hollywood-parallel.mjs \
+            studio/bootstrap-academy-hollywood-checkpoints.mjs \
+            studio/bootstrap-academy-media-checkpoints.mjs \
+            studio/checkpoint-academy-media-jobs.mjs \
+            studio/load-academy-hollywood-surge-to-lcms.mjs \
+            studio/materialize-hollywood-course-assets.mjs \
+            studio/prepare-hollywood-source-context.mjs \
+            studio/preflight-academy-hollywood-provider.mjs \
+            studio/reconcile-hollywood-media-results.mjs \
+            studio/restore-academy-hollywood-checkpoints.mjs \
+            studio/restore-academy-media-checkpoints.mjs \
+            studio/submit-hollywood-media-jobs.mjs \
+            studio/validate-academy-hollywood-surge.mjs \
+            studio/verify-academy-worker-contract.mjs \
+            studio/verify-hollywood-final-media.mjs; do
+            node --check "$file"
+          done
+
+      - name: Install dependencies without assuming a lock file
+        id: dependency_install
+        continue-on-error: true
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Verify cinematic media toolchain
+        id: media_toolchain
+        if: steps.dependency_install.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          ffmpeg -version
+          ffprobe -version
+
+      - name: Verify the 36-worker interchangeable Academy contract
+        id: worker_contract
+        if: steps.dependency_install.outcome == 'success'
+        continue-on-error: true
+        run: npm run verify:academy-worker-contract
+
+      - name: Generate Prisma Client
+        id: prisma_generate
+        if: steps.dependency_install.outcome == 'success'
+        continue-on-error: true
+        run: npm run db:generate
+
+      - name: Apply governed course policy
+        id: course_policy
+        if: steps.dependency_install.outcome == 'success'
+        continue-on-error: true
+        run: npm run apply:course-policy
+
+      - name: Bootstrap and verify protected Academy PostgreSQL
+        id: protected_database
+        if: steps.prisma_generate.outcome == 'success'
+        continue-on-error: true
+        run: npm run db:bootstrap:protected
+
+      - name: Bootstrap protected cinematic authoring checkpoints
+        id: authoring_checkpoint_bootstrap
+        if: steps.protected_database.outcome == 'success'
+        continue-on-error: true
+        run: npm run db:bootstrap:hollywood-checkpoints
+
+      - name: Bootstrap protected cinematic media checkpoints
+        id: media_checkpoint_bootstrap
+        if: steps.protected_database.outcome == 'success'
+        continue-on-error: true
+        run: npm run db:bootstrap:hollywood-media-checkpoints
+
+      - name: Restore protected cinematic authoring checkpoints
+        id: authoring_checkpoint_restore
+        if: steps.authoring_checkpoint_bootstrap.outcome == 'success'
+        continue-on-error: true
+        run: npm run restore:hollywood-checkpoints
+
+      - name: Restore protected cinematic media job checkpoints
+        id: media_checkpoint_restore
+        if: steps.media_checkpoint_bootstrap.outcome == 'success'
+        continue-on-error: true
+        run: npm run restore:hollywood-media-checkpoints
+
+      - name: Prepare exact authoritative source context
+        id: source_context
+        if: steps.course_policy.outcome == 'success'
+        continue-on-error: true
+        run: npm run prepare:sources:hollywood
+
+      - name: Audit the exact 60-course production portfolio
+        id: course_audit
+        if: steps.course_policy.outcome == 'success' && steps.source_context.outcome == 'success'
+        continue-on-error: true
+        run: npm run audit:hollywood
+
+      - name: Verify authoring provider authentication and model access
+        id: provider_preflight
+        if: >-
+          steps.protected_database.outcome == 'success' &&
+          steps.authoring_checkpoint_bootstrap.outcome == 'success' &&
+          steps.authoring_checkpoint_restore.outcome == 'success' &&
+          steps.course_audit.outcome == 'success'
+        continue-on-error: true
+        run: npm run preflight:hollywood
+
+      - name: Launch up to 36 interchangeable course workers
+        id: protected_authoring
+        if: >-
+          steps.source_syntax.outcome == 'success' &&
+          steps.dependency_install.outcome == 'success' &&
+          steps.media_toolchain.outcome == 'success' &&
+          steps.worker_contract.outcome == 'success' &&
+          steps.prisma_generate.outcome == 'success' &&
+          steps.course_policy.outcome == 'success' &&
+          steps.protected_database.outcome == 'success' &&
+          steps.authoring_checkpoint_bootstrap.outcome == 'success' &&
+          steps.authoring_checkpoint_restore.outcome == 'success' &&
+          steps.source_context.outcome == 'success' &&
+          steps.course_audit.outcome == 'success' &&
+          steps.provider_preflight.outcome == 'success'
+        continue-on-error: true
+        run: npm run author:parallel:hollywood
+
+      - name: Require all 60 protected authored packages
+        id: package_completion
+        if: steps.protected_authoring.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        run: |
+          npm run audit:hollywood
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('catalog/academy-hollywood-course-audit.json', 'utf8'));
+          const targets = report.targetCourseIds || [];
+          if (report.totals?.selectedForSurge !== 60) throw new Error(`Expected 60 selected courses; found ${report.totals?.selectedForSurge}`);
+          if (targets.length > 0) throw new Error(`${targets.length} course package(s) still require authoring: ${targets.join(', ')}`);
+          console.log('[Academy Studio] All 60 protected cinematic authoring packages are current and checkpointed.');
+          NODE
+
+      - name: Materialize protected learner materials, exams, media plans, and certificates
+        id: materialization
+        if: steps.package_completion.outcome == 'success'
+        continue-on-error: true
+        run: npm run materialize:hollywood
+
+      - name: Validate exact 60-course compliance staging contract
+        id: cinematic_validation
+        if: steps.materialization.outcome == 'success'
+        continue-on-error: true
+        run: npm run validate:hollywood:surge
+
+      - name: Validate exact 60-course LCMS staging plan
+        id: lcms_dry_run
+        if: steps.cinematic_validation.outcome == 'success'
+        continue-on-error: true
+        run: npm run load:hollywood:check
+
+      - name: Stage exactly 60 protected courses in the LCMS
+        id: lcms_load
+        if: steps.lcms_dry_run.outcome == 'success' && steps.protected_database.outcome == 'success'
+        continue-on-error: true
+        run: npm run load:hollywood
+
+      - name: Submit or preserve governed cinematic media jobs
+        id: media_submission
+        if: >-
+          steps.cinematic_validation.outcome == 'success' &&
+          steps.media_checkpoint_bootstrap.outcome == 'success' &&
+          steps.media_checkpoint_restore.outcome == 'success'
+        continue-on-error: true
+        run: npm run media:submit:hollywood
+
+      - name: Persist submitted cinematic media jobs
+        id: media_checkpoint_submit
+        if: steps.media_submission.outcome == 'success'
+        continue-on-error: true
+        run: npm run checkpoint:hollywood-media
+
+      - name: Reconcile, assemble, archive, and register final cinematic media
+        id: media_reconciliation
+        if: steps.media_checkpoint_submit.outcome == 'success'
+        continue-on-error: true
+        run: npm run reconcile:hollywood-media
+
+      - name: Persist reconciled cinematic media state
+        id: media_checkpoint_reconciled
+        if: always() && steps.media_submission.outcome == 'success'
+        continue-on-error: true
+        run: npm run checkpoint:hollywood-media
+
+      - name: Verify every final module video and accessibility package
+        id: final_media_verification
+        if: steps.media_reconciliation.outcome == 'success'
+        continue-on-error: true
+        run: npm run verify:hollywood-final-media
+
+      - name: Calculate the complete 61-course owner release-approval staging gate
+        id: release_stage
+        if: always()
+        continue-on-error: true
+        run: npm run stage:release-approval
+
+      - name: Restore exact 60-course compliance evidence after owner gate calculation
+        id: restore_exact_compliance
+        if: always() && steps.materialization.outcome == 'success'
+        continue-on-error: true
+        run: npm run validate:hollywood:surge
+
+      - name: Update owner notification issue
+        if: always()
+        shell: bash
+        run: |
+          if [ ! -f catalog/academy-release-approval-notification.md ]; then
+            echo "Release approval notification file was not generated."
+            exit 1
+          fi
+
+          CURRENT_TITLE="$(gh issue view 27 --json title --jq .title 2>/dev/null || true)"
+          if [ "${{ steps.release_stage.outputs.all_staged }}" = "true" ]; then
+            TITLE="[READY FOR OWNER APPROVAL] Complete Academy portfolio release gate"
+            if [[ "$CURRENT_TITLE" != "[READY FOR OWNER APPROVAL]"* ]]; then
+              gh issue comment 27 --body "All governed Academy courses—60 standard courses plus the supplemental PMP course—have reached the pre-owner release-approval staging gate. Publication and checkout remain disabled pending your explicit decision."
+            fi
+          else
+            TITLE="Academy release approval staging gate — ${{ steps.release_stage.outputs.staged_courses || '0' }}/${{ steps.release_stage.outputs.expected_courses || '61' }} staged"
+          fi
+          gh issue edit 27 --title "$TITLE" --body-file catalog/academy-release-approval-notification.md --add-assignee jblan2026-hub
+
+      - name: Reconcile protected database blocker issue
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.protected_database.outcome }}" = "success" ] && [ "${{ steps.authoring_checkpoint_bootstrap.outcome }}" = "success" ] && [ "${{ steps.media_checkpoint_bootstrap.outcome }}" = "success" ]; then
+            BODY="Protected Academy PostgreSQL authentication, base schema verification, authoring checkpoint storage, and media checkpoint storage succeeded in workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            gh issue edit 17 --body "$BODY" || true
+            gh issue close 17 --comment "Protected Academy database authentication and checkpoint bootstrap are verified on workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}." || true
+          else
+            gh issue reopen 17 || true
+            BODY="Protected Academy PostgreSQL authentication or checkpoint bootstrap remains blocked. No publication or checkout action was attempted. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Correct the protected ACADEMY_DATABASE_URL credential and rerun."
+            gh issue edit 17 --body "$BODY" || true
+          fi
+
+      - name: Upload governed production and staging evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: academy-36-worker-production-${{ github.run_id }}
+          path: |
+            catalog/academy-worker-contract-verification.json
+            catalog/academy-hollywood-provider-preflight.json
+            catalog/academy-hollywood-course-audit.json
+            catalog/academy-hollywood-checkpoint-restore.json
+            catalog/academy-hollywood-media-checkpoint-restore.json
+            catalog/academy-hollywood-parallel-summary.json
+            catalog/academy-hollywood-source-context.json
+            catalog/academy-hollywood-materialization.json
+            catalog/academy-hollywood-compliance-staging.json
+            catalog/academy-hollywood-lcms-load-plan.json
+            catalog/academy-hollywood-lcms-load-result.json
+            catalog/academy-hollywood-media-submission.json
+            catalog/academy-hollywood-media-reconciliation.json
+            catalog/academy-hollywood-final-media-verification.json
+            catalog/academy-release-approval-gate.json
+            catalog/academy-release-approval-notification.md
+          if-no-files-found: warn
+          retention-days: 180
+
+      - name: Enforce the final governed result
+        if: always()
+        shell: bash
+        run: |
+          failures=0
+          for outcome in \
+            "${{ steps.source_syntax.outcome }}" \
+            "${{ steps.dependency_install.outcome }}" \
+            "${{ steps.media_toolchain.outcome }}" \
+            "${{ steps.worker_contract.outcome }}" \
+            "${{ steps.prisma_generate.outcome }}" \
+            "${{ steps.course_policy.outcome }}" \
+            "${{ steps.protected_database.outcome }}" \
+            "${{ steps.authoring_checkpoint_bootstrap.outcome }}" \
+            "${{ steps.media_checkpoint_bootstrap.outcome }}" \
+            "${{ steps.authoring_checkpoint_restore.outcome }}" \
+            "${{ steps.media_checkpoint_restore.outcome }}" \
+            "${{ steps.source_context.outcome }}" \
+            "${{ steps.course_audit.outcome }}" \
+            "${{ steps.provider_preflight.outcome }}" \
+            "${{ steps.protected_authoring.outcome }}" \
+            "${{ steps.package_completion.outcome }}" \
+            "${{ steps.materialization.outcome }}" \
+            "${{ steps.cinematic_validation.outcome }}" \
+            "${{ steps.lcms_dry_run.outcome }}" \
+            "${{ steps.lcms_load.outcome }}" \
+            "${{ steps.media_submission.outcome }}" \
+            "${{ steps.media_checkpoint_submit.outcome }}" \
+            "${{ steps.media_reconciliation.outcome }}" \
+            "${{ steps.media_checkpoint_reconciled.outcome }}" \
+            "${{ steps.final_media_verification.outcome }}" \
+            "${{ steps.release_stage.outcome }}" \
+            "${{ steps.restore_exact_compliance.outcome }}"; do
+            if [ "$outcome" != "success" ]; then failures=$((failures + 1)); fi
+          done
+
+          if [ "$failures" -gt 0 ]; then
+            echo "$failures governed production stage(s) did not succeed. The scheduled workflow will resume from protected authoring and media checkpoints."
+            exit 1
+          fi
+          if [ "${{ steps.release_stage.outputs.all_staged }}" != "true" ]; then
+            echo "The 60-course production pipeline completed, but the complete 61-course portfolio has not yet reached owner release-approval staging."
+            exit 2
+          fi
+          echo "All 60 standard courses and the supplemental PMP course are staged for explicit owner release approval. Publication and checkout remain disabled."
