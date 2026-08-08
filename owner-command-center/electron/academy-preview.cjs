@@ -1,5 +1,8 @@
 const fs = require("node:fs");
 const path = require("node:path");
+
+require("./academy-course-review-runtime.cjs");
+
 const { resolveStudioRoot } = require("./academy-studio.cjs");
 
 function assertCourseId(value) {
