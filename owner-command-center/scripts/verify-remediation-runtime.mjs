@@ -9,6 +9,7 @@ const requirePattern = (content, pattern, message) => {
 };
 
 const packageJson = JSON.parse(read("package.json"));
+const bootstrapEntrypoint = read("electron/bootstrap-main.cjs");
 const wrapper = read("electron/main-with-remediation.cjs");
 const queue = read("electron/remediation-queue.cjs");
 const engine = read("electron/ai-remediation.cjs");
@@ -16,7 +17,24 @@ const preload = read("electron/preload.cjs");
 const index = read("src/index.html");
 const dashboard = read("src/remediation-dashboard.js");
 
-if (packageJson.main !== "electron/main-with-remediation.cjs") throw new Error("Remediation runtime verification failed: package entrypoint must use the governed remediation wrapper");
+if (packageJson.main !== "electron/bootstrap-main.cjs") {
+  throw new Error("Remediation runtime verification failed: package entrypoint must use the packaged bootstrap wrapper");
+}
+requirePattern(
+  bootstrapEntrypoint,
+  /require\("\.\/main-with-remediation\.cjs"\)/,
+  "packaged bootstrap entrypoint must preserve the governed remediation wrapper",
+);
+requirePattern(
+  bootstrapEntrypoint,
+  /OBSERRA_COMMAND_CENTER_BOOTSTRAP/,
+  "packaged bootstrap entrypoint must resolve the embedded device bootstrap",
+);
+requirePattern(
+  bootstrapEntrypoint,
+  /setAppUserModelId/,
+  "Windows application identity must be established before the runtime opens windows",
+);
 
 for (const channel of ["remediation:getSnapshot", "remediation:propose", "remediation:decide", "remediation:execute"]) {
   requirePattern(wrapper, new RegExp(channel.replace(":", "\\:")), `IPC channel ${channel} must be registered`);
@@ -55,4 +73,4 @@ requirePattern(engine, /branch[\s\S]*-D/, "failed remediation must remove its is
 requirePattern(engine, /forcePushAllowed:\s*false/, "force pushes must remain prohibited");
 requirePattern(engine, /automaticProductionDeploymentAllowed:\s*false/, "automatic production deployment must remain prohibited");
 
-console.log("[Owner Command Center] Verified-scan-bound remediation runtime, owner controls, draft PR, and rollback verification passed.");
+console.log("[Owner Command Center] Packaged bootstrap, verified-scan-bound remediation runtime, owner controls, draft PR, and rollback verification passed.");
