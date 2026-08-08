@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "policyId": "obserra-academy-launch-pricing",
+  "effectiveDate": "2026-08-08",
+  "currency": "USD",
+  "model": "one-time-payment",
+  "principles": [
+    "Maintain one governed price per course level across Studio catalog, website presentation, and checkout.",
+    "Avoid premium pricing that is disproportionate to self-paced course duration or market alternatives.",
+    "Preserve a reasonable premium for specialized executive and CISO material without pricing short self-paced courses like certification bootcamps.",
+    "Any price change requires an explicit policy revision, catalog regeneration, website parity verification, and audit evidence."
+  ],
+  "tiers": {
+    "Foundation": { "price": 99, "nominalDuration": "2.5 hours" },
+    "Professional": { "price": 149, "nominalDuration": "4.5 hours" },
+    "Advanced": { "price": 199, "nominalDuration": "7 hours" },
+    "Executive Intensive": { "price": 249, "nominalDuration": "9 hours" },
+    "CISO Masterclass": { "price": 299, "nominalDuration": "11 hours" }
+  },
+  "marketPosition": {
+    "strategy": "accessible-premium-professional-self-paced",
+    "notCertificationPricing": true,
+    "benchmarkReviewDate": "2026-08-08",
+    "benchmarkNotes": "Pricing is intentionally below certification-bootcamp economics and bounded against broad self-paced cybersecurity alternatives. Formal market research evidence is retained in repository change history and release documentation."
+  },
+  "releaseGate": {
+    "catalogWebsiteParityRequired": true,
+    "checkoutPriceParityRequired": true,
+    "unsupportedPriceOverridesForbidden": true,
+    "currencyMustBeUsd": true
+  }
+}

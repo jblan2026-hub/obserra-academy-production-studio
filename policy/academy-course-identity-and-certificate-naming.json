@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0",
+  "policyId": "obserra-academy-course-identity-and-certificate-naming",
+  "effectiveDate": "2026-08-08",
+  "courseIdentity": {
+    "displayTitleSource": "course-manifest.course.title",
+    "displayTitleRules": [
+      "Use a concise professional title that describes the subject or outcome.",
+      "Do not prefix the title with Obserra, Obserra Academy, a department name, a price tier, or a version number.",
+      "Preserve accepted acronyms and technical names such as AI, API, CISO, LLM, DevSecOps, Zero Trust, and EIOS where appropriate.",
+      "Use the exact canonical title unchanged across catalog, website, learner player, owner review, checkout description, completion record, and certificate."
+    ],
+    "stableIdSource": "course-manifest.course.id",
+    "stableIdRules": [
+      "Lowercase kebab-case only.",
+      "Stable after first publication unless an explicit migration preserves historical aliases and records.",
+      "Do not encode price, level, version, or learner information into the stable ID."
+    ],
+    "versionSource": "course-manifest.release.version",
+    "versionDisplay": "v{semver}",
+    "versionMustRemainSeparateFromDisplayTitle": true
+  },
+  "certificate": {
+    "credentialName": "Certificate of Course Completion",
+    "issuerDisplayName": "Obserra Academy",
+    "legalIssuer": "Obserra Executive Protection & Intelligence, LLC",
+    "courseTitleMustExactlyMatchCanonicalTitle": true,
+    "courseVersionRequired": true,
+    "courseVersionLabel": "Course Version",
+    "departmentMayDisplayAsSupportingMetadata": true,
+    "certificateIdRemainsStableAndBackwardCompatible": true,
+    "certificateIdMustNotContainLearnerPII": true,
+    "historicalCertificateMustRetainOriginalCourseTitleAndVersion": true,
+    "credentialDisclaimer": "This signed record confirms completion of an Obserra Academy course. It is not a government license, occupational authorization, accredited academic credit, or third-party professional certification."
+  },
+  "releaseGate": {
+    "rejectCertificateTitleMismatch": true,
+    "rejectMissingCourseVersionOnNewCertificate": true,
+    "rejectVersionEmbeddedInCourseDisplayTitle": true,
+    "rejectObserraPrefixInCourseDisplayTitle": true,
+    "rejectUnversionedPublishedCourse": true
+  }
+}

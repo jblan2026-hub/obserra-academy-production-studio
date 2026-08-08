@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "policyId": "obserra-academy-payment-security",
+  "effectiveDate": "2026-08-08",
+  "requirements": {
+    "httpsRequired": true,
+    "minimumTlsVersion": "1.2",
+    "hstsRequired": true,
+    "secureCookiesRequired": true,
+    "httpOnlySessionCookiesRequired": true,
+    "sameSiteCookiesRequired": true,
+    "mixedContentForbidden": true,
+    "paymentProcessor": "Stripe",
+    "stripeHostedCardCollectionRequired": true,
+    "primaryAccountNumberStorageForbidden": true,
+    "cvcStorageForbidden": true,
+    "rawPaymentMethodStorageForbidden": true,
+    "clientSecretLoggingForbidden": true,
+    "stripeSecretLoggingForbidden": true,
+    "webhookSignatureVerificationRequired": true,
+    "checkoutFulfillmentRequiresServerSideVerification": true,
+    "checkoutSuccessRedirectAloneInsufficientForEntitlement": true,
+    "idempotentEntitlementGrantRequired": true,
+    "piiLoggingMinimized": true,
+    "customerEmailMaskingRequiredInOwnerUi": true,
+    "paymentReferenceMaskingRequiredInOwnerUi": true
+  },
+  "releaseGate": {
+    "blockPublicationIfHttpPaymentRouteDetected": true,
+    "blockPublicationIfMixedContentDetected": true,
+    "blockPublicationIfRawCardInputDetected": true,
+    "blockPublicationIfWebhookVerificationMissing": true,
+    "blockPublicationIfSensitivePaymentLoggingDetected": true
+  }
+}
