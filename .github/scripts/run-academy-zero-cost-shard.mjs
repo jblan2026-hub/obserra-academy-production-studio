@@ -13,6 +13,7 @@ const coursesRoot = path.join(root, "courses");
 const shardIndex = Number(process.env.ACADEMY_SHARD_INDEX);
 const shardCount = Number(process.env.ACADEMY_SHARD_COUNT || 16);
 const maxAttempts = Math.max(1, Math.min(2, Number(process.env.ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS || 2)));
+const PIPELINE_REVISION = "2026.08.08.3";
 
 if (!Number.isInteger(shardIndex) || shardIndex < 0 || shardIndex >= shardCount) {
   throw new Error(`Invalid ACADEMY_SHARD_INDEX=${process.env.ACADEMY_SHARD_INDEX}; expected 0..${shardCount - 1}.`);
@@ -119,7 +120,7 @@ function courseState(courseId) {
 const results = [];
 for (const [position, courseId] of selected.entries()) {
   const startedAt = new Date().toISOString();
-  console.log(`[Academy Studio] Shard ${shardIndex + 1}/${shardCount}, course ${position + 1}/${selected.length}: ${courseId}.`);
+  console.log(`[Academy Studio] Pipeline ${PIPELINE_REVISION}, shard ${shardIndex + 1}/${shardCount}, course ${position + 1}/${selected.length}: ${courseId}.`);
 
   let state = courseState(courseId);
   if (state.researchValid && state.packageValid && state.reviewValid) {
@@ -219,6 +220,7 @@ for (const [position, courseId] of selected.entries()) {
 const passed = results.filter((item) => item.passed).length;
 const report = {
   schemaVersion: "1.2",
+  pipelineRevision: PIPELINE_REVISION,
   generatedAt: new Date().toISOString(),
   shardIndex,
   shardCount,
