@@ -42,6 +42,8 @@ env:
   ACADEMY_AUTHORING_CONCURRENCY: 16
   ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
   ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
+  ACADEMY_AUTHORING_REPAIR_ATTEMPTS: 2
+  ACADEMY_AUTHORING_REPAIR_CONCURRENCY: 4
   ACADEMY_PREFLIGHT_MAX_ATTEMPTS: 3
   ACADEMY_PREFLIGHT_RETRY_BASE_MS: 2000
   ACADEMY_PREFLIGHT_TIMEOUT_MS: 60000
@@ -131,6 +133,9 @@ jobs:
         if: steps.audit.outputs.authoring_required == 'true'
         run: npm run author:parallel
 
+      - name: Validate and selectively repair authored packages
+        run: node studio/validate-and-repair-authored-packages.mjs
+
       - name: Re-audit protected packages
         run: npm run audit:courses
 
@@ -161,7 +166,8 @@ jobs:
             exit 1
           fi
 
-      - name: Upload protected course packages for LCMS loading
+      - name: Upload protected course packages for review and LCMS loading
+        if: always() && !cancelled()
         uses: actions/upload-artifact@v4
         with:
           name: protected-academy-course-packages-${{ github.run_id }}
@@ -170,11 +176,13 @@ jobs:
             catalog/academy-learner-course-catalog.json
             catalog/learner-catalog-readiness.json
             catalog/parallel-authoring-summary.json
-          if-no-files-found: error
+            catalog/authoring-quality-repair.json
+          if-no-files-found: warn
           retention-days: 14
           compression-level: 6
 
       - name: Upload non-sensitive audit evidence
+        if: always() && !cancelled()
         uses: actions/upload-artifact@v4
         with:
           name: accelerated-academy-audit-${{ github.run_id }}
@@ -183,11 +191,14 @@ jobs:
             catalog/continuous-course-audit.json
             catalog/bulk-build-report.json
             catalog/academy-course-catalog.json
-          if-no-files-found: error
+            catalog/learner-catalog-readiness.json
+            catalog/authoring-quality-repair.json
+          if-no-files-found: warn
           retention-days: 180
           compression-level: 6
 
       - name: Record authoring completion summary
+        if: always()
         run: |
           {
             echo "## Accelerated Academy authoring"
@@ -198,6 +209,8 @@ jobs:
             echo "- Authoring required: ${{ steps.audit.outputs.authoring_required }}"
             echo "- Blocking findings: ${{ steps.audit.outputs.blocking_findings }}"
             echo "- Provider preflight uses bounded retries and governed model fallback"
+            echo "- Incomplete generated packages are selectively retried before catalog validation"
+            echo "- Protected packages are retained for owner review even when a downstream gate fails"
             echo "- Database credentials were intentionally excluded from this job"
           } >> "$GITHUB_STEP_SUMMARY"
 
