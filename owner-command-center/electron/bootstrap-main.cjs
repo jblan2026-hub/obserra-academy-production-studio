@@ -11,15 +11,20 @@ const STARTUP_SMOKE_TEST = process.env.OBSERRA_STARTUP_SMOKE_TEST === "true";
 const STARTUP_STARTED_AT = performance.now();
 const STARTUP_STARTED_WALL_CLOCK = new Date().toISOString();
 const rendererRecoveryAttempts = new WeakMap();
+const retainedWindows = new Set();
 let bootstrapLoaded = false;
 let startupFailed = false;
 let splashWindow = null;
+let smokeWatchdog = null;
+let smokeTestCompleted = false;
 
 if (typeof app.setAppUserModelId === "function") {
   app.setAppUserModelId(APP_ID);
 }
 
 function startupHealthPath() {
+  const configuredPath = String(process.env.OBSERRA_STARTUP_HEALTH_PATH || "").trim();
+  if (configuredPath) return path.resolve(configuredPath);
   try {
     return path.join(app.getPath("userData"), "startup-health.json");
   } catch {
@@ -33,7 +38,7 @@ function writeStartupHealth(event, details = {}) {
     const destination = startupHealthPath();
     fs.mkdirSync(path.dirname(destination), { recursive: true });
     const record = {
-      schemaVersion: "1.0",
+      schemaVersion: "1.1",
       event,
       recordedAt: new Date().toISOString(),
       startupStartedAt: STARTUP_STARTED_WALL_CLOCK,
@@ -58,11 +63,23 @@ function safeError(error) {
     .slice(0, 12000);
 }
 
+function completeStartupSmokeTest(passed, details = {}) {
+  if (!STARTUP_SMOKE_TEST || smokeTestCompleted) return;
+  smokeTestCompleted = true;
+  if (smokeWatchdog) clearTimeout(smokeWatchdog);
+  writeStartupHealth(passed ? "startup-smoke-passed" : "startup-smoke-failed", details);
+  setTimeout(() => app.exit(passed ? 0 : 1), 250);
+}
+
 function failStartup(error) {
   if (startupFailed) return;
   startupFailed = true;
   const detail = safeError(error);
   writeStartupHealth("startup-failed", { error: detail });
+  if (STARTUP_SMOKE_TEST) {
+    completeStartupSmokeTest(false, { error: detail });
+    return;
+  }
   try {
     dialog.showErrorBox(
       "Obserra Command Center startup error",
@@ -105,11 +122,11 @@ function splashMarkup() {
     body{display:grid;place-items:center}.card{width:480px;padding:34px;border:1px solid #2b3548;border-radius:18px;background:linear-gradient(145deg,#0a1020,#05070b);box-shadow:0 24px 70px rgba(0,0,0,.55)}
     .brand{font-size:12px;letter-spacing:.18em;color:#d9b35f;text-transform:uppercase}.title{font-size:25px;font-weight:750;margin-top:10px}.status{margin-top:12px;color:#aeb8c9;font-size:14px}
     .bar{height:4px;margin-top:26px;border-radius:999px;background:#182033;overflow:hidden}.bar:after{content:"";display:block;width:42%;height:100%;background:#d9b35f;animation:load 1.1s ease-in-out infinite alternate}@keyframes load{from{transform:translateX(-70%)}to{transform:translateX(210%)}}
-  </style></head><body><div class="card"><div class="brand">Obserra Executive Protection & Intelligence LLC</div><div class="title">Owner AI Command Center</div><div class="status">Starting secure owner services and loading the command interface…</div><div class="bar"></div></div></body></html>`;
+  </style></head><body><div class="card"><div class="brand">OBSERRA EXECUTIVE PROTECTION &amp; INTELLIGENCE LLC</div><div class="title">Owner AI Command Center</div><div class="status">Starting the secure owner interface. Live monitoring will initialize in the background.</div><div class="bar"></div></div></body></html>`;
 }
 
 function createSplashWindow() {
-  if (STARTUP_SMOKE_TEST || splashWindow || BrowserWindow.getAllWindows().length > 0) return;
+  if (STARTUP_SMOKE_TEST || splashWindow) return;
   splashWindow = new BrowserWindow({
     width: 560,
     height: 260,
@@ -127,30 +144,52 @@ function createSplashWindow() {
       devTools: false,
     },
   });
+  retainedWindows.add(splashWindow);
   splashWindow.loadURL(`data:text/html;charset=UTF-8,${encodeURIComponent(splashMarkup())}`);
   splashWindow.once("ready-to-show", () => {
     splashWindow?.show();
     writeStartupHealth("splash-ready");
   });
   splashWindow.on("closed", () => {
+    retainedWindows.delete(splashWindow);
     splashWindow = null;
   });
 }
 
-app.whenReady().then(() => {
-  createSplashWindow();
-  if (STARTUP_SMOKE_TEST) {
-    setTimeout(() => app.exit(startupFailed ? 1 : 0), 7000);
-  }
-});
+function focusBestWindow() {
+  const primary = [...retainedWindows].find(
+    (window) => window && !window.isDestroyed() && window !== splashWindow,
+  );
+  const target = primary || (splashWindow && !splashWindow.isDestroyed() ? splashWindow : null);
+  if (!target) return false;
+  if (target.isMinimized()) target.restore();
+  target.show();
+  target.focus();
+  return true;
+}
 
-app.on("browser-window-created", (_event, window) => {
-  if (window === splashWindow) return;
-  window.once("ready-to-show", () => {
-    writeStartupHealth("primary-window-ready");
+function registerPrimaryWindow(window) {
+  if (!window || window.isDestroyed()) return;
+  retainedWindows.add(window);
+  let primaryReadyRecorded = false;
+
+  const markPrimaryReady = () => {
+    if (primaryReadyRecorded || window.isDestroyed()) return;
+    primaryReadyRecorded = true;
+    writeStartupHealth("primary-window-ready", {
+      visible: window.isVisible(),
+      minimized: window.isMinimized(),
+    });
     if (splashWindow && !splashWindow.isDestroyed()) splashWindow.close();
-  });
+    if (STARTUP_SMOKE_TEST) {
+      completeStartupSmokeTest(true, { primaryWindowReady: true });
+    }
+  };
 
+  window.once("ready-to-show", markPrimaryReady);
+  window.webContents.once("did-finish-load", () => {
+    writeStartupHealth("primary-window-content-loaded");
+  });
   window.webContents.on("render-process-gone", (_event, details) => {
     writeStartupHealth("renderer-process-gone", {
       reason: details.reason,
@@ -164,6 +203,32 @@ app.on("browser-window-created", (_event, window) => {
       }, 750);
     }
   });
+  window.on("closed", () => retainedWindows.delete(window));
+}
+
+app.on("browser-window-created", (_event, window) => {
+  retainedWindows.add(window);
+  window.on("closed", () => retainedWindows.delete(window));
+});
+app.on("obserra:primary-window-created", registerPrimaryWindow);
+app.on("second-instance", () => {
+  writeStartupHealth("second-instance-requested");
+  focusBestWindow();
+});
+app.on("activate", () => {
+  focusBestWindow();
+});
+
+app.whenReady().then(() => {
+  createSplashWindow();
+  if (STARTUP_SMOKE_TEST) {
+    smokeWatchdog = setTimeout(() => {
+      completeStartupSmokeTest(false, {
+        reason: "primary-window-ready-timeout",
+        timeoutMs: 30000,
+      });
+    }, 30000);
+  }
 });
 
 app.on("child-process-gone", (_event, details) => {
