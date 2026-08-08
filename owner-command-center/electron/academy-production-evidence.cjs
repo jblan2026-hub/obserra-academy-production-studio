@@ -1,0 +1,232 @@
+const fs = require("node:fs");
+const path = require("node:path");
+const { resolveStudioRoot } = require("./academy-studio.cjs");
+
+const EVIDENCE_FILES = Object.freeze({
+  audit: "academy-hollywood-course-audit.json",
+  workers: "academy-hollywood-parallel-summary.json",
+  compliance: "academy-hollywood-compliance-staging.json",
+  media: "academy-hollywood-media-submission.json",
+  provider: "academy-hollywood-provider-preflight.json",
+  checkpoints: "academy-hollywood-checkpoint-restore.json",
+  legacyWorkers: "parallel-authoring-summary.json",
+  learnerCatalog: "learner-catalog-readiness.json"
+});
+
+function safeReadJson(filePath) {
+  if (!fs.existsSync(filePath)) return { available: false, path: filePath, value: null, error: null };
+  try {
+    return { available: true, path: filePath, value: JSON.parse(fs.readFileSync(filePath, "utf8")), error: null };
+  } catch (error) {
+    return { available: true, path: filePath, value: null, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function normalizeReleaseStatus(value) {
+  return String(value || "draft").trim().toLowerCase();
+}
+
+function inventoryCourses(root) {
+  const coursesRoot = path.join(root, "courses");
+  if (!fs.existsSync(coursesRoot)) {
+    return { discovered: 0, ownerReviewEligible: 0, publicationApproved: 0, publicationEnabled: 0, invalidManifests: 0, courses: [] };
+  }
+
+  const courses = [];
+  let invalidManifests = 0;
+  for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const manifestPath = path.join(coursesRoot, entry.name, "course-manifest.json");
+    if (!fs.existsSync(manifestPath)) continue;
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      const releaseStatus = normalizeReleaseStatus(manifest.release?.status);
+      const publicationEnabled = manifest.release?.publishToAcademy === true;
+      const publicationApproved = publicationEnabled && ["approved", "published"].includes(releaseStatus);
+      courses.push({
+        courseId: manifest.course?.id || entry.name,
+        title: manifest.course?.title || entry.name,
+        releaseStatus,
+        publicationEnabled,
+        publicationApproved,
+        ownerReviewEligible: !["retired", "archived"].includes(releaseStatus)
+      });
+    } catch {
+      invalidManifests += 1;
+    }
+  }
+
+  return {
+    discovered: courses.length,
+    ownerReviewEligible: courses.filter((course) => course.ownerReviewEligible).length,
+    publicationApproved: courses.filter((course) => course.publicationApproved).length,
+    publicationEnabled: courses.filter((course) => course.publicationEnabled).length,
+    invalidManifests,
+    courses
+  };
+}
+
+function firstDefined(...values) {
+  return values.find((value) => value !== undefined && value !== null);
+}
+
+function integerOrNull(value) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function evidenceStatus(record) {
+  if (!record.available) return "missing";
+  if (record.error || !record.value) return "invalid";
+  return "available";
+}
+
+function getAcademyProductionEvidence(rootOverride) {
+  const root = rootOverride || resolveStudioRoot();
+  if (!root) {
+    return {
+      available: false,
+      source: "unavailable",
+      root: null,
+      checkedAt: new Date().toISOString(),
+      workerTarget: 36,
+      workerStatus: { configuredCourseWorkers: null, configuredApplicationWorkers: null, launchedWorkers: 0, activeWorkers: 0, completedAssignments: 0, failedAssignments: 0, interchangeable: null },
+      courseStatus: { discovered: 0, ownerReviewEligible: 0, complianceStagingReady: 0, publicationReady: 0, publicationApproved: 0 },
+      blockers: ["Academy Studio workspace is unavailable. Set OBSERRA_ACADEMY_STUDIO_ROOT to the verified repository path."],
+      claimBoundary: "No live Academy production state is inferred without an accessible repository and machine-readable evidence."
+    };
+  }
+
+  const catalogRoot = path.join(root, "catalog");
+  const records = Object.fromEntries(
+    Object.entries(EVIDENCE_FILES).map(([key, file]) => [key, safeReadJson(path.join(catalogRoot, file))])
+  );
+  const inventory = inventoryCourses(root);
+  const workerEvidence = records.workers.value || records.legacyWorkers.value || null;
+  const allocation = workerEvidence?.allocation || records.audit.value?.allocation || records.compliance.value?.allocation || null;
+  const configuredCourseWorkers = integerOrNull(firstDefined(
+    allocation?.courseWorkerAllocation,
+    workerEvidence?.courseWorkerAllocation
+  ));
+  const configuredApplicationWorkers = integerOrNull(firstDefined(
+    allocation?.applicationWorkerAllocation,
+    workerEvidence?.applicationWorkerAllocation
+  ));
+  const configuredPortfolioWorkers = integerOrNull(firstDefined(
+    allocation?.portfolioWorkerCount,
+    workerEvidence?.portfolioWorkerCount
+  ));
+  const launchedWorkers = integerOrNull(firstDefined(
+    workerEvidence?.launchedWorkerCount,
+    workerEvidence?.workerRoster?.length,
+    workerEvidence?.concurrency
+  )) || 0;
+  const completedAssignments = integerOrNull(firstDefined(
+    workerEvidence?.completedCourses,
+    workerEvidence?.completed?.length
+  )) || 0;
+  const successfulAssignments = integerOrNull(firstDefined(
+    workerEvidence?.successfulCourses,
+    completedAssignments - (integerOrNull(workerEvidence?.failedCourses) || 0)
+  )) || 0;
+  const failedAssignments = integerOrNull(workerEvidence?.failedCourses) || 0;
+  const activeWorkers = Math.max(0, (integerOrNull(workerEvidence?.startedCourses) || 0) - completedAssignments);
+  const workerMode = firstDefined(allocation?.workerMode, workerEvidence?.allocation?.workerMode, null);
+  const interchangeable = firstDefined(
+    allocation?.crossRoleReassignmentAllowed,
+    Array.isArray(workerEvidence?.interchangeableRoles) ? true : null
+  );
+
+  const compliance = records.compliance.value || {};
+  const media = records.media.value || {};
+  const provider = records.provider.value || {};
+  const checkpoints = records.checkpoints.value || {};
+  const learnerCatalog = records.learnerCatalog.value || {};
+  const complianceStagingReady = integerOrNull(firstDefined(
+    compliance.complianceStagingReadyCourses,
+    compliance.ready ? compliance.discoveredCourses : 0
+  )) || 0;
+  const publicationReady = integerOrNull(firstDefined(
+    compliance.publicationReadyCourses,
+    compliance.publicationReady ? compliance.discoveredCourses : 0
+  )) || 0;
+
+  const blockers = [];
+  if (inventory.invalidManifests > 0) blockers.push(`${inventory.invalidManifests} course manifest(s) are unreadable.`);
+  if (evidenceStatus(records.audit) !== "available") blockers.push("Cinematic course audit evidence is not available.");
+  if (evidenceStatus(records.workers) !== "available") blockers.push("36-worker surge execution evidence is not available.");
+  if (evidenceStatus(records.compliance) !== "available") blockers.push("Cinematic compliance staging evidence is not available.");
+  if (evidenceStatus(records.provider) !== "available") blockers.push("Protected authoring provider preflight evidence is not available.");
+  if (provider.ready !== true) blockers.push("Protected authoring provider is not currently proven ready.");
+  if (configuredPortfolioWorkers !== 36) blockers.push(`Configured portfolio worker evidence is ${configuredPortfolioWorkers ?? "unknown"}; required value is 36.`);
+  if (configuredCourseWorkers !== 36) blockers.push(`Configured Academy course worker evidence is ${configuredCourseWorkers ?? "unknown"}; required value is 36.`);
+  if (configuredApplicationWorkers !== 0) blockers.push(`Configured application worker evidence is ${configuredApplicationWorkers ?? "unknown"}; required surge value is 0.`);
+  if (workerMode && workerMode !== "interchangeable-course-production") blockers.push(`Worker mode is ${workerMode}; interchangeable-course-production is required.`);
+  if (interchangeable !== true) blockers.push("Worker interchangeability has not been proven by execution evidence.");
+  if (complianceStagingReady < inventory.ownerReviewEligible) blockers.push(`${inventory.ownerReviewEligible - complianceStagingReady} owner-review course(s) have not reached compliance staging.`);
+  if (media.allJobsSubmitted !== true) blockers.push("All required cinematic media jobs have not been submitted successfully.");
+  if (publicationReady < inventory.ownerReviewEligible) blockers.push(`${inventory.ownerReviewEligible - publicationReady} owner-review course(s) remain blocked from publication.`);
+  if (inventory.publicationEnabled > publicationReady) blockers.push("One or more manifests enable publication without matching publication-readiness evidence.");
+  if (checkpoints.skipped === true || evidenceStatus(records.checkpoints) !== "available") blockers.push("Protected checkpoint restoration evidence is unavailable or skipped.");
+  if (learnerCatalog.ready !== true) blockers.push("Protected learner catalog readiness is not proven.");
+
+  const evidence = Object.fromEntries(
+    Object.entries(records).map(([key, record]) => [key, { status: evidenceStatus(record), file: path.basename(record.path), error: record.error }])
+  );
+
+  return {
+    available: true,
+    source: "authoritative-repository-evidence",
+    root,
+    checkedAt: new Date().toISOString(),
+    workerTarget: 36,
+    workerStatus: {
+      configuredPortfolioWorkers,
+      configuredCourseWorkers,
+      configuredApplicationWorkers,
+      launchedWorkers,
+      activeWorkers,
+      completedAssignments,
+      successfulAssignments,
+      failedAssignments,
+      workerMode,
+      interchangeable,
+      halted: workerEvidence?.halted === true,
+      haltReason: workerEvidence?.haltReason || null
+    },
+    courseStatus: {
+      discovered: inventory.discovered,
+      ownerReviewEligible: inventory.ownerReviewEligible,
+      complianceStagingReady,
+      publicationReady,
+      publicationApproved: inventory.publicationApproved,
+      publicationEnabled: inventory.publicationEnabled,
+      learnerCatalogReady: learnerCatalog.ready === true
+    },
+    providerStatus: {
+      ready: provider.ready === true,
+      provider: provider.provider || null,
+      model: provider.model || null,
+      checkedAt: provider.checkedAt || null
+    },
+    checkpointStatus: {
+      restored: integerOrNull(checkpoints.restored) || 0,
+      evaluated: integerOrNull(checkpoints.evaluated) || 0,
+      skipped: checkpoints.skipped === true
+    },
+    mediaStatus: {
+      requestedVideoJobs: integerOrNull(media.requestedVideoJobs) || 0,
+      submittedVideoJobs: integerOrNull(media.submittedVideoJobs) || 0,
+      configurationRequiredVideoJobs: integerOrNull(media.configurationRequiredVideoJobs) || 0,
+      failedVideoJobs: integerOrNull(media.failedVideoJobs) || 0,
+      allJobsSubmitted: media.allJobsSubmitted === true
+    },
+    publicationLocked: inventory.publicationApproved === 0 || publicationReady < inventory.ownerReviewEligible,
+    evidence,
+    blockers,
+    operational: blockers.length === 0,
+    claimBoundary: "This view reports only machine-readable repository evidence. Worker configuration is not worker execution, submitted media jobs are not mastered media, compliance staging is not publication approval, and a packaged Command Center is not an installed endpoint."
+  };
+}
+
+module.exports = { EVIDENCE_FILES, getAcademyProductionEvidence, inventoryCourses, safeReadJson };
