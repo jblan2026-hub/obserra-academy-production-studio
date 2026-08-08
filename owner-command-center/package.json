@@ -3,6 +3,15 @@
   "version": "0.3.0",
   "private": true,
   "description": "Owner-only local AI command center for the Obserra ecosystem.",
+  "author": {
+    "name": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC"
+  },
+  "license": "UNLICENSED",
+  "packageManager": "npm@10.9.8",
+  "engines": {
+    "node": ">=22 <23",
+    "npm": ">=10 <11"
+  },
   "main": "electron/main-with-remediation.cjs",
   "type": "module",
   "scripts": {
@@ -22,6 +31,7 @@
   "build": {
     "appId": "com.obserra.ownercommandcenter",
     "productName": "Obserra Owner AI Command Center",
+    "copyright": "Copyright © 2026 OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
     "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}",
     "directories": {
       "output": "dist"
