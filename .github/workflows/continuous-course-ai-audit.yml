@@ -56,8 +56,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
+      OBSERRA_PORTFOLIO_WORKER_COUNT: 36
+      OBSERRA_APPLICATION_WORKER_COUNT: 20
       ACADEMY_AUTHORING_PROVIDER: openai
-      ACADEMY_AUTHORING_CONCURRENCY: 6
+      ACADEMY_AUTHORING_CONCURRENCY: 16
       ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
       ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
       ACADEMY_EXPECTED_REVIEW_COURSES: 60
@@ -79,7 +81,7 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          BODY="Protected Academy owner-review build execution started. Authoring validation runs independently from protected LCMS database validation. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.head_ref || github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring target: 6 workers across 60 owner-review courses."
+          BODY="Protected Academy owner-review build execution started. Authoring validation runs independently from protected LCMS database validation. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.head_ref || github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring allocation: 16 course workers across 60 owner-review courses within the fixed 36-worker portfolio; 20 workers remain reserved for applications."
           gh issue edit 17 --body "$BODY"
 
       - name: Configure Node.js
