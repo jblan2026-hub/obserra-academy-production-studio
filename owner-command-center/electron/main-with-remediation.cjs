@@ -6,7 +6,7 @@ const { createRemediationQueue } = require("./remediation-queue.cjs");
 const { getAcademyProductionEvidence } = require("./academy-production-evidence.cjs");
 const { createAcademyReleaseApproval } = require("./academy-release-approval.cjs");
 const { createAcademyGithubEvidence } = require("./academy-github-evidence.cjs");
-const { createAcademyCourseControl } = require("./academy-course-control.cjs");
+const { createAcademyCourseControlResolver } = require("./academy-course-control-resolver.cjs");
 const { resolveStudioRoot } = require("./academy-studio.cjs");
 const { createEndpointEnrollmentRuntime } = require("./endpoint-enrollment.cjs");
 
@@ -81,10 +81,10 @@ const academyReleaseApproval = createAcademyReleaseApproval({
   endpointRuntime,
   studioRootProvider: resolveAcademyEvidenceRoot,
 });
-const academyCourseControl = createAcademyCourseControl({
+const academyCourseControl = createAcademyCourseControlResolver({
   store,
   safeStorage,
-  studioRootProvider: resolveStudioRoot,
+  app,
 });
 
 function requireObject(value, name) {
@@ -265,10 +265,12 @@ if (!primaryInstance) {
     ipcMain.handle("academy:getControlSnapshot", async () => academyCourseControl.snapshot());
     ipcMain.handle("academy:updateReview", async (_event, payload) => academyCourseControl.updateReview(payload));
     ipcMain.handle("academy:transitionCourse", async (_event, payload) => academyCourseControl.transitionCourse(payload));
+    ipcMain.handle("academy:runControlledAction", async (_event, payload) => academyCourseControl.runCourseAction(payload));
     ipcMain.handle("academy:listPurchases", async (_event, payload) => academyCourseControl.listPurchases(payload));
     ipcMain.handle("academy:verifyPurchase", async (_event, payload) => academyCourseControl.verifyPurchase(payload));
     ipcMain.handle("academy:getCommerceHealth", async () => academyCourseControl.commerceHealth({ force: true }));
     ipcMain.handle("academy:getPublicationJobs", async () => academyCourseControl.publicationJobs());
+    ipcMain.handle("academy:getStudioJobs", async () => academyCourseControl.studioJobs());
     ipcMain.handle("academy:getControlLedger", async (_event, limit) => academyCourseControl.ledger(limit));
 
     try {
