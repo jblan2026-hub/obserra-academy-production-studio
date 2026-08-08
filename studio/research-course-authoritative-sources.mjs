@@ -81,12 +81,64 @@ function writeJsonAtomic(filePath, value) {
 
 function responseText(payload) {
   if (typeof payload.output_text === "string" && payload.output_text.trim()) return payload.output_text;
+  const chunks = [];
   for (const item of payload.output || []) {
     for (const content of item.content || []) {
-      if (content.type === "output_text" && typeof content.text === "string") return content.text;
+      if (content.type === "output_text" && typeof content.text === "string" && content.text.trim()) chunks.push(content.text);
     }
   }
-  return "";
+  return chunks.join("\n").trim();
+}
+
+function extractJsonObject(text) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) throw new Error("Authoritative research response contained no output text.");
+  const unfenced = trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  try {
+    return JSON.parse(unfenced);
+  } catch {
+    // Web-grounded Responses API calls cannot use JSON mode. Recover only a single balanced
+    // top-level JSON object from model text and still fail closed if it is malformed.
+  }
+
+  const start = unfenced.indexOf("{");
+  if (start < 0) throw new Error("Authoritative research returned no JSON object.");
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < unfenced.length; index += 1) {
+    const char = unfenced[index];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        const candidate = unfenced.slice(start, index + 1);
+        try {
+          return JSON.parse(candidate);
+        } catch (error) {
+          throw new Error(`Authoritative research returned malformed JSON: ${error.message}`);
+        }
+      }
+    }
+  }
+  throw new Error("Authoritative research returned an unterminated JSON object.");
 }
 
 const course = manifest.course || {};
@@ -107,7 +159,7 @@ Research current, authoritative, primary sources that can support factual course
 
 Also identify documented real-world cases or incidents that can be used as factual learning examples. Prefer official enforcement releases, government reports, court/government records, regulator notices, official incident reports, or first-party public post-incident reports. Do not treat news summaries or marketing pages as primary evidence. If a topic cannot be supported by a primary source, return it under unresolvedTopics instead of fabricating support.
 
-Return one JSON object only with this structure:
+IMPORTANT OUTPUT CONTRACT: Return exactly one valid JSON object and nothing else. Do not use Markdown, code fences, commentary, citations outside the JSON object, or prose before or after the object. Use valid JSON string escaping. The object must use this structure:
 {
   "courseId": "${courseId}",
   "researchDate": "YYYY-MM-DD",
@@ -185,7 +237,6 @@ const response = await fetch(process.env.OPENAI_API_URL || "https://api.openai.c
     tools: [{ type: "web_search" }],
     input: prompt,
     max_output_tokens: Number(process.env.OPENAI_RESEARCH_MAX_OUTPUT_TOKENS || 20000),
-    text: { format: { type: "json_object" } },
     reasoning: { effort: process.env.OPENAI_RESEARCH_REASONING_EFFORT || "medium" },
     store: false
   })
@@ -196,14 +247,9 @@ if (!response.ok) throw new Error(`Authoritative research request failed with ${
 const payload = JSON.parse(body);
 if (payload.status === "incomplete") throw new Error(`Authoritative research response incomplete: ${JSON.stringify(payload.incomplete_details || {})}`);
 const text = responseText(payload);
-if (!text) throw new Error("Authoritative research response contained no output text.");
-
-let research;
-try {
-  research = JSON.parse(text);
-} catch (error) {
-  throw new Error(`Authoritative research returned invalid JSON: ${error.message}`);
-}
+const research = extractJsonObject(text);
+if (!research || typeof research !== "object" || Array.isArray(research)) throw new Error("Authoritative research output must be one JSON object.");
+if (research.courseId !== courseId) throw new Error(`Authoritative research course identity mismatch: expected ${courseId}, received ${research.courseId || "missing"}.`);
 
 const findings = [];
 const sources = Array.isArray(research.authoritativeSources) ? research.authoritativeSources : [];
@@ -250,12 +296,13 @@ for (const module of modules) {
 }
 
 const evidence = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
   courseId,
   manifestHash: stableHash(manifest),
   model: process.env.OPENAI_RESEARCH_MODEL || process.env.OPENAI_AUTHORING_MODEL || "gpt-5",
   webSearchUsed: true,
+  responseMode: "web-search-plus-validated-json-text",
   primarySourcePolicy: allowedPrimaryDomains,
   sourceCount: sources.length,
   documentedCaseCount: cases.length,
