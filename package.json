@@ -46,7 +46,7 @@
     "test:1000x-remediation": "node studio/verify-1000x-remediation-workload.mjs",
     "test:2000x-resilience": "node studio/verify-2000x-cross-project-resilience.mjs",
     "verify:public": "npm run verify:worker-contract && npm run test && npm run audit:courses && npm run validate && npm run build:all && npm run catalog && npm run collect:sources && npm run db:validate",
-    "verify:protected": "npm run verify:public && npm run db:generate && npm run validate:learner-catalog && npm run stage:courses && npm run load:courses:check",
+    "verify:protected": "npm run verify:worker-contract && npm run verify:public && npm run db:generate && npm run validate:learner-catalog && npm run stage:courses && npm run load:courses:check",
     "verify:commercial-release": "npm run verify:protected && npm run collect:sources:release && npm run validate:commercial-release",
     "verify": "npm run verify:public",
     "verify:70x": "npm run verify:worker-contract && npm run verify && npm run test:70x-extension",
