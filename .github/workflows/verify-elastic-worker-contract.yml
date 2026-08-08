@@ -1,0 +1,75 @@
+name: Verify Elastic Worker Pool Contract
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/academy-36-worker-course-surge
+    paths:
+      - "policy/elastic-worker-pool-contract.json"
+      - "studio/worker-pool-contract.mjs"
+      - "studio/verify-worker-pool-contract.mjs"
+      - "studio/author-courses-parallel.mjs"
+      - "package.json"
+      - ".github/workflows/verify-elastic-worker-contract.yml"
+  pull_request:
+    branches:
+      - main
+      - agent/continue-course-buildout
+    paths:
+      - "policy/elastic-worker-pool-contract.json"
+      - "studio/worker-pool-contract.mjs"
+      - "studio/verify-worker-pool-contract.mjs"
+      - "studio/author-courses-parallel.mjs"
+      - "package.json"
+      - ".github/workflows/verify-elastic-worker-contract.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: elastic-worker-contract-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-contract:
+    name: Verify 36 worker interchangeable contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout governed source
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify contract structure, allocation, roles, prohibitions, and launcher binding
+        run: node studio/verify-worker-pool-contract.mjs
+
+      - name: Verify package gates invoke the contract verifier
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const scripts = packageJson.scripts ?? {};
+          if (scripts['verify:worker-contract'] !== 'node studio/verify-worker-pool-contract.mjs') {
+            throw new Error('verify:worker-contract is missing or incorrect.');
+          }
+          for (const name of ['verify:public', 'verify:protected', 'verify:70x', 'verify:500x', 'verify:1000x', 'verify:2000x', 'ci']) {
+            if (!String(scripts[name] ?? '').includes('verify:worker-contract')) {
+              throw new Error(`${name} does not enforce the worker contract gate.`);
+            }
+          }
+          console.log('All governed package verification paths enforce the worker contract.');
+          NODE
+
+      - name: Upload contract verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: elastic-worker-contract-${{ github.sha }}
+          path: catalog/worker-pool-contract-verification.json
+          if-no-files-found: error
+          retention-days: 365
