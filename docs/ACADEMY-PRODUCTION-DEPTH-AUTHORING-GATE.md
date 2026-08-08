@@ -1,7 +1,7 @@
 # Academy Production-Depth Authoring Gate
 
 **Status:** Governed source control  
-**Policy version:** `2026.08.08.1`  
+**Policy version:** `2026.08.08.2`  
 **Applies to:** All owner-review-eligible Obserra Academy course packages  
 **Publication authority:** Not granted
 
@@ -31,6 +31,8 @@ The minimum requirements for every manifest module are:
 
 Every course must also contain at least 30 original final-assessment questions, complete module coverage, a cognitive mix totaling 100 percent, assessment-integrity controls, source-register mappings, workbook content for every module, an instructor guide, accurate marketing content, and the official Obserra legal and visual identity.
 
+Thirty questions is a portfolio floor, not a cap. A course-specific assessment contract overrides that floor whenever it requires more. The PMP exam-preparation course declares a 180-question protected assessment architecture and therefore requires 180 original questions. The authoring runtime derives that requirement from the course contract and validates the package before it is written.
+
 ## Source and applicability controls
 
 Every source-register entry must retain a unique identifier, claim or topic, applicable module identifiers, verification instruction, and usage boundary. Assessment source identifiers must resolve to that governed source register. Framework mappings must remain conditional, independently verifiable, and explicitly informational.
@@ -48,6 +50,7 @@ Changing the policy version changes the source-manifest hash. Packages generated
 The authoring workflow must produce machine-readable evidence containing:
 
 - the exact authoring policy version and thresholds;
+- the course-specific final-assessment minimum;
 - discovered, generated, repaired, and failed course counts;
 - package-level findings;
 - provider and model identity;
