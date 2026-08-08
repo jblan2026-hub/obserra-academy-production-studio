@@ -38,6 +38,8 @@ record("windows-installer-target", (packageJson.build?.win?.target ?? []).some((
 record("windows-portable-target", (packageJson.build?.win?.target ?? []).some((target) => target.target === "portable"));
 record("per-user-installation", packageJson.build?.nsis?.perMachine === false);
 record("no-default-elevation", packageJson.build?.nsis?.allowElevation === false && packageJson.build?.win?.requestedExecutionLevel === "asInvoker");
+record("controlled-post-install-launch", packageJson.build?.nsis?.runAfterFinish === false);
+record("preserve-owner-state-on-uninstall", packageJson.build?.nsis?.deleteAppDataOnUninstall === false);
 record("asar-packaging", packageJson.build?.asar === true);
 
 includesAll("browser-security-boundary", main, [
@@ -144,7 +146,9 @@ record(
 );
 record(
   "windows-package-script-present",
-  packageJson.scripts?.["package:windows"] === "electron-builder --win nsis portable",
+  String(packageJson.scripts?.["package:windows"] ?? "").includes("electron-builder --win nsis portable")
+    && String(packageJson.scripts?.["package:windows"] ?? "").includes("--publish never"),
+  packageJson.scripts?.["package:windows"] ?? null,
 );
 record(
   "removable-media-script-present",
