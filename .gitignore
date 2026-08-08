@@ -5,6 +5,15 @@ node_modules/
 courses/*/generated/
 catalog/academy-learner-course-catalog.json
 catalog/learner-catalog-readiness.json
+catalog/academy-hollywood-provider-preflight.json
+catalog/academy-hollywood-course-audit.json
+catalog/academy-hollywood-checkpoint-restore.json
+catalog/academy-hollywood-parallel-summary.json
+catalog/academy-hollywood-compliance-staging.json
+catalog/academy-hollywood-media-submission.json
+catalog/academy-release-approval-gate.json
+catalog/academy-release-approval-notification.md
+catalog/academy-worker-contract-verification.json
 releases/*/FINAL/*.mp4
 releases/*/FINAL/*.mov
 releases/*/FINAL/*.wav
