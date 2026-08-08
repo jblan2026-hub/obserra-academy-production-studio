@@ -12,6 +12,7 @@ $bootstrapSource = Join-Path $here "Obserra-Command-Center-Bootstrap.json"
 $manifestPath = Join-Path $here "SHA256SUMS.json"
 $verificationScript = Join-Path $here "Test-Obserra-Command-Center-Endpoint.ps1"
 $endpointDirectory = Join-Path $env:LOCALAPPDATA "Obserra\OwnerCommandCenter"
+$portableInstallDirectory = Join-Path $endpointDirectory "Portable"
 $installedBootstrap = Join-Path $endpointDirectory "Obserra-Command-Center-Bootstrap.json"
 $runtimeInstallationReceiptPath = Join-Path $endpointDirectory "installation-receipt.json"
 $installerVerificationPath = Join-Path $endpointDirectory "installer-verification.json"
@@ -83,8 +84,14 @@ Copy-Item $bootstrapSource $installedBootstrap -Force
 if ($Portable) {
     $application = Get-ChildItem $here -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe" | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
     if (-not $application) { throw "Portable Obserra executable was not found on this media." }
+    New-Item -ItemType Directory -Force -Path $portableInstallDirectory | Out-Null
+    $installedPortable = Join-Path $portableInstallDirectory $application.Name
+    Copy-Item $application.FullName $installedPortable -Force
+    $sourceHash = (Get-FileHash -Algorithm SHA256 -Path $application.FullName).Hash
+    $installedHash = (Get-FileHash -Algorithm SHA256 -Path $installedPortable).Hash
+    if ($sourceHash -ne $installedHash) { throw "Portable executable copy failed integrity verification." }
     $env:OBSERRA_COMMAND_CENTER_BOOTSTRAP = $installedBootstrap
-    Start-Process -FilePath $application.FullName
+    Start-Process -FilePath $installedPortable
 } else {
     $application = Get-ChildItem $here -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" } | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
     if (-not $application) { throw "One-click Obserra installer was not found on this media." }
