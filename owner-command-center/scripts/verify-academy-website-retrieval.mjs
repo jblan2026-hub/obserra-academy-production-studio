@@ -24,7 +24,10 @@ try {
       store: makeStore({ "connectors.website.url": "http://example.com" }),
       safeStorage,
     });
-    await assert.rejects(() => retrieval.retrieveCourse("cybersecurity-foundations"), /requires HTTPS/i);
+    await assert.rejects(
+      () => retrieval.retrieveCourse("cybersecurity-foundations"),
+      /requires HTTPS|Unencrypted connector URLs are allowed only on loopback/i,
+    );
   }
 
   {
@@ -40,6 +43,7 @@ try {
           id: "cybersecurity-foundations",
           title: "Cybersecurity Foundations for New Professionals",
           price: 99,
+          publication: { version: "1.0.0" },
           modules: [],
         },
       }), {
@@ -53,6 +57,7 @@ try {
     assert.equal(result.state, "verified-success");
     assert.equal(result.courseId, "cybersecurity-foundations");
     assert.equal(result.course.id, "cybersecurity-foundations");
+    assert.equal(result.course.publication.version, "1.0.0");
   }
 
   {
@@ -68,10 +73,11 @@ try {
         learnerName: "Test Learner",
         courseId: "cybersecurity-foundations",
         courseTitle: "Cybersecurity Foundations for New Professionals",
+        courseVersion: "1.0.0",
         completedAt: "2026-08-08T00:00:00.000Z",
         trainingHours: "2.5 hours",
-        signerName: "Obserra Academy",
-        issuer: "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+        signerName: "Dr. Jody Blanchard",
+        issuer: "Obserra Executive Protection & Intelligence, LLC",
         signatureAlgorithm: "Ed25519",
         publicKeyFingerprint: "sha256:test-fingerprint",
         assessmentScore: 100,
@@ -86,6 +92,7 @@ try {
     assert.equal(result.state, "verified-success");
     assert.notEqual(result.certificate.certificateReference, certificateId);
     assert.equal(result.certificate.learnerName, "Test Learner");
+    assert.equal(result.certificate.courseVersion, "1.0.0");
     assert.equal("assessmentScore" in result.certificate, false);
     assert.equal(JSON.stringify(result).includes(certificateId), false);
   }
@@ -96,7 +103,7 @@ try {
     await assert.rejects(() => retrieval.retrieveCourse("cybersecurity-foundations"), /non-JSON response/i);
   }
 
-  console.log("Academy website retrieval controls passed: HTTPS-only origin binding, published course contract validation, certificate minimization/masking, redirect denial, and malformed response rejection are enforced.");
+  console.log("Academy website retrieval controls passed: HTTPS-only origin binding, published course/version contract validation, certificate title/version minimization and masking, redirect denial, and malformed response rejection are enforced.");
 } finally {
   globalThis.fetch = originalFetch;
 }
