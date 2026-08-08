@@ -6,19 +6,23 @@ on:
     branches:
       - main
       - agent/owner-ai-command-center-production
+      - agent/academy-36-worker-course-surge
     paths:
       - "owner-command-center/**"
       - "studio/**"
       - "courses/**"
+      - "policy/**"
       - "package.json"
       - ".github/workflows/owner-command-center-windows.yml"
   pull_request:
     branches:
       - main
+      - agent/continue-course-buildout
     paths:
       - "owner-command-center/**"
       - "studio/**"
       - "courses/**"
+      - "policy/**"
       - "package.json"
       - ".github/workflows/owner-command-center-windows.yml"
 
@@ -33,7 +37,12 @@ jobs:
   production-gate:
     name: Validate, package, and verify Windows release
     runs-on: windows-2025
-    timeout-minutes: 105
+    timeout-minutes: 120
+    env:
+      OBSERRA_PORTFOLIO_WORKER_COUNT: 36
+      OBSERRA_APPLICATION_WORKER_COUNT: 0
+      COMMAND_CENTER_WORKER_ALLOCATION: 8
+      IDLE_WORKER_ALLOCATION: 0
     defaults:
       run:
         working-directory: owner-command-center
@@ -53,25 +62,32 @@ jobs:
       - name: Install Command Center dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
 
+      - name: Verify governed worker and commercial production contracts
+        working-directory: .
+        run: npm run verify:worker-contract
+
       - name: Validate source syntax and policy JSON
         shell: pwsh
         run: |
-          node --check electron/main.cjs
-          node --check electron/preload.cjs
-          node --check electron/connectors.cjs
-          node --check electron/academy-studio.cjs
-          node --check electron/academy-preview.cjs
-          node --check electron/owner-ai.cjs
-          node --check electron/discovery.cjs
-          node --check electron/vulnerability-scan.cjs
-          node --check electron/threat-policy.cjs
-          node --check electron/security-enforcement.cjs
-          node --check electron/trend-store.cjs
-          node --check electron/ai-remediation.cjs
-          node --check electron/remediation-queue.cjs
-          node --check src/app.js
-          node --check src/security-dashboard.js
-          node --check src/remediation-dashboard.js
+          $files = @(
+            "electron/main.cjs",
+            "electron/preload.cjs",
+            "electron/connectors.cjs",
+            "electron/academy-studio.cjs",
+            "electron/academy-preview.cjs",
+            "electron/owner-ai.cjs",
+            "electron/discovery.cjs",
+            "electron/vulnerability-scan.cjs",
+            "electron/threat-policy.cjs",
+            "electron/security-enforcement.cjs",
+            "electron/trend-store.cjs",
+            "electron/ai-remediation.cjs",
+            "electron/remediation-queue.cjs",
+            "src/app.js",
+            "src/security-dashboard.js",
+            "src/remediation-dashboard.js"
+          )
+          foreach ($file in $files) { node --check $file }
           node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('policy/connector-catalog.json','utf8')); console.log('JSON policy validation passed')"
 
       - name: Run Command Center security and Academy Operations gates
@@ -84,6 +100,10 @@ jobs:
       - name: Execute Studio and Command Center 1000x remediation gate
         working-directory: .
         run: npm run test:1000x-remediation
+
+      - name: Execute Studio and Command Center 2000x resilience gate
+        working-directory: .
+        run: npm run test:2000x-resilience
 
       - name: Build installer, portable executable, and removable-media bundle
         shell: pwsh
@@ -107,10 +127,10 @@ jobs:
           $media = Join-Path $PWD "release-media"
           if (-not (Test-Path $media)) { throw "release-media directory missing" }
 
-          $installer = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" }
-          $portable = Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe"
-          if (-not $installer) { throw "One-click installer missing" }
-          if (-not $portable) { throw "Portable executable missing" }
+          $installer = @(Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-*.exe" | Where-Object { $_.Name -notlike "*Portable*" })
+          $portable = @(Get-ChildItem $media -Filter "Obserra-Owner-AI-Command-Center-Portable-*.exe")
+          if ($installer.Count -lt 1) { throw "One-click installer missing" }
+          if ($portable.Count -lt 1) { throw "Portable executable missing" }
 
           $requiredFiles = @(
             "SHA256SUMS.txt",
@@ -148,8 +168,8 @@ jobs:
           }
 
           Write-Host "Windows release gate passed."
-          Write-Host "Installer: $($installer.Name)"
-          Write-Host "Portable: $($portable.Name)"
+          Write-Host "Installer: $($installer[0].Name)"
+          Write-Host "Portable: $($portable[0].Name)"
           Write-Host "Bootstrap target: $($bootstrap.targetHostname)"
 
       - name: Upload verified removable-media installer bundle
