@@ -78,6 +78,11 @@ try {
     "studio/academy-course-portfolio.mjs",
     "studio/academy-worker-contract.mjs",
     "studio/academy-hollywood-checkpoints.mjs",
+    "studio/academy-media-checkpoints.mjs",
+    "studio/bootstrap-academy-hollywood-checkpoints.mjs",
+    "studio/bootstrap-academy-media-checkpoints.mjs",
+    "studio/restore-academy-hollywood-checkpoints.mjs",
+    "studio/restore-academy-media-checkpoints.mjs",
     "studio/prepare-hollywood-source-context.mjs",
     "studio/audit-hollywood-course-readiness.mjs",
     "studio/author-course-hollywood.mjs",
@@ -86,11 +91,12 @@ try {
     "studio/materialize-hollywood-course-assets.mjs",
     "studio/validate-academy-hollywood-surge.mjs",
     "studio/submit-hollywood-media-jobs.mjs",
+    "studio/checkpoint-academy-media-jobs.mjs",
+    "studio/reconcile-hollywood-media-results.mjs",
+    "studio/verify-hollywood-final-media.mjs",
     "studio/load-academy-hollywood-surge-to-lcms.mjs",
     "studio/stage-courses-for-release-approval.mjs",
     "studio/preflight-academy-hollywood-provider.mjs",
-    "studio/bootstrap-academy-hollywood-checkpoints.mjs",
-    "studio/restore-academy-hollywood-checkpoints.mjs",
     ".github/workflows/academy-36-worker-hollywood-production.yml",
     "owner-command-center/electron/academy-studio.cjs",
     "owner-command-center/src/academy-batch.js",
@@ -148,6 +154,50 @@ try {
     "complianceStagingReadyCourses",
   ]) record(`surge validation requirement ${phrase}`, validation.includes(phrase));
 
+  const mediaSubmission = read("studio/submit-hollywood-media-jobs.mjs");
+  for (const phrase of [
+    "ACADEMY_CINEMATIC_TEMPLATE_APPROVED",
+    "Media submission requires exactly 60 compliance-staged courses",
+    "ACADEMY_MEDIA_MAX_SCRIPT_CHARS",
+    "preserved-submitted",
+    "academy-media-job.json",
+    "publicationAuthorized: false",
+  ]) record(`media submission requirement ${phrase}`, mediaSubmission.includes(phrase));
+
+  const mediaCheckpoints = read("studio/academy-media-checkpoints.mjs");
+  for (const phrase of [
+    "AcademyHollywoodMediaJobCheckpoint",
+    "persistMediaJobCheckpoint",
+    "restoreMediaJobCheckpoints",
+    "publicationAuthorized !== false",
+    "scriptHash",
+  ]) record(`media checkpoint requirement ${phrase}`, mediaCheckpoints.includes(phrase));
+
+  const mediaReconciliation = read("studio/reconcile-hollywood-media-results.mjs");
+  for (const phrase of [
+    "api.synthesia.io/v2/videos",
+    "api.heygen.com/v1/video_status.get",
+    "academy-course-media",
+    "public: false",
+    "supabase://",
+    "ffmpeg",
+    "captions.vtt",
+    "audio-description.md",
+    "media-rights-ledger",
+    "publicationAuthorized: false",
+  ]) record(`media reconciliation requirement ${phrase}`, mediaReconciliation.includes(phrase));
+
+  const finalMedia = read("studio/verify-hollywood-final-media.mjs");
+  for (const phrase of [
+    "expectedCourses: portfolio.expectedCourses",
+    "audio-verification-failed",
+    "invalid-vtt-header",
+    "module-not-assembled-and-archived",
+    "module-media-not-registered-in-lcms",
+    "private-storage-receipts-incomplete",
+    "publicationAuthorized: false",
+  ]) record(`final media verification requirement ${phrase}`, finalMedia.includes(phrase));
+
   const loader = read("studio/load-academy-hollywood-surge-to-lcms.mjs");
   for (const phrase of [
     "Exactly 60 courses must pass",
@@ -188,10 +238,15 @@ try {
     "ACADEMY_AUTHORING_CONCURRENCY: 36",
     "ACADEMY_EXPECTED_SURGE_COURSES: 60",
     "ACADEMY_EXPECTED_REVIEW_COURSES: 61",
+    "ACADEMY_CINEMATIC_TEMPLATE_APPROVED",
+    "SUPABASE_SECRET_KEY",
     "Prepare exact authoritative source context",
+    "Restore protected cinematic media job checkpoints",
     "Materialize protected learner materials, exams, media plans, and certificates",
     "Validate exact 60-course compliance staging contract",
     "Stage exactly 60 protected courses in the LCMS",
+    "Reconcile, assemble, archive, and register final cinematic media",
+    "Verify every final module video and accessibility package",
     "Update owner notification issue",
   ]) record(`production workflow requirement ${phrase}`, workflow.includes(phrase));
 
@@ -202,6 +257,11 @@ try {
   record("parallel authoring uses 36-worker coordinator", scripts["author:parallel:hollywood"] === "node studio/author-courses-hollywood-parallel.mjs", scripts["author:parallel:hollywood"]);
   record("materialization command", scripts["materialize:hollywood"] === "node studio/materialize-hollywood-course-assets.mjs", scripts["materialize:hollywood"]);
   record("exact surge validation command", scripts["validate:hollywood:surge"] === "node studio/validate-academy-hollywood-surge.mjs", scripts["validate:hollywood:surge"]);
+  record("media checkpoint bootstrap command", scripts["db:bootstrap:hollywood-media-checkpoints"] === "node studio/bootstrap-academy-media-checkpoints.mjs", scripts["db:bootstrap:hollywood-media-checkpoints"]);
+  record("media checkpoint restore command", scripts["restore:hollywood-media-checkpoints"] === "node studio/restore-academy-media-checkpoints.mjs", scripts["restore:hollywood-media-checkpoints"]);
+  record("media checkpoint persistence command", scripts["checkpoint:hollywood-media"] === "node studio/checkpoint-academy-media-jobs.mjs", scripts["checkpoint:hollywood-media"]);
+  record("media reconciliation command", scripts["reconcile:hollywood-media"] === "node studio/reconcile-hollywood-media-results.mjs", scripts["reconcile:hollywood-media"]);
+  record("final media verification command", scripts["verify:hollywood-final-media"] === "node studio/verify-hollywood-final-media.mjs", scripts["verify:hollywood-final-media"]);
   record("protected LCMS dry-run command", scripts["load:hollywood:check"] === "node studio/load-academy-hollywood-surge-to-lcms.mjs --dry-run", scripts["load:hollywood:check"]);
   record("protected LCMS load command", scripts["load:hollywood"] === "node studio/load-academy-hollywood-surge-to-lcms.mjs", scripts["load:hollywood"]);
   record("61-course release approval status command", scripts["stage:release-approval"] === "node studio/stage-courses-for-release-approval.mjs", scripts["stage:release-approval"]);
@@ -210,15 +270,18 @@ try {
     "author:parallel:hollywood",
     "materialize:hollywood",
     "validate:hollywood:surge",
-    "media:submit:hollywood",
     "load:hollywood",
+    "media:submit:hollywood",
+    "checkpoint:hollywood-media",
+    "reconcile:hollywood-media",
+    "verify:hollywood-final-media",
     "stage:release-approval",
   ].every((name) => String(scripts["build:all:hollywood"] ?? "").includes(name)), scripts["build:all:hollywood"]);
   record("public verification binds worker contract", String(scripts["verify:public"] ?? "").includes("verify:academy-worker-contract"), scripts["verify:public"]);
   record("CI binds worker contract", String(scripts.ci ?? "").includes("verify:academy-worker-contract"), scripts.ci);
 
   const report = {
-    schemaVersion: "2.0",
+    schemaVersion: "2.1",
     verifiedAt: new Date().toISOString(),
     gate: "academy-36-worker-interchangeable-course-production",
     surgePortfolioDefinition: "exactly 60 standard Academy courses",
@@ -239,7 +302,7 @@ try {
     checkCount: checks.length,
     passedCount: checks.filter((check) => check.passed).length,
     checks,
-    claimBoundary: "This verification proves source-level worker allocation, exact 60-course surge selection, authoritative-source binding, concrete protected asset materialization, LCMS compliance staging, the separate 61-course owner-release gate, and Command Center visibility. It does not prove provider execution, course generation, media mastering, owner approval, publication, or endpoint installation.",
+    claimBoundary: "This verification proves source-level worker allocation, exact 60-course surge selection, authoritative-source binding, concrete protected asset materialization, resumable provider media jobs, private-storage reconciliation, final media verification, LCMS compliance staging, the separate 61-course owner-release gate, and Command Center visibility. It does not prove provider execution, course generation, media mastering, owner approval, publication, or endpoint installation.",
   };
   fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
   fs.writeFileSync(path.join(root, "catalog", "academy-worker-contract-verification.json"), `${JSON.stringify(report, null, 2)}\n`);
