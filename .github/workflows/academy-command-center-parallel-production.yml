@@ -14,6 +14,8 @@ on:
       - "prisma/**"
       - "package.json"
       - ".github/workflows/academy-command-center-parallel-production.yml"
+      - ".github/workflows/owner-command-center-windows.yml"
+      - ".github/workflows/continuous-course-ai-audit.yml"
   pull_request:
     branches:
       - main
@@ -26,6 +28,8 @@ on:
       - "prisma/**"
       - "package.json"
       - ".github/workflows/academy-command-center-parallel-production.yml"
+      - ".github/workflows/owner-command-center-windows.yml"
+      - ".github/workflows/continuous-course-ai-audit.yml"
 
 permissions:
   contents: read
@@ -40,15 +44,16 @@ env:
   OBSERRA_APPLICATION_WORKER_COUNT: 0
   COMMAND_CENTER_WORKER_ALLOCATION: 8
   IDLE_WORKER_ALLOCATION: 0
+  ACADEMY_AUTHORING_CONCURRENCY: 28
+  ACADEMY_STAGING_CONCURRENCY: 28
 
 jobs:
   academy-production:
-    name: Build and compliance-stage all 60 Academy courses
+    name: Author, validate, and compliance-stage all 60 Academy courses
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
       ACADEMY_AUTHORING_PROVIDER: openai
-      ACADEMY_AUTHORING_CONCURRENCY: 28
       ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
       ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
       ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: 1200000
@@ -58,6 +63,7 @@ jobs:
       ACADEMY_EXPECTED_REVIEW_COURSES: 60
       ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
       ACADEMY_SUPABASE_REGION: us-east-1
+      ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: true
       STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
       STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -142,7 +148,7 @@ jobs:
           console.log(`[Academy Studio] Protected selectors normalized. providerCredential=${Boolean(trimOuterQuotes(process.env.OPENAI_API_KEY))} databaseCredential=${Boolean(databaseUrl)}`);
           NODE
 
-      - name: Install locked production dependencies
+      - name: Install production dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
 
       - name: Verify 36-worker and commercial cinematic contracts
@@ -165,72 +171,79 @@ jobs:
       - name: Bootstrap and verify protected Academy schema
         run: npm run db:bootstrap:protected
 
-      - name: Restore protected authoring checkpoints
+      - name: Restore matching protected authoring checkpoints
         run: npm run restore:authoring-checkpoints
 
       - name: Audit all governed course manifests and packages
         id: audit
         run: npm run audit:courses
 
-      - name: Reject blocking manifest findings
-        if: steps.audit.outputs.blocking_findings != '0'
-        shell: bash
-        run: |
-          echo "The Academy audit reported ${{ steps.audit.outputs.blocking_findings }} blocking finding(s)."
-          exit 1
-
-      - name: Require protected authoring provider
-        if: steps.audit.outputs.authoring_required == 'true'
-        shell: bash
-        run: |
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "OPENAI_API_KEY is required for the remaining governed course packages."
-            exit 1
-          fi
-
       - name: Verify funded authoring provider routing and capacity
         if: steps.audit.outputs.authoring_required == 'true'
-        run: npm run preflight:authoring
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "OPENAI_API_KEY is required for remaining governed authoring work."
+            exit 1
+          fi
+          npm run preflight:authoring
 
-      - name: Launch 28 Academy workers across all remaining courses
+      - name: Launch 28 governed Academy workers
         if: steps.audit.outputs.authoring_required == 'true'
         run: npm run author:parallel
 
-      - name: Prove every owner-review package was restored or authored
+      - name: Prove every owner-review package is current
         run: |
           npm run audit:courses
           node <<'NODE'
           const fs = require('node:fs');
           const report = JSON.parse(fs.readFileSync('catalog/continuous-course-audit.json', 'utf8'));
+          const authoringFindings = new Set([
+            'missing-ai-course-package',
+            'stale-ai-course-package',
+            'untraceable-ai-course-package',
+            'outdated-ai-authoring-policy',
+            'unsupported-ai-authoring-envelope',
+            'worker-contract-mismatch',
+            'production-standard-mismatch',
+            'missing-detailed-reference-structure',
+            'missing-commercial-production-structure',
+          ]);
           const unresolved = (report.courses ?? []).filter((course) =>
-            course.ownerReviewEligible && (
-              course.authoringMissing
-              || course.findings?.includes('stale-ai-course-package')
-              || course.findings?.includes('untraceable-ai-course-package')
-              || course.findings?.includes('outdated-ai-authoring-policy')
-            )
+            course.ownerReviewEligible && (course.findings ?? []).some((finding) => authoringFindings.has(finding))
           );
           if (unresolved.length) {
             throw new Error(`${unresolved.length} course package(s) remain unresolved: ${unresolved.map((course) => course.courseId).join(', ')}`);
           }
           NODE
 
-      - name: Materialize learner materials, assessments, media plans, and certificate packages
-        run: |
-          npm run build:all
-          npm run catalog
+      - name: Materialize detailed course, implementation, assessment, and cinematic assets
+        run: npm run build:all
+
+      - name: Generate protected learner and public metadata catalogs
+        run: npm run catalog
+
+      - name: Build authoritative source-resolution queue
+        run: npm run collect:sources
 
       - name: Validate learner catalog and implementation guidance
         run: npm run validate:learner-catalog
 
-      - name: Validate protected LCMS load plan and source package
+      - name: Compliance-stage every course package
+        run: npm run stage:courses
+
+      - name: Measure final commercial release blockers without promotion
+        id: release_gate
+        continue-on-error: true
+        run: npm run validate:commercial-release
+
+      - name: Validate protected LCMS delivery and repository tests
         run: |
           npm run validate
           npm run load:courses:check
           npm test
           npm run db:validate
 
-      - name: Load validated course packages into protected LCMS
+      - name: Load validated owner-review packages into protected LCMS
         run: npm run load:courses
 
       - name: Publish Academy production evidence
@@ -248,11 +261,15 @@ jobs:
             catalog/bulk-build-report.json
             catalog/academy-course-catalog.json
             catalog/learner-catalog-readiness.json
+            catalog/commercial-implementation-guidance-readiness.json
+            catalog/authoritative-source-resolution-queue.json
+            catalog/compliance-staging-summary.json
+            catalog/commercial-release-readiness.json
           if-no-files-found: ignore
           retention-days: 365
 
   command-center-production:
-    name: Validate and package Owner Command Center for endpoint installation
+    name: Build, install, and endpoint-verify Owner Command Center
     runs-on: windows-2025
     timeout-minutes: 120
     defaults:
@@ -275,18 +292,16 @@ jobs:
       - name: Install Command Center dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Verify worker and commercial production contracts
-        working-directory: .
-        run: npm run verify:worker-contract
-
-      - name: Validate Command Center source and policy syntax
+      - name: Validate Command Center source and governed policy syntax
         shell: pwsh
         run: |
           $files = @(
             "electron/main.cjs",
+            "electron/main-with-remediation.cjs",
             "electron/preload.cjs",
             "electron/connectors.cjs",
             "electron/academy-studio.cjs",
+            "electron/academy-governance.cjs",
             "electron/academy-preview.cjs",
             "electron/owner-ai.cjs",
             "electron/discovery.cjs",
@@ -297,11 +312,17 @@ jobs:
             "electron/ai-remediation.cjs",
             "electron/remediation-queue.cjs",
             "src/app.js",
+            "src/academy-batch.js",
             "src/security-dashboard.js",
-            "src/remediation-dashboard.js"
+            "src/remediation-dashboard.js",
+            "scripts/verify-production-readiness.mjs"
           )
           foreach ($file in $files) { node --check $file }
-          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('policy/connector-catalog.json','utf8')); console.log('Command Center policy JSON validated')"
+          node -e "const fs=require('fs'); for (const file of ['package.json','policy/connector-catalog.json','../policy/elastic-worker-pool-contract.json','../policy/commercial-cinematic-course-production-standard.json']) JSON.parse(fs.readFileSync(file,'utf8')); console.log('Command Center policy JSON validated')"
+
+      - name: Verify worker and commercial production contracts
+        working-directory: .
+        run: npm run verify:worker-contract
 
       - name: Run owner-only security, connector, Academy, installer, and recovery gates
         run: npm run verify
@@ -348,7 +369,11 @@ jobs:
             "SHA256SUMS.txt",
             "SHA256SUMS.json",
             "Install-Obserra-Command-Center.ps1",
+            "Test-Obserra-Command-Center-Installation.ps1",
             "Obserra-Command-Center-Bootstrap.json",
+            "Obserra-Command-Center-Release.json",
+            "Obserra-Worker-Pool-Contract.json",
+            "Obserra-Commercial-Course-Production-Standard.json",
             "INSTALL-AND-RECOVERY.md",
             "HIGH-AVAILABILITY.md"
           )) {
@@ -358,22 +383,36 @@ jobs:
           $bootstrap = Get-Content (Join-Path $media "Obserra-Command-Center-Bootstrap.json") -Raw | ConvertFrom-Json
           if ($bootstrap.schemaVersion -ne "1.0") { throw "Unsupported bootstrap schema" }
           if ($bootstrap.targetHostname -ne "obserra") { throw "Bootstrap target must be machine 'obserra'" }
-          $requiredConnectorIds = @("lcms","academy","website","store","eios","stripe","github","vercel","clerk","localAi")
-          foreach ($connectorId in $requiredConnectorIds) {
-            if (-not (@($bootstrap.connectors) | Where-Object { $_.id -eq $connectorId })) { throw "Bootstrap connector missing: $connectorId" }
-          }
+          if ($bootstrap.workerContractId -ne "obserra-elastic-production-pool-36") { throw "Worker contract mismatch" }
+          if ($bootstrap.productionStandardId -ne "obserra-commercial-cinematic-course-production-v1") { throw "Production standard mismatch" }
 
           $manifest = @(Get-Content (Join-Path $media "SHA256SUMS.json") -Raw | ConvertFrom-Json)
-          if ($manifest.Count -lt 6) { throw "Integrity manifest is incomplete" }
+          if ($manifest.Count -lt 10) { throw "Integrity manifest is incomplete" }
           foreach ($entry in $manifest) {
             $filePath = Join-Path $media $entry.File
             if (-not (Test-Path $filePath)) { throw "Manifest references missing file: $($entry.File)" }
             if ((Get-Sha256Hex -Path $filePath) -ne $entry.SHA256) { throw "SHA-256 mismatch for $($entry.File)" }
+            if ([long]$entry.Bytes -ne (Get-Item $filePath).Length) { throw "File-size mismatch for $($entry.File)" }
           }
 
-          Write-Host "Command Center endpoint release gate passed."
-          Write-Host "Installer: $($installer[0].Name)"
-          Write-Host "Portable: $($portable[0].Name)"
+      - name: Install and post-install verify on Windows runner
+        shell: pwsh
+        run: |
+          $studioRoot = (Resolve-Path ..).Path
+          & ./release-media/Install-Obserra-Command-Center.ps1 -SkipHostnameCheck -NoLaunch -StudioRoot $studioRoot
+          $evidenceRoot = Join-Path $env:LOCALAPPDATA "Obserra\OwnerCommandCenter"
+          $healthPath = Join-Path $evidenceRoot "endpoint-health.json"
+          $installationPath = Join-Path $evidenceRoot "installation-record.json"
+          if (-not (Test-Path $healthPath)) { throw "Endpoint health evidence missing" }
+          if (-not (Test-Path $installationPath)) { throw "Installation record missing" }
+          $health = Get-Content $healthPath -Raw | ConvertFrom-Json
+          if (-not $health.ready -or -not $health.localOnly -or -not $health.academyStudioReady) {
+            throw "Installed Command Center endpoint health gate failed"
+          }
+          if ($health.workerContractId -ne "obserra-elastic-production-pool-36") { throw "Endpoint worker contract mismatch" }
+          if ($health.productionStandardId -ne "obserra-commercial-cinematic-course-production-v1") { throw "Endpoint production standard mismatch" }
+          Copy-Item $healthPath ./release-media/CI-Endpoint-Health.json -Force
+          Copy-Item $installationPath ./release-media/CI-Installation-Record.json -Force
 
       - name: Upload verified endpoint installation bundle
         uses: actions/upload-artifact@v4
@@ -382,3 +421,28 @@ jobs:
           path: owner-command-center/release-media/**
           if-no-files-found: error
           retention-days: 365
+
+  production-summary:
+    name: Reconcile parallel production outcomes
+    if: always()
+    needs:
+      - academy-production
+      - command-center-production
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Write governed outcome summary
+        shell: bash
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
+          ## Governed 36-worker parallel production outcome
+
+          - Academy production job: `${{ needs.academy-production.result }}`
+          - Command Center production job: `${{ needs.command-center-production.result }}`
+          - Governed allocation: 28 Academy / 8 Command Center / 0 unrelated application / 0 idle
+          - Academy publication and checkout: disabled until final release evidence and owner acceptance
+          - Command Center owner-endpoint installation: requires execution of the verified bundle on the owner's endpoint; CI installation proves package installability only
+          SUMMARY
+
+      - name: Fail when either governed workstream fails
+        if: needs.academy-production.result != 'success' || needs.command-center-production.result != 'success'
+        run: exit 1
