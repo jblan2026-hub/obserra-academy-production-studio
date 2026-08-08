@@ -13,21 +13,73 @@ for (const target of ["nsis", "portable"]) {
 }
 if (packageJson?.build?.nsis?.oneClick !== true) throw new Error("NSIS installer must remain one-click");
 if (packageJson?.build?.nsis?.perMachine !== false) throw new Error("Installer must be per-user to avoid unnecessary elevation");
+if (packageJson?.build?.nsis?.allowElevation !== false) throw new Error("Installer must not allow elevation by default");
 if (packageJson?.build?.win?.requestedExecutionLevel !== "asInvoker") throw new Error("Installer must not request administrator rights by default");
 if (!String(packageJson?.build?.portable?.artifactName ?? "").includes("Portable")) throw new Error("Portable artifact must be clearly labeled");
+if (packageJson?.build?.asar !== true) throw new Error("Packaged application files must remain inside ASAR where supported");
 
 const mediaScriptPath = path.join(root, "scripts", "build-removable-media-package.ps1");
 const mediaScript = fs.readFileSync(mediaScriptPath, "utf8");
-const requiredConnectorIds = ["lcms", "academy", "website", "store", "eios", "stripe", "github", "vercel", "clerk", "localAi"];
+const requiredConnectorIds = [
+  "lcms",
+  "academy",
+  "website",
+  "store",
+  "eios",
+  "stripe",
+  "github",
+  "vercel",
+  "clerk",
+  "localAi",
+];
 
-if (!/schemaVersion\s*=\s*"1\.0"/.test(mediaScript)) throw new Error("Removable-media bootstrap must use schema version 1.0");
-if (!/TargetHostname\s*=\s*"obserra"/.test(mediaScript)) throw new Error("Default removable-media target must remain machine 'obserra'");
+if (!/schemaVersion\s*=\s*"1\.0"/.test(mediaScript)) {
+  throw new Error("Removable-media bootstrap and release records must use governed schema version 1.0");
+}
+if (!/TargetHostname\s*=\s*"obserra"/.test(mediaScript)) {
+  throw new Error("Default removable-media target must remain machine 'obserra'");
+}
 for (const connectorId of requiredConnectorIds) {
   const pattern = new RegExp(`id\\s*=\\s*"${connectorId}"`);
   if (!pattern.test(mediaScript)) throw new Error(`Removable-media bootstrap is missing connector: ${connectorId}`);
 }
-for (const requiredTerm of ["SHA256SUMS.json", "Get-FileHash", "OBSERRA_COMMAND_CENTER_BOOTSTRAP", "Portable"]) {
-  if (!mediaScript.includes(requiredTerm)) throw new Error(`Removable-media packaging is missing required behavior: ${requiredTerm}`);
+for (const requiredTerm of [
+  "SHA256SUMS.json",
+  "Get-FileHash",
+  "Get-AuthenticodeSignature",
+  "OBSERRA_COMMAND_CENTER_BOOTSTRAP",
+  "OBSERRA_ACADEMY_STUDIO_ROOT",
+  "Test-Obserra-Command-Center-Installation.ps1",
+  "Obserra-Command-Center-Release.json",
+  "Obserra-Worker-Pool-Contract.json",
+  "Obserra-Commercial-Course-Production-Standard.json",
+  "endpoint-health.json",
+  "installation-record.json",
+  "StudioRoot",
+  "RequireAuthenticode",
+  "SetEnvironmentVariable",
+  "Portable",
+]) {
+  if (!mediaScript.includes(requiredTerm)) {
+    throw new Error(`Removable-media packaging is missing required behavior: ${requiredTerm}`);
+  }
+}
+for (const requiredAllocation of [
+  "academyWorkers = 28",
+  "commandCenterWorkers = 8",
+  "unrelatedApplicationWorkers = 0",
+]) {
+  if (!mediaScript.includes(requiredAllocation)) {
+    throw new Error(`Release descriptor is missing governed allocation: ${requiredAllocation}`);
+  }
+}
+if (!mediaScript.includes("productionDistributionRequiresTrustedCodeSigning = $true")) {
+  throw new Error("Release descriptor must state that trusted code signing is required for production distribution");
+}
+if (!mediaScript.includes("ownerEndpointInstallationMayProceedAfterHashVerification = $true")) {
+  throw new Error("Owner endpoint hash-verified installation policy is missing");
 }
 
-console.log(`[Owner Command Center] Installer configuration verified: one-click NSIS, portable target, schema 1.0 bootstrap, and ${requiredConnectorIds.length} governed connectors.`);
+console.log(
+  `[Owner Command Center] Installer configuration verified: one-click per-user NSIS, portable target, persistent bootstrap and Studio root, post-install health evidence, hash verification, explicit code-signing state, and ${requiredConnectorIds.length} governed connectors.`,
+);
