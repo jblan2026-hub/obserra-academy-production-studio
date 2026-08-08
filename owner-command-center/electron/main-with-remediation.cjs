@@ -6,6 +6,7 @@ const { createRemediationQueue } = require("./remediation-queue.cjs");
 const { getAcademyProductionEvidence } = require("./academy-production-evidence.cjs");
 const { createAcademyReleaseApproval } = require("./academy-release-approval.cjs");
 const { createAcademyGithubEvidence } = require("./academy-github-evidence.cjs");
+const { createAcademyCourseControl } = require("./academy-course-control.cjs");
 const { resolveStudioRoot } = require("./academy-studio.cjs");
 const { createEndpointEnrollmentRuntime } = require("./endpoint-enrollment.cjs");
 
@@ -79,6 +80,11 @@ const academyReleaseApproval = createAcademyReleaseApproval({
   safeStorage,
   endpointRuntime,
   studioRootProvider: resolveAcademyEvidenceRoot,
+});
+const academyCourseControl = createAcademyCourseControl({
+  store,
+  safeStorage,
+  studioRootProvider: resolveStudioRoot,
 });
 
 function requireObject(value, name) {
@@ -255,6 +261,15 @@ if (!primaryInstance) {
       }
       return submitDecisionToGithub(approval.decision);
     });
+
+    ipcMain.handle("academy:getControlSnapshot", async () => academyCourseControl.snapshot());
+    ipcMain.handle("academy:updateReview", async (_event, payload) => academyCourseControl.updateReview(payload));
+    ipcMain.handle("academy:transitionCourse", async (_event, payload) => academyCourseControl.transitionCourse(payload));
+    ipcMain.handle("academy:listPurchases", async (_event, payload) => academyCourseControl.listPurchases(payload));
+    ipcMain.handle("academy:verifyPurchase", async (_event, payload) => academyCourseControl.verifyPurchase(payload));
+    ipcMain.handle("academy:getCommerceHealth", async () => academyCourseControl.commerceHealth({ force: true }));
+    ipcMain.handle("academy:getPublicationJobs", async () => academyCourseControl.publicationJobs());
+    ipcMain.handle("academy:getControlLedger", async (_event, limit) => academyCourseControl.ledger(limit));
 
     try {
       const profilePath = await waitForBootstrapProfile();
