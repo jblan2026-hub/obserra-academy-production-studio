@@ -8,8 +8,10 @@ import {
   ACADEMY_WORKSTREAM,
   WORKER_TOTAL,
   assertTaskAssignment,
+  commercialProductionStandard,
+  commercialProductionStandardHash,
   contractHash,
-  roleForTask,
+  taskContract,
   validateAllocation,
   verifyWorkerPoolContract,
   workerPoolContract,
@@ -18,9 +20,10 @@ import {
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const reportPath = path.join(root, "catalog", "continuous-course-audit.json");
 const summaryPath = path.join(root, "catalog", "parallel-authoring-summary.json");
-const failureContractVersion = "1.2";
+const failureContractVersion = "1.3";
 const taskType = "protected-authoring";
-const governedRole = roleForTask(taskType);
+const governedTask = taskContract(taskType);
+const governedRole = governedTask.role;
 
 function boundedNumber(value, fallback, minimum, maximum) {
   const parsed = Number(value);
@@ -123,7 +126,7 @@ function governedAssignment(workerId, courseId) {
     workstream: ACADEMY_WORKSTREAM,
     taskType,
     role: governedRole,
-    acknowledgedRules: workerPoolContract.universalRules,
+    acknowledgedRules: governedTask.appliedRules,
   });
   return {
     ...assignment,
@@ -166,6 +169,9 @@ function runAuthoring(courseId, attempt, assignment) {
           OBSERRA_WORKER_ROLE: assignment.role,
           OBSERRA_WORKER_TASK_TYPE: assignment.taskType,
           OBSERRA_WORKER_WORKSTREAM: assignment.workstream,
+          OBSERRA_PRODUCTION_STANDARD_ID: assignment.productionStandardId,
+          OBSERRA_PRODUCTION_STANDARD_HASH: assignment.productionStandardHash,
+          OBSERRA_PRODUCTION_QUALITY_TIER: assignment.qualityTier,
         },
         stdio: "inherit",
       },
@@ -225,7 +231,7 @@ function runAuthoring(courseId, attempt, assignment) {
 async function authorWithRetry(courseId, assignment) {
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     console.log(
-      `[Academy Studio] ${assignment.workerId} operating as ${assignment.role} for ${courseId}, attempt ${attempt}/${maxAttempts}.`,
+      `[Academy Studio] ${assignment.workerId} operating as ${assignment.role} for ${courseId}, attempt ${attempt}/${maxAttempts}, quality=${assignment.qualityTier}.`,
     );
     const result = await runAuthoring(courseId, attempt, assignment);
     if (result.ok) return { courseId, ...result };
@@ -282,10 +288,14 @@ async function worker(workerNumber, queue, results) {
       taskType: assignment.taskType,
       workstream: assignment.workstream,
       contractHash: assignment.contractHash,
+      productionStandardId: assignment.productionStandardId,
+      productionStandardHash: assignment.productionStandardHash,
+      qualityTier: assignment.qualityTier,
+      appliedRules: assignment.appliedRules,
       startedAt: new Date().toISOString(),
     });
     console.log(
-      `[Academy Studio] ${workerId} claimed ${position}/${targets.length}: ${course.courseId} under role ${assignment.role}.`,
+      `[Academy Studio] ${workerId} claimed ${position}/${targets.length}: ${course.courseId} under role ${assignment.role} and standard ${assignment.productionStandardId}.`,
     );
     const result = await authorWithRetry(course.courseId, assignment);
     results.completed.push(result);
@@ -306,13 +316,16 @@ function writeSummary(results, startedAt) {
   const failures = results.completed.filter((result) => !result.ok);
   fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
   fs.writeFileSync(summaryPath, `${JSON.stringify({
-    schemaVersion: "1.5",
+    schemaVersion: "1.6",
     failureContractVersion,
     generatedAt: new Date().toISOString(),
     provider,
     contractId: workerPoolContract.contractId,
     contractHash: contractHash(),
     contractVerification,
+    productionStandardId: commercialProductionStandard.standardId,
+    productionStandardHash: commercialProductionStandardHash(),
+    qualityTier: commercialProductionStandard.qualityTier,
     assignmentMode: workerPoolContract.assignmentMode,
     totalLogicalWorkers: WORKER_TOTAL,
     applicationWorkerAllocation,
@@ -322,7 +335,7 @@ function writeSummary(results, startedAt) {
     concurrency,
     taskType,
     role: governedRole,
-    appliedRules: workerPoolContract.universalRules,
+    appliedRules: governedTask.appliedRules,
     maxAttempts,
     processTimeoutMs,
     checkpointPersistenceRequired:
@@ -363,7 +376,7 @@ if (targets.length === 0) {
 }
 
 console.log(
-  `[Academy Studio] Starting contract governed parallel authoring for ${targets.length} course(s) with ${concurrency} active Academy workers from the elastic ${WORKER_TOTAL} worker pool. Command Center allocation=${commandCenterWorkerAllocation}; idle allocation=${idleWorkerAllocation}; application allocation=${applicationWorkerAllocation}; contract=${workerPoolContract.contractId}; contractHash=${contractHash()}.`,
+  `[Academy Studio] Starting contract governed parallel authoring for ${targets.length} course(s) with ${concurrency} active Academy workers from the elastic ${WORKER_TOTAL} worker pool. Command Center allocation=${commandCenterWorkerAllocation}; idle allocation=${idleWorkerAllocation}; application allocation=${applicationWorkerAllocation}; contract=${workerPoolContract.contractId}; productionStandard=${commercialProductionStandard.standardId}; quality=${commercialProductionStandard.qualityTier}; contractHash=${contractHash()}; standardHash=${commercialProductionStandardHash()}.`,
 );
 
 const queue = [...targets];
@@ -371,7 +384,7 @@ const heartbeat = setInterval(() => {
   const active = Math.max(0, results.started - results.completed.length);
   const elapsedMinutes = Math.max(1, Math.round((Date.now() - startedAt) / 60000));
   console.log(
-    `[Academy Studio] Contract heartbeat: ${results.completed.length}/${targets.length} complete, ${active} active, ${queue.length} queued, ${elapsedMinutes} minute(s) elapsed, halted=${results.halted}, contractHash=${contractHash()}.`,
+    `[Academy Studio] Contract heartbeat: ${results.completed.length}/${targets.length} complete, ${active} active, ${queue.length} queued, ${elapsedMinutes} minute(s) elapsed, halted=${results.halted}, contractHash=${contractHash()}, standardHash=${commercialProductionStandardHash()}.`,
   );
 }, heartbeatIntervalMs);
 heartbeat.unref?.();
