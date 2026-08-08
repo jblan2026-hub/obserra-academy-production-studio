@@ -1,6 +1,6 @@
 {
   "name": "obserra-owner-ai-command-center",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Owner-only local AI command center for the Obserra ecosystem.",
   "main": "electron/main-with-remediation.cjs",
@@ -10,7 +10,8 @@
     "dev": "electron .",
     "verify:endpoint": "node scripts/verify-endpoint-enrollment.mjs",
     "verify:academy-evidence": "node scripts/verify-academy-production-evidence.mjs",
-    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-endpoint-enrollment.mjs && node scripts/verify-academy-production-evidence.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
+    "verify:approval": "node scripts/verify-academy-release-approval.mjs",
+    "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-endpoint-enrollment.mjs && node scripts/verify-academy-production-evidence.mjs && node scripts/verify-academy-release-approval.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
     "package:windows": "electron-builder --win nsis portable",
     "package:media": "powershell -ExecutionPolicy Bypass -File scripts/build-removable-media-package.ps1"
   },
