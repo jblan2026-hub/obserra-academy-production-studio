@@ -61,8 +61,8 @@ jobs:
         working-directory: .
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Install Command Center dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install deterministic Command Center dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Validate source syntax and governed policy JSON
         shell: pwsh
@@ -87,10 +87,11 @@ jobs:
             "src/academy-batch.js",
             "src/security-dashboard.js",
             "src/remediation-dashboard.js",
+            "scripts/verify-runtime-governance.mjs",
             "scripts/verify-production-readiness.mjs"
           )
           foreach ($file in $files) { node --check $file }
-          node -e "const fs=require('fs'); for (const file of ['package.json','policy/connector-catalog.json','../policy/elastic-worker-pool-contract.json','../policy/commercial-cinematic-course-production-standard.json']) JSON.parse(fs.readFileSync(file,'utf8')); console.log('JSON policy validation passed')"
+          node -e "const fs=require('fs'); for (const file of ['package.json','package-lock.json','policy/connector-catalog.json','../policy/elastic-worker-pool-contract.json','../policy/commercial-cinematic-course-production-standard.json']) JSON.parse(fs.readFileSync(file,'utf8')); console.log('JSON policy and dependency-lock validation passed')"
 
       - name: Verify governed worker and commercial production contracts
         working-directory: .
