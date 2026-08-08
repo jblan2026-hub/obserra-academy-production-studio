@@ -1,0 +1,244 @@
+{
+  "schemaVersion": "1.0",
+  "standardId": "obserra-commercial-cinematic-course-production-v1",
+  "effectiveDate": "2026-08-08",
+  "owner": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+  "appliesTo": {
+    "portfolio": "Obserra Academy",
+    "targetOwnerReviewCourses": 60,
+    "mediaScope": "every instructional lesson and required learner-facing media asset",
+    "releaseClass": "commercial-paid-learning"
+  },
+  "claimBoundary": {
+    "internalProductionTerm": "commercial-cinematic-production",
+    "aspirationalDescription": "Hollywood-grade",
+    "publicClaimAllowedBeforeFinalAcceptance": false,
+    "rule": "Hollywood-grade is an aspirational creative direction, not a certification. Public quality claims require completed evidence, human review, and explicit owner acceptance."
+  },
+  "productionPrinciples": [
+    "original-instructional-value",
+    "cinematic-visual-storytelling",
+    "broadcast-quality-dialogue",
+    "source-grounded-factual-claims",
+    "accessible-equivalent-learning",
+    "rights-cleared-assets",
+    "assessment-integrity",
+    "secure-protected-delivery",
+    "versioned-reproducible-release",
+    "fail-closed-quality-gates"
+  ],
+  "requiredRoles": [
+    "executive-producer",
+    "instructional-director",
+    "script-editor",
+    "storyboard-producer",
+    "visual-director",
+    "motion-graphics-producer",
+    "video-editor",
+    "colorist",
+    "narration-director",
+    "audio-engineer",
+    "caption-transcript-qc",
+    "accessibility-producer",
+    "rights-clearance-producer",
+    "assessment-author",
+    "psychometric-reviewer",
+    "media-qc-validator",
+    "compliance-validator"
+  ],
+  "requiredStages": [
+    "learning-architecture",
+    "source-and-rights-planning",
+    "screenplay-and-narration-script",
+    "storyboard-and-shot-list",
+    "visual-asset-production",
+    "narration-recording",
+    "picture-edit",
+    "motion-graphics-and-compositing",
+    "color-finishing",
+    "audio-edit-mix-and-master",
+    "captions-transcript-and-accessibility",
+    "assessment-and-materials-packaging",
+    "automated-media-qc",
+    "human-creative-and-technical-qc",
+    "compliance-staging",
+    "owner-final-acceptance"
+  ],
+  "pictureMaster": {
+    "minimumWidthPixels": 3840,
+    "minimumHeightPixels": 2160,
+    "scan": "progressive",
+    "allowedFrameRates": [23.976, 24, 25, 29.97, 30],
+    "minimumBitDepth": 10,
+    "colorSpace": "Rec.709",
+    "mezzanineCodecs": ["Apple ProRes 422 HQ", "DNxHR HQX", "H.265 Main 10"],
+    "deliveryMinimum": "1920x1080 progressive derived from an approved master",
+    "requirements": [
+      "stable-frame-cadence",
+      "no-black-or-frozen-unintended-frames",
+      "no-visible-compression-failure",
+      "consistent-color-and-exposure",
+      "title-safe-legible-graphics",
+      "no-placeholder-or-test-footage",
+      "official-brand-assets-only",
+      "source-or-reenactment-labels-where-required"
+    ]
+  },
+  "audioMaster": {
+    "sampleRateHz": 48000,
+    "minimumBitDepth": 24,
+    "channelConfiguration": "stereo",
+    "integratedLoudnessTargetLufs": -16,
+    "integratedLoudnessToleranceLu": 1,
+    "maximumTruePeakDbtp": -1,
+    "requirements": [
+      "no-clipping",
+      "no-audible-dropouts",
+      "no-unapproved-background-noise",
+      "dialogue-intelligibility-verified",
+      "music-and-effects-do-not-mask-instruction",
+      "pronunciation-and-terminology-reviewed",
+      "consistent-voice-and-room-tone",
+      "professional-mix-and-master"
+    ]
+  },
+  "creativeQuality": {
+    "requirements": [
+      "approved-creative-treatment",
+      "lesson-specific-storyboard",
+      "lesson-specific-shot-list",
+      "intentional-camera-or-virtual-camera-language",
+      "visual-continuity",
+      "purposeful-pacing",
+      "original-or-rights-cleared-b-roll",
+      "professional-motion-graphics",
+      "consistent-lower-thirds-and-source-cards",
+      "human-directed-narration-performance",
+      "no-uncanny-or-unreviewed-avatar-performance",
+      "no-generic-slide-reading-as-final-production",
+      "no-provider-watermark-or-test-mode-output"
+    ]
+  },
+  "accessibility": {
+    "target": "WCAG 2.2 AA aligned learner experience",
+    "requiredArtifacts": [
+      "human-reviewed-webvtt-captions",
+      "human-reviewed-srt-captions",
+      "verbatim-time-aligned-transcript",
+      "audio-description-or-approved-equivalent",
+      "reduced-motion-alternative",
+      "text-equivalent-for-essential-visuals",
+      "keyboard-and-screen-reader-compatible-materials"
+    ],
+    "captionAccuracyMinimumPercent": 99,
+    "requirements": [
+      "speaker-identification-where-needed",
+      "meaningful-sound-identification",
+      "synchronized-caption-timing",
+      "no-information-conveyed-by-color-alone",
+      "contrast-and-legibility-reviewed"
+    ]
+  },
+  "rightsAndProvenance": {
+    "requiredArtifacts": [
+      "per-asset-rights-ledger",
+      "license-or-ownership-evidence",
+      "source-register",
+      "ai-generated-asset-provenance",
+      "talent-and-voice-authorization-where-applicable",
+      "music-and-stock-license-records",
+      "trademark-and-independence-review"
+    ],
+    "prohibited": [
+      "unlicensed-copyrighted-media",
+      "undocumented-stock-assets",
+      "unauthorized-voice-or-likeness",
+      "confidential-or-recalled-exam-content",
+      "fabricated-source-attribution"
+    ]
+  },
+  "learningPackage": {
+    "requiredArtifacts": [
+      "instructor-manuscript",
+      "learner-guide",
+      "learner-workbook",
+      "lesson-slides-or-visual-reference",
+      "practice-exercises",
+      "knowledge-checks",
+      "original-final-assessment",
+      "protected-answer-key-and-rationales",
+      "source-and-framework-crosswalk",
+      "certificate-of-course-completion-template"
+    ],
+    "assessmentRequirements": [
+      "original-items-only",
+      "module-and-objective-traceability",
+      "cognitive-level-distribution",
+      "distractor-rationales",
+      "answer-key-protected-from-learner-delivery",
+      "tutor-lockout-during-graded-assessment",
+      "psychometric-and-sme-review"
+    ],
+    "certificateRule": "Certificate of course completion only; never certification, licensure, accreditation, compliance validation, or professional authorization."
+  },
+  "finalReleasePackage": {
+    "requiredArtifacts": [
+      "approved-mezzanine-video-master",
+      "approved-streaming-delivery-file",
+      "audio-loudness-and-true-peak-report",
+      "picture-technical-qc-report",
+      "caption-and-transcript-qc-report",
+      "accessibility-equivalence-report",
+      "creative-review-record",
+      "source-and-rights-ledger",
+      "learner-materials-package",
+      "assessment-package",
+      "certificate-package",
+      "sha256-integrity-manifest",
+      "versioned-release-record",
+      "rollback-and-recovery-record"
+    ],
+    "prohibitedFinalStates": [
+      "configuration-required",
+      "submitted-only",
+      "rendering",
+      "test-mode",
+      "silent-media",
+      "placeholder-media",
+      "missing-rights",
+      "missing-captions",
+      "missing-transcript",
+      "unreviewed-ai-output",
+      "failed-qc"
+    ]
+  },
+  "approvalGates": [
+    "instructional-design",
+    "subject-matter-expert",
+    "technical-accuracy",
+    "creative-direction",
+    "picture-qc",
+    "audio-qc",
+    "brand",
+    "accessibility",
+    "copyright-and-rights",
+    "legal-and-trademark-where-applicable",
+    "assessment-integrity-and-psychometrics",
+    "privacy-and-security",
+    "commerce-and-entitlement",
+    "certificate",
+    "rollback-and-recovery",
+    "owner-final-acceptance"
+  ],
+  "releaseControls": {
+    "failClosed": true,
+    "publicationDefault": false,
+    "checkoutDefault": false,
+    "automaticPublicationAllowed": false,
+    "automaticPurchaseEnablementAllowed": false,
+    "ownerApprovalRequired": true,
+    "allEvidenceRequiredBeforeFinal": true,
+    "providerSubmissionIsNotCompletion": true,
+    "scriptOrStoryboardIsNotFinalMedia": true
+  }
+}
