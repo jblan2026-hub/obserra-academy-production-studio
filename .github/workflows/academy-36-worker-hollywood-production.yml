@@ -20,6 +20,8 @@ on:
       - "studio/validate-hollywood-course-contract.mjs"
       - "studio/stage-courses-for-release-approval.mjs"
       - "studio/verify-academy-worker-contract.mjs"
+      - "owner-command-center/electron/academy-studio.cjs"
+      - "owner-command-center/src/academy-batch.js"
       - "courses/**"
       - "releases/**"
   schedule:
@@ -35,7 +37,7 @@ concurrency:
 
 jobs:
   produce-stage-and-notify:
-    name: Build and stage 60 commercial cinematic courses
+    name: Build and stage complete Academy portfolio
     runs-on: ubuntu-latest
     timeout-minutes: 720
     env:
@@ -44,7 +46,9 @@ jobs:
       ACADEMY_COURSE_WORKER_COUNT: 36
       ACADEMY_AUTHORING_CONCURRENCY: 36
       ACADEMY_WORKER_MODE: interchangeable-course-production
-      ACADEMY_EXPECTED_REVIEW_COURSES: 60
+      ACADEMY_EXPECTED_REVIEW_COURSES: 61
+      ACADEMY_CORE_COURSE_TARGET: 60
+      ACADEMY_SUPPLEMENTAL_COURSE_TARGET: 1
       ACADEMY_MINIMUM_REVIEW_COURSES: 60
       ACADEMY_MINIMUM_LESSON_WORDS: 1200
       ACADEMY_RELEASE_APPROVAL_ISSUE: 27
@@ -81,7 +85,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
 
       - name: Normalize protected secrets without logging values
         shell: bash
@@ -105,31 +108,38 @@ jobs:
           console.log('[Academy Studio] Protected values normalized; values were not printed.');
           NODE
 
-      - name: Install locked dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install dependencies without assuming a lock file
+        id: dependency_install
+        continue-on-error: true
+        run: npm install --ignore-scripts --no-audit --no-fund
 
       - name: Verify the 36-worker interchangeable Academy contract
         id: worker_contract
+        if: steps.dependency_install.outcome == 'success'
         continue-on-error: true
         run: npm run verify:academy-worker-contract
 
       - name: Generate Prisma Client
         id: prisma_generate
+        if: steps.dependency_install.outcome == 'success'
         continue-on-error: true
         run: npm run db:generate
 
       - name: Apply governed course policy
         id: course_policy
+        if: steps.dependency_install.outcome == 'success'
         continue-on-error: true
         run: npm run apply:course-policy
 
       - name: Verify authoring provider authentication and model access
         id: provider_preflight
+        if: steps.dependency_install.outcome == 'success'
         continue-on-error: true
         run: npm run preflight:hollywood
 
       - name: Bootstrap protected cinematic checkpoint storage
         id: database_bootstrap
+        if: steps.prisma_generate.outcome == 'success'
         continue-on-error: true
         run: npm run db:bootstrap:hollywood-checkpoints
 
@@ -141,6 +151,7 @@ jobs:
 
       - name: Audit all governed course manifests and select production work
         id: course_audit
+        if: steps.course_policy.outcome == 'success'
         continue-on-error: true
         run: npm run audit:hollywood
 
@@ -169,7 +180,7 @@ jobs:
         continue-on-error: true
         run: npm run media:submit:hollywood
 
-      - name: Calculate the 60-course owner release-approval staging gate
+      - name: Calculate the complete portfolio owner release-approval staging gate
         id: release_stage
         if: always()
         run: npm run stage:release-approval
@@ -185,12 +196,12 @@ jobs:
 
           CURRENT_TITLE="$(gh issue view 27 --json title --jq .title 2>/dev/null || true)"
           if [ "${{ steps.release_stage.outputs.all_staged }}" = "true" ]; then
-            TITLE="[READY FOR OWNER APPROVAL] Academy 60-course release gate"
+            TITLE="[READY FOR OWNER APPROVAL] Complete Academy portfolio release gate"
             if [[ "$CURRENT_TITLE" != "[READY FOR OWNER APPROVAL]"* ]]; then
-              gh issue comment 27 --body "All 60 governed Academy courses have reached the pre-owner release-approval staging gate. Publication and checkout remain disabled pending your explicit decision. Review the updated issue body and Command Center evidence."
+              gh issue comment 27 --body "All governed Academy courses—60 core courses plus the PMP course—have reached the pre-owner release-approval staging gate. Publication and checkout remain disabled pending your explicit decision. Review the updated issue body and Command Center evidence."
             fi
           else
-            TITLE="Academy release approval staging gate — ${{ steps.release_stage.outputs.staged_courses || '0' }}/${{ steps.release_stage.outputs.expected_courses || '60' }} staged"
+            TITLE="Academy release approval staging gate — ${{ steps.release_stage.outputs.staged_courses || '0' }}/${{ steps.release_stage.outputs.expected_courses || '61' }} staged"
           fi
           gh issue edit 27 --title "$TITLE" --body-file catalog/academy-release-approval-notification.md --add-assignee jblan2026-hub
 
@@ -200,8 +211,10 @@ jobs:
         run: |
           if [ "${{ steps.database_bootstrap.outcome }}" = "success" ]; then
             BODY="Protected Academy PostgreSQL authentication and cinematic checkpoint bootstrap succeeded for workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. The course-production pipeline proceeded according to its downstream gates. This issue may remain open only if another protected database defect is documented."
-          else
+          elif [ "${{ steps.database_bootstrap.outcome }}" = "failure" ]; then
             BODY="Protected Academy PostgreSQL authentication or cinematic checkpoint bootstrap failed before the 36-worker authoring surge could launch. No publication or checkout action was attempted. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Update the protected ACADEMY_DATABASE_URL secret with the valid Supavisor session-mode credential and rerun."
+          else
+            BODY="Protected Academy database bootstrap was not attempted because an earlier workflow prerequisite failed. No authoring worker, publication, or checkout action was attempted. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Review dependency installation and Prisma generation before diagnosing the database secret."
           fi
           gh issue edit 17 --body "$BODY" || true
 
@@ -211,6 +224,7 @@ jobs:
         with:
           name: academy-36-worker-production-${{ github.run_id }}
           path: |
+            catalog/academy-worker-contract-verification.json
             catalog/academy-hollywood-provider-preflight.json
             catalog/academy-hollywood-course-audit.json
             catalog/academy-hollywood-checkpoint-restore.json
@@ -222,7 +236,7 @@ jobs:
             courses/*/generated/validation/hollywood-contract-validation.json
             courses/*/generated/release/owner-approval-staging-record.json
           if-no-files-found: warn
-          retention-days: 365
+          retention-days: 90
 
       - name: Enforce the final governed result
         if: always()
@@ -230,6 +244,7 @@ jobs:
         run: |
           failures=0
           for outcome in \
+            "${{ steps.dependency_install.outcome }}" \
             "${{ steps.worker_contract.outcome }}" \
             "${{ steps.prisma_generate.outcome }}" \
             "${{ steps.course_policy.outcome }}" \
@@ -244,11 +259,11 @@ jobs:
           done
 
           if [ "$failures" -gt 0 ]; then
-            echo "$failures governed production stage(s) did not succeed. Review the issue and uploaded evidence."
+            echo "$failures governed production stage(s) did not succeed. Review issue #27 and the uploaded evidence."
             exit 1
           fi
           if [ "${{ steps.release_stage.outputs.all_staged }}" != "true" ]; then
-            echo "Production stages completed, but not all 60 courses are staged for owner release approval."
+            echo "Production stages completed, but the complete Academy portfolio is not staged for owner release approval."
             exit 2
           fi
-          echo "All 60 courses are staged for explicit owner release approval. Publication remains disabled."
+          echo "All governed Academy courses are staged for explicit owner release approval. Publication remains disabled."
