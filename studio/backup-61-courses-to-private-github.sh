@@ -71,15 +71,16 @@ for evidence in \
   academy-61-research-registry-merge.json \
   academy-61-cinematic-authoring-summary.json \
   academy-61-independent-review-summary.json \
-  academy-hollywood-compliance-staging.json \
-  academy-hollywood-media-reconciliation.json \
-  academy-61-media-submission.json; do
+  academy-local-ollama-evidence-summary.json \
+  academy-61-local-media-render-summary.json \
+  academy-free-source-context-summary.json \
+  academy-hollywood-compliance-staging.json; do
   copy_path "${source_root}/catalog/${evidence}" "${backup_dir}/catalog/${evidence}"
 done
 
 cat > "${backup_dir}/BACKUP-METADATA.json" <<EOF
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "sourceRepository": "${GITHUB_REPOSITORY}",
   "sourceCommit": "${GITHUB_SHA}",
   "sourceRunId": "${GITHUB_RUN_ID}",
@@ -87,7 +88,9 @@ cat > "${backup_dir}/BACKUP-METADATA.json" <<EOF
   "privateBackupBranch": "${ACADEMY_PRIVATE_BACKUP_BRANCH}",
   "backupPath": "${backup_rel}",
   "classification": "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.",
-  "publicRepositoryStorageAuthorized": false
+  "publicRepositoryStorageAuthorized": false,
+  "commercialModelApiExpected": false,
+  "commercialMediaApiExpected": false
 }
 EOF
 
@@ -122,6 +125,14 @@ if [[ "${certificate_count}" -lt "61" ]]; then
   echo "[Academy Backup] Expected certificate assets for all courses; found ${certificate_count} certificate files." >&2
   exit 6
 fi
+if [[ ! -s "${backup_dir}/catalog/academy-local-ollama-evidence-summary.json" ]]; then
+  echo "[Academy Backup] Local model zero-cost evidence is missing." >&2
+  exit 7
+fi
+if [[ ! -s "${backup_dir}/catalog/academy-61-local-media-render-summary.json" ]]; then
+  echo "[Academy Backup] Local media zero-cost evidence is missing." >&2
+  exit 8
+fi
 
 cat > "${backup_dir}/BACKUP-SUMMARY.md" <<EOF
 # Obserra Academy Private Backup
@@ -132,6 +143,7 @@ Source workflow run: ${GITHUB_RUN_ID}
 Courses backed up: ${course_count}
 Final video files backed up: ${video_count}
 Certificate files backed up: ${certificate_count}
+Model/media production mode: local-only, no commercial generation API expected
 Classification: OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.
 Public repository storage authorized: no
 EOF
