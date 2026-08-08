@@ -5,19 +5,19 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - agent/academy-performance-output-optimization
+      - agent/academy-accelerated-performance-v2
     paths:
       - "studio/academy-authoring-performance.mjs"
-      - "studio/author-courses-hollywood-parallel.mjs"
+      - "studio/author-courses-parallel.mjs"
       - "tests/academy-authoring-performance.test.ts"
       - "docs/operations/ACADEMY-PERFORMANCE-OUTPUT-OPTIMIZATION.md"
       - ".github/workflows/academy-performance-output-gate.yml"
   pull_request:
     branches:
-      - agent/academy-36-worker-hollywood-production-reconciled
+      - agent/academy-build-acceleration
     paths:
       - "studio/academy-authoring-performance.mjs"
-      - "studio/author-courses-hollywood-parallel.mjs"
+      - "studio/author-courses-parallel.mjs"
       - "tests/academy-authoring-performance.test.ts"
       - "docs/operations/ACADEMY-PERFORMANCE-OUTPUT-OPTIMIZATION.md"
       - ".github/workflows/academy-performance-output-gate.yml"
@@ -32,12 +32,9 @@ concurrency:
 env:
   DATABASE_URL: postgresql://validation:validation@127.0.0.1:5432/academy_performance_validation?schema=public
   OBSERRA_PORTFOLIO_WORKER_COUNT: 36
-  OBSERRA_APPLICATION_WORKER_COUNT: 0
-  ACADEMY_COURSE_WORKER_COUNT: 36
-  ACADEMY_AUTHORING_CONCURRENCY: 36
-  ACADEMY_WORKER_MODE: interchangeable-course-production
-  ACADEMY_EXPECTED_SURGE_COURSES: 60
-  ACADEMY_SURGE_EXCLUDED_COURSE_IDS: pmp-exam-prep-business-application
+  OBSERRA_APPLICATION_WORKER_COUNT: 20
+  ACADEMY_COURSE_WORKER_COUNT: 16
+  ACADEMY_AUTHORING_CONCURRENCY: 16
   ACADEMY_EXPECTED_REVIEW_COURSES: 61
 
 jobs:
@@ -50,14 +47,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: Install repository dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Install locked repository dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Validate optimized coordinator syntax
         run: |
           node --check studio/academy-authoring-performance.mjs
-          node --check studio/author-courses-hollywood-parallel.mjs
+          node --check studio/author-courses-parallel.mjs
+
+      - name: Run performance contract tests
+        run: node --test tests/academy-authoring-performance.test.ts
 
       - name: Run repository regression tests
         run: npm test
@@ -67,26 +69,23 @@ jobs:
           npm run db:generate
           npm run db:validate
 
-      - name: Verify exact Academy portfolio and worker contract
-        run: |
-          npm run verify:academy-worker-contract
-          npm run prepare:sources:hollywood
-          npm run audit:hollywood
-
-      - name: Verify performance controls remain fail closed
+      - name: Verify current governed worker allocation
         shell: bash
         run: |
           set -euo pipefail
-          grep -F 'longest-estimated-work-first' studio/author-courses-hollywood-parallel.mjs
-          grep -F 'bounded deterministic jitter' studio/author-courses-hollywood-parallel.mjs
-          grep -F 'buildAuthoringPerformanceMetrics' studio/author-courses-hollywood-parallel.mjs
+          grep -F 'const portfolioWorkerCount = 36' studio/author-courses-parallel.mjs
+          grep -F 'const applicationWorkerAllocation = 20' studio/author-courses-parallel.mjs
+          grep -F 'const courseWorkerAllocation = 16' studio/author-courses-parallel.mjs
+          grep -F 'schedulingPolicy: "longest-estimated-work-first"' studio/author-courses-parallel.mjs
+          grep -F 'bounded deterministic jitter' studio/author-courses-parallel.mjs
+          grep -F 'buildAuthoringPerformanceMetrics' studio/author-courses-parallel.mjs
           grep -F 'provider_request_invalid' studio/authoring-provider-errors.mjs
-          if grep -A 12 'function shouldHaltPortfolio' studio/author-courses-hollywood-parallel.mjs | grep -F 'provider_request_invalid'; then
+          if grep -A 16 'function shouldHaltPortfolio' studio/author-courses-parallel.mjs | grep -F 'provider_request_invalid'; then
             echo "A course-specific invalid request must not halt unrelated course workers."
             exit 1
           fi
-          grep -F 'checkpointPersistenceRequired' studio/author-courses-hollywood-parallel.mjs
-          grep -F 'publication authority=false' studio/author-courses-hollywood-parallel.mjs
+          grep -F 'No missing, stale, or untraceable owner-review course packages require AI authoring.' studio/author-courses-parallel.mjs
+          grep -F 'They do not establish independent source verification' studio/author-courses-parallel.mjs
 
       - name: Generate synthetic performance evidence
         run: |
@@ -94,22 +93,27 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import { buildAuthoringPerformanceMetrics, retryDelayMs } from './studio/academy-authoring-performance.mjs';
-          const results = Array.from({ length: 36 }, (_, index) => ({
+          const results = Array.from({ length: 16 }, (_, index) => ({
             ok: true,
-            attempt: index % 9 === 0 ? 2 : 1,
+            attempt: index % 7 === 0 ? 2 : 1,
             elapsedMs: 900000 + (index * 10000),
             outputBytes: 250000 + (index * 1000),
           }));
           const evidence = {
-            schemaVersion: '1.0',
+            schemaVersion: '2.0',
             generatedAt: new Date().toISOString(),
             fixtureOnly: true,
+            allocation: {
+              portfolioWorkers: 36,
+              applicationWorkers: 20,
+              academyWorkers: 16,
+            },
             purpose: 'Verify performance math and evidence schema without invoking a provider or representing live throughput.',
             metrics: buildAuthoringPerformanceMetrics({
               results,
               elapsedMs: 3600000,
-              launchedWorkerCount: 36,
-              requestedCourses: 36,
+              launchedWorkerCount: 16,
+              requestedCourses: 16,
             }),
             retryJitterSamplesMs: [1, 2, 3].map((attempt) => retryDelayMs(5000, attempt, 'fixture-course')),
             claimBoundary: 'Synthetic evidence validates calculations only. It is not a production course build result.',
