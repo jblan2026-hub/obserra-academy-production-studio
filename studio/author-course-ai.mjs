@@ -7,6 +7,7 @@ import {
   ProviderAuthoringError,
   providerAuthoringErrorFromHttp,
 } from "./authoring-provider-errors.mjs";
+import { assertAuthoredPackageReady } from "./validate-authored-package.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const AUTHORING_POLICY_VERSION = "2026.08.07.2";
@@ -166,17 +167,25 @@ async function providerHttpError(providerName, response) {
 async function callOpenAI(prompt) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY is required");
+  const organization = String(process.env.OPENAI_ORGANIZATION || "").trim();
+  const project = String(process.env.OPENAI_PROJECT || "").trim();
   const response = await fetchWithAuthoringTimeout(
     "OpenAI",
     process.env.OPENAI_API_URL || "https://api.openai.com/v1/responses",
     {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        ...(organization ? { "OpenAI-Organization": organization } : {}),
+        ...(project ? { "OpenAI-Project": project } : {}),
+      },
       body: JSON.stringify({
         model: process.env.OPENAI_AUTHORING_MODEL || "gpt-5",
         input: prompt,
         text: { format: { type: "json_object" } },
         reasoning: { effort: process.env.OPENAI_REASONING_EFFORT || "high" },
+        store: false,
       }),
     },
   );
@@ -234,6 +243,8 @@ async function main() {
 
   const raw = provider === "anthropic" ? await callAnthropic(prompt) : await callOpenAI(prompt);
   const authored = parseJson(raw);
+  assertAuthoredPackageReady({ manifest, authored });
+
   const envelope = {
     schemaVersion: "1.2",
     courseId,
@@ -245,6 +256,11 @@ async function main() {
     reviewStatus: "draft-ai-generated",
     legalName,
     proprietaryNotice,
+    qualityGate: {
+      name: "authored-package-structural-readiness",
+      passed: true,
+      findingCount: 0,
+    },
     content: authored,
   };
   fs.writeFileSync(outputPath, `${JSON.stringify(envelope, null, 2)}\n`);
@@ -261,6 +277,8 @@ try {
     );
     process.exitCode = error.exitCode;
   } else {
-    throw error;
+    const safeMessage = String(error instanceof Error ? error.message : error).replace(/\s+/g, " ").slice(0, 3000);
+    console.error(`[Academy Studio] AUTHORING_PACKAGE_FAILURE course=${courseId}: ${safeMessage}`);
+    process.exitCode = 1;
   }
 }
