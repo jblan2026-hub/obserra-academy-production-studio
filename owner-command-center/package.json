@@ -1,6 +1,6 @@
 {
   "name": "obserra-owner-ai-command-center",
-  "version": "0.4.0",
+  "version": "0.3.3",
   "private": true,
   "description": "Owner-only local AI command center for the Obserra ecosystem.",
   "main": "electron/main-with-remediation.cjs",
