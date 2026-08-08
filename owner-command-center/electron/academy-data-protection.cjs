@@ -17,6 +17,13 @@ function maskEmail(value) {
   return `${visible || "*"}***@${domain}`;
 }
 
+function maskReference(value) {
+  const text = String(value || "").trim();
+  if (!text) return null;
+  if (text.length <= 10) return "[REDACTED]";
+  return `${text.slice(0, 6)}...${text.slice(-4)}`;
+}
+
 function sanitizeString(value) {
   return String(value || "")
     .replace(TOKEN_PATTERN, "[REDACTED_SECRET]")
@@ -70,4 +77,6 @@ module.exports = {
   ownerSafe,
   ownerSafeError,
   sanitizeString,
+  maskEmail,
+  maskReference,
 };
