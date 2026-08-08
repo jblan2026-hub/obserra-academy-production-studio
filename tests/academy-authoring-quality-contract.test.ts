@@ -7,6 +7,7 @@ import {
   ACADEMY_AUTHORING_QUALITY_REQUIREMENTS,
   academyAuthoringQualityContract,
   countWords,
+  requiredFinalAssessmentQuestions,
 } from "../studio/academy-authoring-quality-contract.mjs";
 // @ts-ignore Studio production utilities are intentionally authored as native ESM.
 import {
@@ -22,28 +23,7 @@ function choices() {
   return ["Option A", "Option B", "Option C", "Option D"];
 }
 
-function knowledgeCheck(index: number) {
-  return {
-    question: `Knowledge check ${index}`,
-    options: choices(),
-    correctIndex: index % 4,
-    rationale: "The selected answer follows the evidence and decision criteria.",
-  };
-}
-
-function assessmentQuestion(index: number) {
-  return {
-    question: `Assessment question ${index}`,
-    options: choices(),
-    correctIndex: index % 4,
-    rationale: "The selected answer is the most proportionate and defensible response.",
-    moduleId: "module-1",
-    cognitiveLevel: index % 2 === 0 ? "application" : "analysis",
-    sourceIds: ["SRC-001"],
-  };
-}
-
-function validFixture() {
+function standardFixture() {
   const manifest = {
     course: {
       modules: [
@@ -69,7 +49,7 @@ function validFixture() {
         claimOrTopic: "Executive decision governance",
         moduleIds: ["module-1"],
         verificationInstruction: "Verify against an approved authoritative source.",
-        usageBoundary: "Informational instruction only; not legal or compliance advice.",
+        usageBoundary: "Informational instruction only.",
       },
     ],
     frameworkAlignment: [
@@ -87,7 +67,7 @@ function validFixture() {
         { level: "application", targetPercent: 60 },
         { level: "analysis", targetPercent: 40 },
       ],
-      integrityNotes: ["Do not disclose answers during protected assessments."],
+      integrityNotes: ["Do not disclose protected answers."],
     },
     modules: [
       {
@@ -111,12 +91,12 @@ function validFixture() {
           }),
         ),
         executiveExample: "An executive compares alternatives before authorizing action.",
-        operationalExample: "An operator records evidence and escalates a material exception.",
+        operationalExample: "An operator records evidence and escalates an exception.",
         scenario: {
           situation: "A high-impact decision must be made with incomplete evidence.",
           evidence: ["Verified observation", "Known limitation"],
           decisionPrompt: "Select and justify the proportionate response.",
-          recommendedApproach: "Preserve evidence, bound the action, and retain human oversight.",
+          recommendedApproach: "Preserve evidence and retain human oversight.",
           debrief: "The recommendation balances urgency, authority, and reversibility.",
         },
         exercise: {
@@ -126,24 +106,29 @@ function validFixture() {
         },
         knowledgeChecks: Array.from(
           { length: ACADEMY_AUTHORING_QUALITY_REQUIREMENTS.knowledgeChecks },
-          (_, index) => knowledgeCheck(index),
+          (_, index) => ({
+            question: `Knowledge check ${index + 1}`,
+            options: choices(),
+            correctIndex: index % 4,
+            rationale: "The selected answer follows the evidence and decision criteria.",
+          }),
         ),
         slideNarrative: Array.from(
           { length: ACADEMY_AUTHORING_QUALITY_REQUIREMENTS.slideNarratives },
           (_, index) => ({
             title: `Slide ${index + 1}`,
             content: ["Substantive instructional point", "Evidence boundary"],
-            speakerNotes: "Explain the decision logic and practical implications.",
+            speakerNotes: "Explain the decision logic and implications.",
             visualDirection: "Use a readable decision-flow graphic with text labels.",
           }),
         ),
         videoScript: {
-          opening: "Open with a consequential executive decision under uncertainty.",
+          opening: "Open with a consequential decision under uncertainty.",
           segments: Array.from(
             { length: ACADEMY_AUTHORING_QUALITY_REQUIREMENTS.videoSegments },
             (_, index) => ({
-              visual: `Scene ${index + 1} with readable source and context cards.`,
-              narration: "Professional narration explains the evidence and decision logic.",
+              visual: `Scene ${index + 1} with readable context cards.`,
+              narration: "Professional narration explains evidence and decision logic.",
             }),
           ),
           closing: "Close with a defensible action and documentation standard.",
@@ -156,8 +141,16 @@ function validFixture() {
       },
     ],
     finalAssessment: Array.from(
-      { length: ACADEMY_AUTHORING_QUALITY_REQUIREMENTS.finalAssessmentQuestions },
-      (_, index) => assessmentQuestion(index),
+      { length: 30 },
+      (_, index) => ({
+        question: `Assessment question ${index + 1}`,
+        options: choices(),
+        correctIndex: index % 4,
+        rationale: "The selected answer is the most defensible response.",
+        moduleId: "module-1",
+        cognitiveLevel: index % 2 === 0 ? "application" : "analysis",
+        sourceIds: ["SRC-001"],
+      }),
     ),
     learnerWorkbook: [
       {
@@ -173,7 +166,7 @@ function validFixture() {
     },
     marketing: {
       shortDescription: "Executive decision instruction grounded in evidence.",
-      longDescription: "A professional course on proportionate, governed executive decisions.",
+      longDescription: "A professional course on proportionate executive decisions.",
       buyerOutcomes: ["Produce a defensible decision record."],
       seoKeywords: ["executive leadership", "decision governance"],
     },
@@ -186,10 +179,10 @@ function validFixture() {
   return { manifest, authored };
 }
 
-test("Academy authoring uses one explicit production-depth contract", () => {
-  assert.equal(ACADEMY_AUTHORING_POLICY_VERSION, "2026.08.08.1");
+test("Academy authoring uses the current production-depth contract", () => {
+  assert.equal(ACADEMY_AUTHORING_POLICY_VERSION, "2026.08.08.2");
   assert.deepEqual(academyAuthoringQualityContract(), {
-    policyVersion: "2026.08.08.1",
+    policyVersion: "2026.08.08.2",
     lessonNarrativeWords: 1200,
     learningObjectives: 6,
     keyConcepts: 6,
@@ -203,8 +196,21 @@ test("Academy authoring uses one explicit production-depth contract", () => {
   assert.equal(countWords(words(1200)), 1200);
 });
 
-test("a package satisfying the complete production-depth contract passes", () => {
-  const fixture = validFixture();
+test("course-specific assessment contracts override the 30-question floor", () => {
+  const pmpManifest = {
+    course: {
+      examAlignment: { examQuestionCount: 180 },
+    },
+  };
+  assert.equal(requiredFinalAssessmentQuestions(pmpManifest), 180);
+  assert.equal(
+    academyAuthoringQualityContract(pmpManifest).finalAssessmentQuestions,
+    180,
+  );
+});
+
+test("a package satisfying the standard production-depth contract passes", () => {
+  const fixture = standardFixture();
   assert.deepEqual(authoredPackageFindings(fixture), []);
   assert.deepEqual(assertAuthoredPackageReady(fixture), {
     ready: true,
@@ -213,8 +219,8 @@ test("a package satisfying the complete production-depth contract passes", () =>
   });
 });
 
-test("the quality gate rejects the prior 700-word and 25-question standard", () => {
-  const fixture = validFixture();
+test("the quality gate rejects the superseded 700-word and 25-question depth", () => {
+  const fixture = standardFixture();
   fixture.authored.modules[0].lessonNarrative = words(700);
   fixture.authored.modules[0].learningObjectives = fixture.authored.modules[0].learningObjectives.slice(0, 4);
   fixture.authored.modules[0].keyConcepts = fixture.authored.modules[0].keyConcepts.slice(0, 4);
@@ -235,9 +241,12 @@ test("the quality gate rejects the prior 700-word and 25-question standard", () 
   );
 });
 
-test("assessment source identifiers must resolve to the governed source register", () => {
-  const fixture = validFixture();
+test("assessment source identifiers must resolve to the source register", () => {
+  const fixture = standardFixture();
   fixture.authored.finalAssessment[0].sourceIds = ["UNKNOWN-SOURCE"];
-  const findings = authoredPackageFindings(fixture);
-  assert.ok(findings.includes("assessment-1:unknown-source-id-UNKNOWN-SOURCE"));
+  assert.ok(
+    authoredPackageFindings(fixture).includes(
+      "assessment-1:unknown-source-id-UNKNOWN-SOURCE",
+    ),
+  );
 });
