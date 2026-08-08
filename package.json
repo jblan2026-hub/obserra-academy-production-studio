@@ -13,6 +13,8 @@
     "audit:courses": "node studio/audit-course-build-readiness.mjs",
     "audit:hollywood": "node studio/audit-hollywood-course-readiness.mjs",
     "verify:academy-worker-contract": "node studio/verify-academy-worker-contract.mjs",
+    "verify:cinematic-standard": "node studio/verify-commercial-cinematic-standard.mjs",
+    "verify:worker-contract": "node studio/verify-worker-pool-contract.mjs",
     "prepare:sources:hollywood": "node studio/prepare-hollywood-source-context.mjs",
     "validate": "npm run apply:course-policy && node studio/validate.mjs",
     "validate:ai-native-course": "node studio/validate-ai-native-course.mjs",
