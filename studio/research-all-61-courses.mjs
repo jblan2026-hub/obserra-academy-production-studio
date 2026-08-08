@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -5,8 +6,31 @@ import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
-const concurrency = Math.max(1, Math.min(36, Number(process.env.ACADEMY_RESEARCH_CONCURRENCY || 36)));
+const concurrency = Math.max(1, Math.min(36, Number(process.env.ACADEMY_RESEARCH_CONCURRENCY || process.env.ACADEMY_PAID_RESEARCH_CONCURRENCY || 4)));
 const maxAttempts = Math.max(1, Math.min(3, Number(process.env.ACADEMY_RESEARCH_MAX_ATTEMPTS || 2)));
+
+function stableHash(value) {
+  return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+
+function readJson(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  try { return JSON.parse(fs.readFileSync(filePath, "utf8")); } catch { return null; }
+}
+
+function reusableResearch(courseId) {
+  const manifestPath = path.join(coursesRoot, courseId, "course-manifest.json");
+  const evidencePath = path.join(coursesRoot, courseId, "generated", "research", "authoritative-source-research.json");
+  const manifest = readJson(manifestPath);
+  const evidence = readJson(evidencePath);
+  return Boolean(
+    manifest &&
+    evidence?.passed === true &&
+    evidence?.manifestHash === stableHash(manifest) &&
+    Array.isArray(evidence?.unresolvedTopics) &&
+    evidence.unresolvedTopics.length === 0
+  );
+}
 
 const courses = fs.readdirSync(coursesRoot, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
@@ -50,40 +74,54 @@ async function runWithRetry(courseId) {
     console.log(`[Academy Studio] Research worker starting ${courseId}, attempt ${attempt}/${maxAttempts}.`);
     last = await runCourse(courseId, attempt);
     if (last.ok) return last;
+    if ([42, 43, 44].includes(last.code)) return last;
     if (attempt < maxAttempts) await delay(3000 * attempt);
   }
   return last;
 }
 
-const queue = [...courses];
-const results = [];
+const reusable = courses.filter(reusableResearch);
+const queue = courses.filter((courseId) => !reusable.includes(courseId));
+const results = reusable.map((courseId) => ({ courseId, attempt: 0, ok: true, reused: true, code: 0, error: null }));
+let circuitOpen = false;
+
 async function worker(workerId) {
-  while (queue.length > 0) {
+  while (queue.length > 0 && !circuitOpen) {
     const courseId = queue.shift();
     if (!courseId) return;
-    console.log(`[Academy Studio] Research worker ${workerId}/36 assigned ${courseId}.`);
+    console.log(`[Academy Studio] Paid research slot ${workerId}/${concurrency} assigned ${courseId}.`);
     const result = await runWithRetry(courseId);
-    results.push(result);
-    console.log(`[Academy Studio] Research worker ${workerId}/36 ${result.ok ? "completed" : "failed"} ${courseId}.`);
+    results.push({ ...result, workerId, reused: false });
+    if ([42, 43].includes(result.code)) {
+      circuitOpen = true;
+      console.error(`[Academy Studio] Paid research circuit opened after nonretryable provider failure on ${courseId}; remaining courses will not consume credits.`);
+    }
   }
 }
 
-await Promise.all(Array.from({ length: Math.min(concurrency, courses.length) }, (_, index) => worker(index + 1)));
+await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(1, queue.length)) }, (_, index) => worker(index + 1)));
+for (const courseId of queue.splice(0)) {
+  results.push({ courseId, attempt: 0, ok: false, reused: false, code: 42, error: "not-started-provider-circuit-open" });
+}
+
 const failed = results.filter((result) => !result.ok);
 const summary = {
-  schemaVersion: "1.0",
+  schemaVersion: "1.1",
   generatedAt: new Date().toISOString(),
-  objective: "complete-all-61-academy-courses-only",
+  objective: "complete-all-61-academy-courses-only-credit-last",
   portfolioWorkerCount: 36,
   applicationWorkerAllocation: 0,
-  researchWorkerAllocation: 36,
+  logicalResearchWorkers: 36,
+  paidResearchConcurrency: concurrency,
   discoveredCourses: courses.length,
-  concurrency,
+  reused: results.filter((result) => result.reused).length,
+  newlyCompleted: results.filter((result) => result.ok && !result.reused).length,
   completed: results.filter((result) => result.ok).length,
   failed: failed.length,
+  providerCircuitOpened: circuitOpen,
   results
 };
 fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
 fs.writeFileSync(path.join(root, "catalog", "academy-61-source-research-summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
-console.log(`[Academy Studio] Authoritative research complete for ${summary.completed}/61 courses.`);
+console.log(`[Academy Studio] Authoritative research ready for ${summary.completed}/61 courses: ${summary.reused} reused, ${summary.newlyCompleted} newly researched.`);
 if (failed.length > 0) process.exit(2);
