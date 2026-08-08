@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "status": "production-in-progress",
+  "publicReleaseAllowed": false,
+  "policy": {
+    "unlicensedAssetsProhibited": true,
+    "confidentialExamContentProhibited": true,
+    "examDumpsAndRecalledQuestionsProhibited": true,
+    "copyrightedStandardsMustBeLicensedOrParaphrased": true,
+    "aiGeneratedReenactmentsMustBeLabeled": true,
+    "publicCasesMustUseVerifiedSources": true,
+    "officialObserraLogoOnly": true,
+    "thirdPartyTrademarkReviewRequired": true
+  },
+  "trademarks": [
+    {
+      "mark": "PMP®",
+      "owner": "Project Management Institute, Inc.",
+      "courseUse": "Identification of the certification examination for which this independent course prepares learners.",
+      "requiredNotice": "PMP® is a registered mark of Project Management Institute, Inc.",
+      "authorizationClaimAllowed": false,
+      "sponsorshipOrEndorsementClaimAllowed": false,
+      "legalReviewStatus": "pending"
+    },
+    {
+      "mark": "PMI and PMBOK",
+      "owner": "Project Management Institute, Inc.",
+      "courseUse": "Identification of the certification owner and legally acquired reference publications.",
+      "authorizationClaimAllowed": false,
+      "sponsorshipOrEndorsementClaimAllowed": false,
+      "legalReviewStatus": "pending"
+    }
+  ],
+  "sourceRights": [
+    {
+      "sourceId": "PMI-ECO-2026",
+      "treatment": "Paraphrase official requirements and map tasks; use only short attributed quotations when necessary; direct learners to the controlling official source.",
+      "status": "pending-legal-review"
+    },
+    {
+      "sourceId": "PMI-PMBOK-8",
+      "treatment": "Use legally acquired reference copies; paraphrase copyrighted material; do not distribute copied chapters, figures, or tables without permission.",
+      "status": "pending-license-and-legal-review"
+    },
+    {
+      "sourceId": "PMI-ETHICS-2025",
+      "treatment": "Paraphrase and identify the published values; do not reproduce the full code.",
+      "status": "pending-legal-review"
+    },
+    {
+      "sourceId": "public-government-and-oversight-cases",
+      "treatment": "Use official public reports, original visualizations, accurate dates and facts, explicit limitations, and no unsupported single-cause conclusions.",
+      "status": "pending-editorial-review"
+    }
+  ],
+  "brandAssets": [
+    {
+      "asset": "brand/assets/obserra-official-logo.png",
+      "owner": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+      "approvedUse": "Course player, opening ident, watermark, tutor identity, certificate, and governed course materials.",
+      "status": "owner-approved-source-asset",
+      "sha256": "a8f2a51a6a96364262b736978d9c2ff4ff48060ed5b80a0291bba064b39be8a8"
+    }
+  ],
+  "mediaCategories": [
+    {
+      "category": "original-3d-and-motion-graphics",
+      "rightsRequirement": "Created by or assigned to Obserra with editable production files and commercial distribution rights.",
+      "status": "not-complete"
+    },
+    {
+      "category": "licensed-stock-footage-and-photography",
+      "rightsRequirement": "Commercial paid-training and digital-distribution license; editorial-only assets prohibited in simulated commercial scenes.",
+      "status": "not-acquired"
+    },
+    {
+      "category": "music-and-sound-design",
+      "rightsRequirement": "Commercial synchronization and distribution rights covering Academy delivery and derivative edits.",
+      "status": "not-acquired"
+    },
+    {
+      "category": "voice-and-presenter",
+      "rightsRequirement": "Written commercial-use consent including synthetic-voice terms where applicable.",
+      "status": "not-contracted"
+    },
+    {
+      "category": "ai-generated-illustrations",
+      "rightsRequirement": "Approved tool terms, prompt and provenance record, illustrative label, no unauthorized likeness, and human review.",
+      "status": "not-created"
+    }
+  ],
+  "perVideoRecords": [],
+  "releaseGate": {
+    "allPerVideoRecordsComplete": false,
+    "allLicensesStored": false,
+    "allAttributionsVerified": false,
+    "allTrademarkNoticesApproved": false,
+    "allSyntheticContentLabeled": false,
+    "allPublicCaseVisualsVerified": false,
+    "legalApproval": false,
+    "ownerApproval": false
+  }
+}

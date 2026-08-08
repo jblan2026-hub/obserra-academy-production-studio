@@ -1,10 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { recordAuditEvent } from "@/lib/audit-service";
 import { requireOrganization } from "@/lib/organization-service";
 import { prisma } from "@/lib/prisma";
-import { authorizeStudioRequest } from "@/lib/studio-auth";
+import { authenticateStudioRequest, authorizeStudioRequest } from "@/lib/studio-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +15,12 @@ export async function GET(request: Request) {
   const correlationId = request.headers.get("x-correlation-id") ?? crypto.randomUUID();
 
   try {
-    const session = await auth();
-    if (!session.isAuthenticated || !session.orgId) {
-      return NextResponse.json({ error: "An authenticated organization session is required", correlationId }, { status: 401 });
+    const authentication = await authenticateStudioRequest(request);
+    if (!authentication.principal) {
+      return NextResponse.json({ error: authentication.reason ?? "Authentication required", correlationId }, { status: 401 });
     }
-
-    const organization = await requireOrganization(session.orgId);
+    const principal = authentication.principal;
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const executions = await prisma.aiExecution.findMany({
       where: { organizationId: organization.id },
       orderBy: { createdAt: "desc" },
@@ -37,16 +36,16 @@ export async function GET(request: Request) {
 
     await recordAuditEvent({
       organizationId: organization.id,
-      actorId: session.userId ?? undefined,
-      actorType: "user",
+      actorId: principal.actorId,
+      actorType: principal.actorType,
       action: "ai.execution.list",
       resourceType: "AiExecution",
       correlationId,
       outcome: "success",
-      metadata: { count: executions.length },
+      metadata: { count: executions.length, identityProvider: principal.identityProvider },
     });
 
-    return NextResponse.json({ correlationId, organizationId: session.orgId, executions });
+    return NextResponse.json({ correlationId, organizationId: principal.organizationId, executions });
   } catch (error) {
     return NextResponse.json({
       correlationId,
@@ -75,7 +74,7 @@ export async function POST(request: Request) {
   const principal = authorization.principal;
 
   try {
-    const organization = await requireOrganization(principal.organizationId);
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const body = await request.json() as {
       objective?: string;
       input?: unknown;
@@ -150,6 +149,7 @@ export async function POST(request: Request) {
         promptTemplateId: body.promptTemplateId,
         modelProfileId: body.modelProfileId,
         role: principal.role,
+        identityProvider: principal.identityProvider,
       },
     });
 
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
       resourceType: "AiExecution",
       correlationId,
       outcome: "failure",
-      metadata: { reason: error instanceof Error ? error.message : "unknown" },
+      metadata: { reason: error instanceof Error ? error.message : "unknown", identityProvider: principal.identityProvider },
     });
     return NextResponse.json({ error: "AI execution creation failed", correlationId }, { status: 500 });
   }

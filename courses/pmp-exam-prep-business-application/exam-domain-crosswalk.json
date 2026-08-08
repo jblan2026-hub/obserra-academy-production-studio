@@ -1,0 +1,275 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "examOutline": "July 2026",
+  "verifiedAt": "2026-08-06T00:00:00Z",
+  "copyrightPolicy": "This crosswalk uses internal paraphrases of the PMI Examination Content Outline. It does not reproduce the full copyrighted task and enabler text.",
+  "coverageModel": {
+    "people": {
+      "weightPercent": 33,
+      "taskCount": 8,
+      "fullSimulationQuestionTarget": 59
+    },
+    "process": {
+      "weightPercent": 41,
+      "taskCount": 10,
+      "fullSimulationQuestionTarget": 74
+    },
+    "businessEnvironment": {
+      "weightPercent": 26,
+      "taskCount": 8,
+      "fullSimulationQuestionTarget": 47
+    }
+  },
+  "approachDistribution": {
+    "predictiveTargetQuestionsPer180": 72,
+    "adaptiveAgileAndHybridTargetQuestionsPer180": 108,
+    "rule": "Approaches are distributed across every domain rather than isolated into a separate agile section."
+  },
+  "tasks": [
+    {
+      "taskId": "people-1",
+      "domain": "people",
+      "internalLabel": "Create, communicate, maintain, and repair a shared project vision",
+      "coverage": ["common-vision", "project-success-value-outcomes"],
+      "applicationSkills": ["vision narrative", "root-cause analysis of misalignment", "stakeholder confirmation", "vision refresh after change"],
+      "examPreparation": ["vision-conflict scenario set", "stakeholder-alignment decision drill", "original single-response and multiple-response questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "people-2",
+      "domain": "people",
+      "internalLabel": "Diagnose and resolve conflict while restoring effective working agreements",
+      "coverage": ["conflict-management", "performance-coaching-problem-solving"],
+      "applicationSkills": ["conflict-source identification", "context analysis", "strategy selection", "ground-rule repair", "proportionate escalation"],
+      "examPreparation": ["conflict-method comparison", "next-best-action scenarios", "distractor analysis for premature escalation and avoidance"],
+      "status": "designed"
+    },
+    {
+      "taskId": "people-3",
+      "domain": "people",
+      "internalLabel": "Lead, empower, represent, structure, and support a capable project team",
+      "coverage": ["leadership-styles", "roles-responsibilities-empowerment", "team-diversity-psychological-safety", "performance-coaching-problem-solving"],
+      "applicationSkills": ["situational leadership", "team expectations", "empowerment boundaries", "role clarity", "problem solving", "team advocacy", "diverse-perspective integration"],
+      "examPreparation": ["leadership-style scenarios", "servant-leadership versus directive-action drill", "team-performance remediation cases"],
+      "status": "designed"
+    },
+    {
+      "taskId": "people-4",
+      "domain": "people",
+      "internalLabel": "Identify, analyze, communicate with, engage, align, and influence stakeholders",
+      "coverage": ["stakeholder-identification-analysis", "expectation-alignment-customer-value"],
+      "applicationSkills": ["stakeholder discovery", "influence-impact analysis", "communication tailoring", "engagement execution", "trust building", "objective alignment"],
+      "examPreparation": ["stakeholder-map lab", "hidden-influencer scenario", "engagement-strategy selection questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "people-5",
+      "domain": "people",
+      "internalLabel": "Surface, categorize, discuss, and align stakeholder expectations",
+      "coverage": ["expectation-alignment-customer-value", "stakeholder-identification-analysis"],
+      "applicationSkills": ["expectation discovery", "facilitated alignment", "mentoring opportunities", "shared success measures"],
+      "examPreparation": ["competing-expectations workshop", "facilitation-first decision pattern", "mentoring and escalation scenarios"],
+      "status": "designed"
+    },
+    {
+      "taskId": "people-6",
+      "domain": "people",
+      "internalLabel": "Maintain customer and stakeholder expectations and respond to satisfaction signals",
+      "coverage": ["expectation-alignment-customer-value", "communication-reporting-knowledge-transfer", "value-based-delivery-benefits"],
+      "applicationSkills": ["internal and external customer analysis", "outcome alignment", "satisfaction monitoring", "response planning"],
+      "examPreparation": ["customer-value cases", "expectation-drift scenarios", "response-selection questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "people-7",
+      "domain": "people",
+      "internalLabel": "Identify, capture, transfer, and sustain critical project knowledge",
+      "coverage": ["communication-reporting-knowledge-transfer", "transition-closure-lessons-learned", "continuous-improvement-organizational-learning"],
+      "applicationSkills": ["critical-knowledge identification", "knowledge capture", "transfer environment", "transition continuity", "organizational learning"],
+      "examPreparation": ["knowledge-loss scenario", "transition planning drill", "lessons-learned versus knowledge-transfer questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "people-8",
+      "domain": "people",
+      "internalLabel": "Plan transparent communication, feedback, reporting, and governance support",
+      "coverage": ["communication-reporting-knowledge-transfer", "metrics-status-artifacts", "project-governance-success-metrics"],
+      "applicationSkills": ["communication strategy", "transparency", "feedback loops", "reporting requirements", "sponsor-ready reporting", "governance reporting"],
+      "examPreparation": ["communication-channel selection", "executive-reporting lab", "report-first versus investigate-first scenarios"],
+      "status": "designed"
+    },
+    {
+      "taskId": "process-1",
+      "domain": "process",
+      "internalLabel": "Tailor the delivery approach and create, integrate, maintain, and use the project plan",
+      "coverage": ["tailor-development-approach", "integrated-project-management-plan", "estimation-dependencies-data-decisions"],
+      "applicationSkills": ["complexity assessment", "predictive-adaptive-hybrid selection", "information requirements", "execution strategy", "integrated planning", "effort and resource estimation", "dependency analysis", "plan maintenance", "data-informed decisions"],
+      "examPreparation": ["approach-selection matrix", "integrated-plan defect hunt", "dependency and assumption scenarios", "mixed-format planning questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "process-2",
+      "domain": "process",
+      "internalLabel": "Define, agree, decompose, and control project scope and requirements",
+      "coverage": ["scope-requirements-work-breakdown", "integrated-change-control"],
+      "applicationSkills": ["scope definition", "stakeholder agreement", "work decomposition", "backlog integrity", "acceptance criteria", "scope-change control"],
+      "examPreparation": ["WBS and backlog scenarios", "gold-plating detection", "scope-versus-change questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "process-3",
+      "domain": "process",
+      "internalLabel": "Prioritize, demonstrate, measure, and sustain value and benefits",
+      "coverage": ["value-based-delivery-benefits", "project-success-value-outcomes", "expectation-alignment-customer-value"],
+      "applicationSkills": ["value-component identification", "priority decisions", "incremental delivery", "benefit measurement", "business-value review", "delivery-option evaluation"],
+      "examPreparation": ["value-ranking lab", "incremental-delivery scenarios", "output-versus-outcome questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "process-4",
+      "domain": "process",
+      "internalLabel": "Plan, obtain, manage, and optimize project resources",
+      "coverage": ["resources-capacity-optimization", "roles-responsibilities-empowerment", "estimation-dependencies-data-decisions"],
+      "applicationSkills": ["resource definition", "capacity planning", "availability analysis", "optimization", "constraint disclosure"],
+      "examPreparation": ["resource-leveling scenarios", "capacity shortage cases", "resource-versus-schedule trade-off questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "process-5",
+      "domain": "process",
+      "internalLabel": "Plan procurement, select contract strategies, negotiate, and manage suppliers and agreements",
+      "coverage": ["procurement-contracts-suppliers", "integrated-project-management-plan"],
+      "applicationSkills": ["make-or-buy thinking", "procurement planning", "contract-type selection", "negotiation strategy", "vendor performance", "supplier governance", "agreement completion"],
+      "examPreparation": ["contract-risk allocation cases", "vendor underperformance scenario", "procurement closure questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "process-6",
+      "domain": "process",
+      "internalLabel": "Plan, forecast, track, report, and govern project finances and reserves",
+      "coverage": ["finance-reserves-cost-control", "estimation-dependencies-data-decisions", "metrics-status-artifacts"],
+      "applicationSkills": ["financial-needs analysis", "contingency quantification", "spend tracking", "financial reporting", "future challenge anticipation", "variance governance", "reserve management"],
+      "examPreparation": ["forecast and reserve lab", "cost-variance scenarios", "formula application with decision interpretation"],
+      "status": "designed"
+    },
+    {
+      "taskId": "process-7",
+      "domain": "process",
+      "internalLabel": "Plan, assure, control, review, and improve quality and compliance of deliverables",
+      "coverage": ["quality-regulatory-continuous-improvement", "compliance-requirements-consequences", "continuous-improvement-organizational-learning"],
+      "applicationSkills": ["quality requirements", "quality processes", "assurance and control", "regulatory alignment", "cost of quality", "sustainability", "ongoing review", "continuous improvement"],
+      "examPreparation": ["quality-versus-grade cases", "prevention-appraisal-failure analysis", "compliance and acceptance scenarios"],
+      "status": "designed"
+    },
+    {
+      "taskId": "process-8",
+      "domain": "process",
+      "internalLabel": "Estimate, build, baseline, execute, analyze, and recover the project schedule",
+      "coverage": ["schedule-network-critical-path", "schedule-risk-variation-recovery", "estimation-dependencies-data-decisions"],
+      "applicationSkills": ["approach-appropriate scheduling", "cross-project coordination", "milestones and dependencies", "story-point and task estimation", "historical data", "baseline integrity", "variance analysis", "recovery options"],
+      "examPreparation": ["network and critical-path lab", "schedule compression cases", "adaptive forecasting scenarios"],
+      "status": "designed"
+    },
+    {
+      "taskId": "process-9",
+      "domain": "process",
+      "internalLabel": "Evaluate project status through metrics, artifacts, evidence, forecasts, and communication",
+      "coverage": ["metrics-status-artifacts", "schedule-risk-variation-recovery", "finance-reserves-cost-control"],
+      "applicationSkills": ["metric design", "data reconciliation", "artifact tailoring", "review and update discipline", "accessibility", "progress assessment", "forecasting", "status communication", "artifact-effectiveness review"],
+      "examPreparation": ["dashboard interpretation", "conflicting metric scenario", "artifact selection and status-report questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "process-10",
+      "domain": "process",
+      "internalLabel": "Confirm completion, acceptance, transition readiness, and responsible closure",
+      "coverage": ["transition-closure-lessons-learned", "communication-reporting-knowledge-transfer", "procurement-contracts-suppliers"],
+      "applicationSkills": ["completion criteria", "stakeholder approval", "operational transition", "financial and contract closure", "resource release", "retrospectives", "knowledge retention"],
+      "examPreparation": ["closure-readiness checklist", "premature closure scenarios", "transition and lessons-learned questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "business-1",
+      "domain": "businessEnvironment",
+      "internalLabel": "Define governance, ethics, reporting, success measures, and escalation authority",
+      "coverage": ["project-governance-success-metrics", "integrated-project-management-plan", "communication-reporting-knowledge-transfer"],
+      "applicationSkills": ["governance structure", "rules and policies", "ethical boundaries", "success metrics", "escalation paths", "thresholds"],
+      "examPreparation": ["governance-design lab", "decision-authority scenarios", "escalation threshold questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "business-2",
+      "domain": "businessEnvironment",
+      "internalLabel": "Identify, classify, plan, measure, and respond to project compliance obligations",
+      "coverage": ["compliance-requirements-consequences", "quality-regulatory-continuous-improvement", "ai-sustainability-modern-projects"],
+      "applicationSkills": ["requirement confirmation", "compliance categories", "threat analysis", "supporting methods", "noncompliance consequences", "response selection", "compliance measurement"],
+      "examPreparation": ["regulated-project case", "compliance evidence matrix", "unsupported compliance-claim distractor analysis"],
+      "status": "designed"
+    },
+    {
+      "taskId": "business-3",
+      "domain": "businessEnvironment",
+      "internalLabel": "Evaluate, authorize, implement, communicate, and document project changes",
+      "coverage": ["integrated-change-control", "organizational-external-change", "metrics-status-artifacts"],
+      "applicationSkills": ["change-request analysis", "impact assessment", "decision authority", "approved implementation", "baseline and artifact updates", "status communication"],
+      "examPreparation": ["change-control board simulation", "urgent change scenarios", "configuration integrity questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "business-4",
+      "domain": "businessEnvironment",
+      "internalLabel": "Prioritize and remove impediments, manage issues, and collaborate on interventions",
+      "coverage": ["issues-impediments-intervention", "performance-coaching-problem-solving", "risk-identification-analysis-response"],
+      "applicationSkills": ["impact evaluation", "impediment prioritization", "intervention selection", "continual reassessment", "risk-to-issue recognition", "stakeholder collaboration"],
+      "examPreparation": ["blocker triage", "issue-versus-risk drill", "remove-escalate-or-monitor scenarios"],
+      "status": "designed"
+    },
+    {
+      "taskId": "business-5",
+      "domain": "businessEnvironment",
+      "internalLabel": "Identify, analyze, respond to, monitor, control, and communicate project risk",
+      "coverage": ["risk-identification-analysis-response", "finance-reserves-cost-control", "schedule-risk-variation-recovery", "ai-sustainability-modern-projects"],
+      "applicationSkills": ["risk identification", "qualitative and quantitative analysis", "risk planning", "register maintenance", "response execution", "security and sustainability risk", "residual risk communication"],
+      "examPreparation": ["risk-response strategy cases", "reserve and exposure scenarios", "risk register and issue transition questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "business-6",
+      "domain": "businessEnvironment",
+      "internalLabel": "Use lessons and evidence to improve project and organizational practices",
+      "coverage": ["continuous-improvement-organizational-learning", "transition-closure-lessons-learned", "quality-regulatory-continuous-improvement"],
+      "applicationSkills": ["lessons-learned use", "process updates", "organizational asset updates", "improvement measurement"],
+      "examPreparation": ["retrospective-to-action lab", "improvement ownership scenarios", "lessons archive versus learning-system questions"],
+      "status": "designed"
+    },
+    {
+      "taskId": "business-7",
+      "domain": "businessEnvironment",
+      "internalLabel": "Assess culture and support organizational change required for project outcomes",
+      "coverage": ["organizational-external-change", "stakeholder-identification-analysis", "communication-reporting-knowledge-transfer"],
+      "applicationSkills": ["culture assessment", "change impact", "adoption planning", "stakeholder response", "communication and reinforcement"],
+      "examPreparation": ["organizational adoption case", "resistance diagnosis", "change leadership scenarios"],
+      "status": "designed"
+    },
+    {
+      "taskId": "business-8",
+      "domain": "businessEnvironment",
+      "internalLabel": "Monitor and respond to regulatory, technology, geopolitical, market, and sustainability changes",
+      "coverage": ["organizational-external-change", "ai-sustainability-modern-projects", "integrated-change-control", "risk-identification-analysis-response"],
+      "applicationSkills": ["environmental scanning", "impact prioritization", "scope and backlog adaptation", "risk update", "governance response", "continuous review"],
+      "examPreparation": ["market disruption scenario", "regulatory change case", "AI and sustainability impact questions"],
+      "status": "designed"
+    }
+  ],
+  "coverageAssertions": {
+    "allDomainsCovered": true,
+    "allTasksMapped": true,
+    "peopleTasksMapped": 8,
+    "processTasksMapped": 10,
+    "businessEnvironmentTasksMapped": 8,
+    "taskCoverageMustBeVerifiedBeforeRelease": true,
+    "enablerLevelReviewRequired": true,
+    "assessmentItemTraceabilityRequired": true
+  }
+}

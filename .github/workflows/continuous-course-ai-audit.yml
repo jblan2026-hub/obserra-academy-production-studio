@@ -1,143 +1,16 @@
-name: Continuous Academy Course AI Audit
+name: Legacy Continuous Course AI Audit Disabled
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "17 * * * *"
-  push:
-    branches: [main]
-    paths:
-      - "courses/**/course-manifest.json"
-      - "studio/audit-course-build-readiness.mjs"
-      - "studio/author-course-ai.mjs"
-      - "studio/build-all-courses.mjs"
-      - "studio/generate-catalog.mjs"
-      - ".github/workflows/continuous-course-ai-audit.yml"
 
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-
-concurrency:
-  group: continuous-academy-course-ai-audit
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  audit-author-build:
+  blocked:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
-    env:
-      ACADEMY_AUTHORING_PROVIDER: openai
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Checkout Studio
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Configure Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Audit every course from its own manifest
-        id: audit
-        continue-on-error: true
-        run: npm run audit:courses
-
-      - name: Stop unsafe automatic repair for invalid manifests
-        if: steps.audit.outputs.blocking_findings != '0'
+      - name: Reject legacy execution route
         run: |
-          gh issue create \
-            --title "Academy course manifest alignment failure" \
-            --body "The continuous Academy audit found ${{ steps.audit.outputs.blocking_findings }} blocking manifest alignment finding(s). Automatic authoring and build were stopped. Review catalog/continuous-course-audit.json from workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          echo "This legacy Academy workflow is disabled. Use .github/workflows/academy-zero-cost-sharded-completion.yml."
           exit 1
-
-      - name: Require AI authoring credential when authoring is needed
-        if: steps.audit.outputs.authoring_required == 'true'
-        run: |
-          test -n "$OPENAI_API_KEY" || {
-            gh issue create \
-              --title "Academy AI authoring credential required" \
-              --body "Approved courses require AI authoring, but OPENAI_API_KEY is not configured for the continuous Academy audit workflow. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
-            exit 1
-          }
-
-      - name: AI author only missing or stale approved courses
-        if: steps.audit.outputs.authoring_required == 'true'
-        run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-          const { spawnSync } = require('node:child_process');
-          const report = JSON.parse(fs.readFileSync('catalog/continuous-course-audit.json', 'utf8'));
-          const targets = report.courses.filter((course) => course.approved && (course.authoringMissing || course.findings.includes('stale-ai-course-package')));
-          for (const [index, course] of targets.entries()) {
-            console.log(`[Academy Studio] AI authoring ${index + 1}/${targets.length}: ${course.courseId}`);
-            const result = spawnSync(process.execPath, ['studio/author-course-ai.mjs', '--course', course.courseId, '--provider', process.env.ACADEMY_AUTHORING_PROVIDER, '--force'], {
-              stdio: 'inherit',
-              env: process.env,
-            });
-            if (result.status !== 0) process.exit(result.status ?? 1);
-          }
-          NODE
-
-      - name: Regenerate governed course assets and catalog
-        if: steps.audit.outputs.build_required == 'true' || steps.audit.outputs.authoring_required == 'true'
-        run: |
-          npm run build:all
-          npm run catalog
-
-      - name: Validate every manifest-defined course independently
-        run: |
-          npm run audit:courses
-          npm run validate
-          npm run load:courses:check
-          npm test
-
-      - name: Detect generated changes
-        id: changes
-        run: |
-          if git diff --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Create governed course build branch
-        if: steps.changes.outputs.changed == 'true'
-        id: branch
-        run: |
-          BRANCH="automation/academy-course-build-${GITHUB_RUN_ID}"
-          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
-          git config user.name "Obserra Academy AI Builder"
-          git config user.email "academy-ai-builder@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git add courses catalog
-          git commit -m "Regenerate manifest aligned Academy courses"
-          git push origin "$BRANCH"
-
-      - name: Open draft owner review pull request
-        if: steps.changes.outputs.changed == 'true'
-        run: |
-          gh pr create \
-            --draft \
-            --base main \
-            --head "${{ steps.branch.outputs.name }}" \
-            --title "Academy AI course build and catalog alignment" \
-            --body "Automated governed course build generated from each course's own manifest. The workflow independently checked lesson count, lesson durations, advertised hours, descriptions, outcomes, pricing, completion rules, certificate eligibility, official logo, and full legal branding. Owner review is required before merge and website publication. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
-
-      - name: Publish audit evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: continuous-academy-course-audit-${{ github.run_id }}
-          path: |
-            catalog/continuous-course-audit.json
-            catalog/bulk-build-report.json
-            catalog/academy-course-catalog.json
-          retention-days: 180

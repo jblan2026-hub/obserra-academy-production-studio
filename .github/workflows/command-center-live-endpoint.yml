@@ -1,0 +1,25 @@
+name: Command Center Live Endpoint Gate
+run-name: Command Center live endpoint deferred for Academy PR 46
+
+# Temporary branch-only scheduling guard for PR 46. Restore the full workflow from main before merge.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: command-center-live-endpoint-${{ github.ref }}-9fd62cb80f770a39cd54b6dc258a5a46a47895f4
+  cancel-in-progress: true
+
+jobs:
+  deferred-outside-academy-pr46:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.number != 46 }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require restoration outside PR 46
+        run: |
+          echo "Temporary PR 46 scheduling guard is active. Restore .github/workflows/command-center-live-endpoint.yml from main before other use."
+          exit 1

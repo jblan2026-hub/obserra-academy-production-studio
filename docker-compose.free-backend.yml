@@ -1,0 +1,139 @@
+name: obserra-academy-free-backend
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-academy}
+      POSTGRES_USER: ${POSTGRES_USER:-academy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-academy-local-only-change-me}
+    volumes:
+      - academy_postgres:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-academy} -d ${POSTGRES_DB:-academy}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - academy_ollama:/root/.ollama
+    ports:
+      - "127.0.0.1:${OLLAMA_PORT:-11434}:11434"
+
+  ollama-model:
+    image: ollama/ollama:latest
+    restart: "no"
+    depends_on:
+      ollama:
+        condition: service_started
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      LOCAL_AI_MODEL: ${LOCAL_AI_MODEL:-qwen2.5:7b-instruct}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        until ollama list >/dev/null 2>&1; do sleep 2; done;
+        ollama pull "$${LOCAL_AI_MODEL}"
+
+  db-init:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-academy}:${POSTGRES_PASSWORD:-academy-local-only-change-me}@postgres:5432/${POSTGRES_DB:-academy}?schema=public
+    command: ["npx", "prisma", "db", "push"]
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      ollama-model:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-academy}:${POSTGRES_PASSWORD:-academy-local-only-change-me}@postgres:5432/${POSTGRES_DB:-academy}?schema=public
+      BACKEND_COST_MODE: free-first
+      STUDIO_AUTH_PROVIDER: ${STUDIO_AUTH_PROVIDER:-machine-only}
+      STUDIO_MACHINE_TOKEN: ${STUDIO_MACHINE_TOKEN:?Set STUDIO_MACHINE_TOKEN in your local environment}
+      STUDIO_OIDC_ISSUER: ${STUDIO_OIDC_ISSUER:-}
+      STUDIO_OIDC_AUDIENCE: ${STUDIO_OIDC_AUDIENCE:-}
+      STUDIO_OIDC_JWKS_URL: ${STUDIO_OIDC_JWKS_URL:-}
+      STUDIO_OWNER_ORGANIZATION_ID: ${STUDIO_OWNER_ORGANIZATION_ID:-org_obserra_academy}
+      STUDIO_AUTH_DEFAULT_ORGANIZATION_ID: ${STUDIO_AUTH_DEFAULT_ORGANIZATION_ID:-org_obserra_academy}
+      STUDIO_STORAGE_PROVIDER: local
+      STUDIO_LOCAL_STORAGE_ROOT: /data/private
+      STUDIO_QUEUE_PROVIDER: postgres
+      STUDIO_AI_PROVIDER: local
+      STUDIO_ALLOW_PAID_AI: "false"
+      STUDIO_PAID_AI_DAILY_CALL_BUDGET: "1"
+      STUDIO_PAID_AI_PER_RUN_CALL_BUDGET: "1"
+      LOCAL_AI_BASE_URL: http://ollama:11434
+      LOCAL_AI_MODEL: ${LOCAL_AI_MODEL:-qwen2.5:7b-instruct}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZHVtbXktZnJlZS1iYWNrZW5kLWJ1aWxk
+      CLERK_SECRET_KEY: sk_test_ZHVtbXktZnJlZS1iYWNrZW5kLWJ1aWxk
+      OPENAI_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
+    volumes:
+      - academy_private_storage:/data/private
+    ports:
+      - "127.0.0.1:${ACADEMY_BACKEND_PORT:-3000}:3000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      ollama-model:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-academy}:${POSTGRES_PASSWORD:-academy-local-only-change-me}@postgres:5432/${POSTGRES_DB:-academy}?schema=public
+      BACKEND_COST_MODE: free-first
+      STUDIO_AUTH_PROVIDER: machine-only
+      STUDIO_STORAGE_PROVIDER: local
+      STUDIO_LOCAL_STORAGE_ROOT: /data/private
+      STUDIO_QUEUE_PROVIDER: postgres
+      STUDIO_AI_PROVIDER: local
+      STUDIO_ALLOW_PAID_AI: "false"
+      STUDIO_PAID_AI_DAILY_CALL_BUDGET: "1"
+      STUDIO_PAID_AI_PER_RUN_CALL_BUDGET: "1"
+      LOCAL_AI_BASE_URL: http://ollama:11434
+      LOCAL_AI_MODEL: ${LOCAL_AI_MODEL:-qwen2.5:7b-instruct}
+      STUDIO_FREE_WORKER_BATCH_SIZE: ${STUDIO_FREE_WORKER_BATCH_SIZE:-10}
+      OPENAI_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
+    volumes:
+      - academy_private_storage:/data/private
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        while true; do
+          npm run worker:free-ai || true;
+          sleep 5;
+        done
+
+volumes:
+  academy_postgres:
+  academy_ollama:
+  academy_private_storage:

@@ -1,8 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { recordAuditEvent } from "@/lib/audit-service";
-import { authorizeStudioRequest } from "@/lib/studio-auth";
+import { authenticateStudioRequest, authorizeStudioRequest } from "@/lib/studio-auth";
 import { requireOrganization } from "@/lib/organization-service";
 
 export const dynamic = "force-dynamic";
@@ -12,12 +11,12 @@ export async function GET(request: Request) {
 
   try {
     if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
-    const session = await auth();
-    if (!session.isAuthenticated || !session.orgId) {
-      return NextResponse.json({ error: "An authenticated organization session is required", correlationId }, { status: 401 });
+    const authentication = await authenticateStudioRequest(request);
+    if (!authentication.principal) {
+      return NextResponse.json({ error: authentication.reason ?? "Authentication required", correlationId }, { status: 401 });
     }
-
-    const organization = await requireOrganization(session.orgId);
+    const principal = authentication.principal;
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const builds = await prisma.build.findMany({
       where: { course: { organizationId: organization.id } },
       orderBy: { createdAt: "desc" },
@@ -27,16 +26,16 @@ export async function GET(request: Request) {
 
     await recordAuditEvent({
       organizationId: organization.id,
-      actorId: session.userId ?? undefined,
-      actorType: "user",
+      actorId: principal.actorId,
+      actorType: principal.actorType,
       action: "build.list",
       resourceType: "Build",
       correlationId,
       outcome: "success",
-      metadata: { count: builds.length },
+      metadata: { count: builds.length, identityProvider: principal.identityProvider },
     });
 
-    return NextResponse.json({ correlationId, organizationId: session.orgId, builds });
+    return NextResponse.json({ correlationId, organizationId: principal.organizationId, builds });
   } catch (error) {
     return NextResponse.json({ correlationId, builds: [], warning: error instanceof Error ? error.message : "Build history unavailable" });
   }
@@ -62,7 +61,7 @@ export async function POST(request: Request) {
 
   try {
     if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
-    const organization = await requireOrganization(principal.organizationId);
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const body = await request.json() as { courseId?: string; buildType?: string; commitSha?: string };
     const buildType = body.buildType?.trim();
 
@@ -99,7 +98,7 @@ export async function POST(request: Request) {
       resourceId: build.id,
       correlationId,
       outcome: "success",
-      metadata: { buildType, courseId: course.id, courseSlug: course.slug, role: principal.role },
+      metadata: { buildType, courseId: course.id, courseSlug: course.slug, role: principal.role, identityProvider: principal.identityProvider },
     });
 
     return NextResponse.json({ build, correlationId }, { status: 202 });
@@ -111,7 +110,7 @@ export async function POST(request: Request) {
       resourceType: "Build",
       correlationId,
       outcome: "failure",
-      metadata: { reason: error instanceof Error ? error.message : "unknown", clerkOrganizationId: principal.organizationId },
+      metadata: { reason: error instanceof Error ? error.message : "unknown", externalOrganizationId: principal.organizationId, identityProvider: principal.identityProvider },
     });
     return NextResponse.json({ error: "Build initiation failed", correlationId }, { status: 500 });
   }

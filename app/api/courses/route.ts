@@ -1,9 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { productionQueue } from "@/lib/studio-data";
 import { recordAuditEvent } from "@/lib/audit-service";
-import { authorizeStudioRequest } from "@/lib/studio-auth";
+import { authenticateStudioRequest, authorizeStudioRequest } from "@/lib/studio-auth";
 import { requireOrganization } from "@/lib/organization-service";
 
 export const dynamic = "force-dynamic";
@@ -13,12 +12,12 @@ export async function GET(request: Request) {
 
   try {
     if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
-    const session = await auth();
-    if (!session.isAuthenticated || !session.orgId) {
-      return NextResponse.json({ error: "An authenticated organization session is required", correlationId }, { status: 401 });
+    const authentication = await authenticateStudioRequest(request);
+    if (!authentication.principal) {
+      return NextResponse.json({ error: authentication.reason ?? "Authentication required", correlationId }, { status: 401 });
     }
-
-    const organization = await requireOrganization(session.orgId);
+    const principal = authentication.principal;
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const courses = await prisma.course.findMany({
       where: { organizationId: organization.id },
       orderBy: { updatedAt: "desc" },
@@ -27,16 +26,16 @@ export async function GET(request: Request) {
 
     await recordAuditEvent({
       organizationId: organization.id,
-      actorId: session.userId ?? undefined,
-      actorType: "user",
+      actorId: principal.actorId,
+      actorType: principal.actorType,
       action: "course.list",
       resourceType: "Course",
       correlationId,
       outcome: "success",
-      metadata: { count: courses.length, source: "database" },
+      metadata: { count: courses.length, source: "database", identityProvider: principal.identityProvider },
     });
 
-    return NextResponse.json({ source: "database", correlationId, organizationId: session.orgId, courses });
+    return NextResponse.json({ source: "database", correlationId, organizationId: principal.organizationId, courses });
   } catch (error) {
     return NextResponse.json({
       source: "fallback",
@@ -74,7 +73,7 @@ export async function POST(request: Request) {
 
   try {
     if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
-    const organization = await requireOrganization(principal.organizationId);
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const body = await request.json() as { slug?: string; title?: string; summary?: string; productionOwner?: string };
     const slug = body.slug?.trim().toLowerCase();
     const title = body.title?.trim();
@@ -106,7 +105,7 @@ export async function POST(request: Request) {
       resourceId: course.id,
       correlationId,
       outcome: "success",
-      metadata: { slug: course.slug, role: principal.role, clerkOrganizationId: principal.organizationId },
+      metadata: { slug: course.slug, role: principal.role, externalOrganizationId: principal.organizationId, identityProvider: principal.identityProvider },
     });
 
     return NextResponse.json({ course, correlationId }, { status: 201 });
@@ -118,7 +117,7 @@ export async function POST(request: Request) {
       resourceType: "Course",
       correlationId,
       outcome: "failure",
-      metadata: { reason: error instanceof Error ? error.message : "unknown", clerkOrganizationId: principal.organizationId },
+      metadata: { reason: error instanceof Error ? error.message : "unknown", externalOrganizationId: principal.organizationId, identityProvider: principal.identityProvider },
     });
     return NextResponse.json({ error: "Course creation failed", correlationId }, { status: 500 });
   }

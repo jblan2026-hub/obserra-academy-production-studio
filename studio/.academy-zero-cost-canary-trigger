@@ -1,0 +1,3 @@
+Zero cost Academy canary trigger.
+Purpose: force the protected 61 course content workflow to run with native local Ollama providers only.
+Paid model providers remain disabled by workflow policy.
