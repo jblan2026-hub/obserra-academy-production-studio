@@ -86,7 +86,14 @@ check("parallel authoring preserves bounded retry behavior", parallelAuthorSourc
 check("parallel authoring emits progress heartbeat evidence", parallelAuthorSource.includes("Parallel authoring heartbeat"));
 check("parallel authoring summary records timeout and elapsed evidence", parallelAuthorSource.includes("processTimeoutMs") && parallelAuthorSource.includes("elapsedMs"));
 check("parallel authoring keeps protected output in the ephemeral generated path", authorCourseSource.includes('path.join(courseDir, "generated", "authoring")'));
-check("parallel authoring remains capped at twelve workers", /ACADEMY_AUTHORING_CONCURRENCY,\s*6,\s*1,\s*12/.test(parallelAuthorSource));
+check(
+  "parallel authoring is capped at the 16-worker course allocation",
+  parallelAuthorSource.includes("const portfolioWorkerCount = 36")
+    && parallelAuthorSource.includes("const applicationWorkerAllocation = 20")
+    && parallelAuthorSource.includes("const courseWorkerAllocation = 16")
+    && parallelAuthorSource.includes("courseWorkerAllocation,\n  1,\n  courseWorkerAllocation")
+    && parallelAuthorSource.includes("applicationWorkerAllocation + courseWorkerAllocation !== portfolioWorkerCount"),
+);
 
 console.log(`Studio 70x extension evaluated ${checks.length} non-duplicative assertions.`);
 for (const item of checks) console.log(`${item.passed ? "PASS" : "FAIL"} ${item.name}`);
