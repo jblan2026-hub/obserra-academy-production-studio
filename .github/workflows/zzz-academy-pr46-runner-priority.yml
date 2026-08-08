@@ -1,0 +1,42 @@
+name: Academy PR 46 Runner Priority
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/zzz-academy-pr46-runner-priority.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cancel-40x-contention:
+    name: Release 40x runner capacity for Academy
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 46 }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: obserra-40x-production-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - run: echo "40x enterprise gate deferred while PR 46 completes the governed 61-course objective."
+
+  cancel-50x-contention:
+    name: Release 50x runner capacity for Academy
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 46 }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: obserra-50x-production-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - run: echo "50x enterprise gate deferred while PR 46 completes the governed 61-course objective."
+
+  cancel-mega-contention:
+    name: Release mega-gate runner capacity for Academy
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 46 }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: obserra-enterprise-mega-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - run: echo "Enterprise mega gate deferred while PR 46 completes the governed 61-course objective."
