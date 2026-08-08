@@ -7,6 +7,7 @@ on:
       - main
       - agent/owner-ai-command-center-production
       - agent/academy-36-worker-course-surge
+      - release/command-center-endpoint-20260808
     paths:
       - "owner-command-center/**"
       - "studio/**"
