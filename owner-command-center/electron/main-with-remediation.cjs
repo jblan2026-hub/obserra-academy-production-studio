@@ -4,6 +4,7 @@ const { app, ipcMain, safeStorage } = require("electron");
 const Store = require("electron-store");
 const { createRemediationQueue } = require("./remediation-queue.cjs");
 const { getAcademyProductionEvidence } = require("./academy-production-evidence.cjs");
+const { createAcademyReleaseApproval } = require("./academy-release-approval.cjs");
 const { createEndpointEnrollmentRuntime } = require("./endpoint-enrollment.cjs");
 
 const store = new Store({ name: "owner-command-center" });
@@ -29,7 +30,15 @@ endpointRuntime = createEndpointEnrollmentRuntime({
   app,
   safeStorage,
   ipcMain: endpointIpcMain,
-  academyEvidenceProvider: () => getAcademyProductionEvidence(),
+  academyEvidenceProvider: () => {
+    const evidence = getAcademyProductionEvidence();
+    return { ...evidence, operational: evidence.controlPlaneOperational === true };
+  },
+});
+const academyReleaseApproval = createAcademyReleaseApproval({
+  store,
+  safeStorage,
+  endpointRuntime,
 });
 
 function requireObject(value, name) {
@@ -136,6 +145,21 @@ if (!primaryInstance) {
     });
     ipcMain.handle("remediation:execute", async (_event, proposalId) => remediationQueue.execute(String(proposalId || "")));
     ipcMain.handle("academy:getProductionEvidence", async () => getAcademyProductionEvidence());
+    ipcMain.handle("academy:getReleaseApproval", async () => academyReleaseApproval.getSnapshot());
+    ipcMain.handle("academy:recordReleaseDecision", async (_event, payload) => {
+      const request = requireObject(payload, "Academy owner release decision");
+      const decision = academyReleaseApproval.recordDecision({
+        decision: request.decision,
+        confirmation: request.confirmation,
+        note: request.note,
+      });
+      endpointRuntime.refresh();
+      return {
+        decision,
+        approval: academyReleaseApproval.getSnapshot(),
+        productionEvidence: getAcademyProductionEvidence(),
+      };
+    });
 
     try {
       const profilePath = await waitForBootstrapProfile();
