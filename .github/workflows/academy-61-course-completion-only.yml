@@ -3,9 +3,9 @@ run-name: 61-course completion • ${{ github.ref_name }} • ${{ github.sha }}
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches:
-      - agent/academy-61-course-completion-only
+      - main
     paths:
       - "courses/**"
       - "sources/**"
