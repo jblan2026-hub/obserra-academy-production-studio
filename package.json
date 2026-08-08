@@ -15,6 +15,7 @@
     "verify:worker-contract": "node studio/verify-worker-pool-contract.mjs && npm run verify:course-production-standard",
     "validate": "npm run apply:course-policy && node studio/validate.mjs",
     "preflight:authoring": "node studio/preflight-authoring-provider.mjs",
+    "preflight:checkpoint-gateway": "node studio/preflight-authoring-checkpoint-gateway.mjs",
     "restore:authoring-checkpoints": "node studio/restore-authoring-checkpoints.mjs",
     "author:course": "node studio/author-course-with-checkpoint.mjs",
     "author:all": "node studio/author-all-courses.mjs",
