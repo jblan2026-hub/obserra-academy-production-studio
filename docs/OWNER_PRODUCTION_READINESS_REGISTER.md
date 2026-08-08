@@ -3,12 +3,24 @@
 - **Document ID:** ACADEMY-OWNER-PROD-TRUTH-001
 - **Status:** Controlled current-state record
 - **Owner:** Obserra LLC Owner, Academy Product, Learning Engineering, Security, and Operations
-- **Last updated:** 2026-08-07
-- **Applies to:** Academy Production Studio, protected learner content, LCMS loading, owner review, publication, website ingestion, commerce, certificates, and Command Center monitoring
+- **Last updated:** 2026-08-08
+- **Applies to:** Academy Production Studio, protected learner content, LCMS loading, owner review, publication, website ingestion, commerce, certificates, Command Center monitoring, and worker allocation
 
 ## Purpose
 
-This record prevents authored source, catalog metadata, scripts, generated packages, automated tests, preview deployments, local packages, or partial course assets from being represented as learner-ready production courses. It also records the owner directive that Academy operations, review status, publication state, and production health must be visible through the owner-private Command Center without exposing protected learner content or credentials.
+This record prevents authored source, catalog metadata, scripts, generated packages, automated tests, preview deployments, local packages, worker records, or partial course assets from being represented as learner-ready production courses. It also records the owner directive that Academy operations, review status, publication state, worker activity, and production health must be visible through the owner-private Command Center without exposing protected learner content or credentials.
+
+## Authoritative worker allocation
+
+The portfolio contains **36 logical workers total**:
+
+| Worker pool | Allocation | Authorized scope |
+|---|---:|---|
+| Application production | 20 | Application development, maintenance, validation, release preparation, and operational support |
+| Academy course production | 16 | Course authoring, assessments, protected package generation, validation, and LCMS preparation |
+| Total | 36 | Fixed portfolio ceiling |
+
+Cross-pool borrowing is disabled by default. Actual simultaneous execution may be lower because of provider, runner, database, or workload constraints. No workflow may exceed its assigned pool without an explicit owner-approved allocation change.
 
 ## Mandatory status vocabulary
 
@@ -30,24 +42,27 @@ Academy status reports must use only these evidence-bound states:
 
 | Capability | Current state | Evidence boundary | Blocker or next gate |
 |---|---|---|---|
-| Protected 60-course authoring pipeline | Blocked | PR 16, branch `agent/continue-course-buildout`, head `d927bb2cbb31d4407e5d0593ce87e67a506c92a0` | The protected audit stopped at the external AI provider capacity boundary with `credit_balance_exhausted`. |
-| Studio validation | CI verified | Validate Academy Production Studio run 407 succeeded for the PR 16 head | Rerun after provider capacity is restored and protected packages are regenerated. |
-| Studio authentication validation | CI verified | Studio Authentication Validation run 256 succeeded | Production identity and end-to-end learner authorization still require direct verification. |
-| Owner Command Center packaging gates | CI verified for the PR 16 head | Fast Gate 192, 2000x Windows Gate 174, and Windows Package run 276 succeeded | These results do not establish hosted owner-private Command Center production. |
-| Enterprise cross-project gates | CI verified for the PR 16 head | Enterprise Mega Release Gate 264, 40x Gate 252, and 50x Gate 252 succeeded | Re-execute after the blocked protected authoring and LCMS steps complete. |
-| Protected Academy audit | Blocked | Protected audit run 59 failed at OpenAI HTTP 429 provider code `credit_balance_exhausted` | Restore approved API credits or quota for the organization associated with the GitHub `OPENAI_API_KEY`, then rerun from the exact source head. |
-| AI-authored learner packages | Blocked | Six active workers stopped after attempt 1; the remaining 54 courses were not started | Generate all required packages under the current policy provenance and validate every course. |
-| Protected learner catalog | Blocked | Downstream regeneration and validation were skipped after provider failure | Produce exactly 60 owner-review records and pass completeness, source, assessment, accessibility, completion, and certificate metadata gates. |
-| LCMS PostgreSQL persistence | Blocked | Database bootstrap, Prisma validation, and LCMS load were skipped after provider failure | Verify the approved Academy database, schema, authentication, transaction behavior, backup, restore, and complete learner-content load. |
-| Website Academy ingestion | Implemented in a separate website feature line | Website PR 46 accepts approved Studio catalog schemas while preserving a safe public baseline | Reconcile the approved Academy publication artifact with the website branch and verify production ingestion. |
-| Public sales catalog | Operational baseline exists, not proof of protected learner readiness | Public catalog remains descriptive by design | Do not infer learner content, media, assessments, entitlements, or certificates from catalog presence. |
+| Protected 60-course authoring pipeline | Blocked | PR 16, branch `agent/continue-course-buildout` | Protected PostgreSQL authentication failed before checkpoint restoration and authoring. |
+| Course worker allocation | Configured, not operational | 16-worker maximum encoded in workflow and parallel authoring runtime | Rerun after database authentication is corrected; 0 workers launched in the latest blocked run. |
+| Application worker reservation | Governed allocation | 20 workers reserved in the Website Application Production Pipeline | Application validation must rerun on its revised 20-worker matrix. |
+| OpenAI provider preflight | CI verified | Run `31228989224` completed a minimal `gpt-5` request with HTTP 200 | Does not prove sufficient remaining capacity for all 60 courses. |
+| Studio validation | CI verified | Run `31228989248` succeeded | Rerun after protected packages are regenerated. |
+| Studio authentication validation | CI verified | Run `31228989221` succeeded | Production identity and learner authorization still require direct verification. |
+| Owner Command Center packaging gates | CI verified on prior reviewed head | Fast Gate `31228989219`, 2000x Windows Gate `31228989249`, Windows Package `31228989251` | Does not establish hosted owner-private Command Center production. |
+| Enterprise cross-project gates | CI verified on prior reviewed head | Mega Release `31228989228`, 40x `31228989227`, 50x `31228989255` | Re-execute after protected authoring and LCMS steps complete. |
+| Protected Academy audit | Blocked | Run `31228989220` failed before authoring | Correct or rotate the protected Academy PostgreSQL credential and rerun. |
+| AI-authored learner packages | Blocked | No worker launched in the latest audit | Restore checkpoints, then generate and validate all required packages using up to 16 course workers. |
+| Protected learner catalog | Blocked | Downstream regeneration and validation were skipped | Produce exactly 60 owner-review records and pass completeness, source, assessment, accessibility, completion, and certificate metadata gates. |
+| LCMS PostgreSQL persistence | Blocked | Schema bootstrap and LCMS load did not complete | Verify authentication, schema, transaction behavior, backup, restore, and complete learner-content load. |
+| Website Academy ingestion | Implemented in a separate website feature line | Website accepts approved Studio catalog schemas while preserving a safe public baseline | Reconcile an approved Academy publication artifact and verify production ingestion. |
 | Owner final review | Blocked | Owner-review bypass and review metadata exist in source | The exact staged learner experience must pass every pre-owner gate before submission. |
-| Course publication | Blocked | Owner-review eligibility and publication approval are intentionally separate | Owner approval, release packaging, catalog synchronization, deployment, rollback, and direct production verification are required. |
-| Command Center Academy monitoring | Designed or partially implemented in separate feature lines | Local connector and dashboard work exists | Implement governed production APIs and least-privilege service identities; never expose protected learner content, raw credentials, or assessment answers. |
+| Course publication | Blocked | Owner-review eligibility and publication approval remain separate | Owner approval, release packaging, catalog synchronization, deployment, rollback, and direct production verification are required. |
 
-## Provider capacity incident boundary
+## Worker truth boundary
 
-The protected audit failure is a real production-readiness blocker, not a transient green-state exception. The pipeline correctly classified provider credit exhaustion as non-retryable, stopped active workers, prevented wasteful retries, and skipped downstream persistence and publication operations. No document or dashboard may state that the 60 protected learner courses are generated, loaded, review-ready, or production-published until a later successful run proves those states.
+A configured concurrency value is not an active worker. A GitHub Actions job is not a persistent production worker. A worker becomes operational only after its identity, authorization, heartbeat, assigned task, output evidence, failure handling, revocation, and recovery are verified.
+
+The 16 course-worker allocation is a maximum governed authoring pool. The runtime creates only as many processes as there are eligible courses, up to 16. If the database, provider, or policy gate fails, the workers must not launch.
 
 ## Owner-review acceptance gate
 
@@ -83,6 +98,8 @@ A course may be reported as production published and verified only after:
 
 The owner-private Command Center may consume only governed, minimum-necessary Academy projections, including:
 
+- portfolio allocation of 36 workers, with 20 application and 16 course workers;
+- active, queued, blocked, completed, and failed worker counts by pool;
 - service and database health;
 - course count by controlled status;
 - generation, validation, review, and publication state;
@@ -101,4 +118,4 @@ Course mappings to laws, regulations, standards, professional guidance, certific
 
 ## Documentation reconciliation rule
 
-Every material change to course source, provider policy, protected packages, learner catalog, database schema, LCMS loading, identity, entitlement, assessment, media, accessibility, commerce, publication, certificate, Command Center integration, recovery, or regulatory applicability must update this register and the affected standards, runbooks, release evidence, and owner-status records in the same governed change set.
+Every material change to worker allocation, course source, provider policy, protected packages, learner catalog, database schema, LCMS loading, identity, entitlement, assessment, media, accessibility, commerce, publication, certificate, Command Center integration, recovery, or regulatory applicability must update this register and the affected standards, runbooks, release evidence, and owner-status records in the same governed change set.
