@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   endpoint-contract:
-    name: Endpoint identity, evidence, approval, and local-only contract
+    name: Endpoint identity, GitHub evidence, approval, and local-only contract
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:
@@ -45,18 +45,22 @@ jobs:
           node --check electron/endpoint-enrollment.cjs
           node --check electron/academy-production-evidence.cjs
           node --check electron/academy-release-approval.cjs
+          node --check electron/academy-github-evidence.cjs
           node --check electron/preload.cjs
           node --check src/academy-batch.js
+          node --check src/academy-github-evidence.js
           node --check scripts/verify-endpoint-enrollment.mjs
           node --check scripts/verify-academy-production-evidence.mjs
           node --check scripts/verify-academy-release-approval.mjs
+          node --check scripts/verify-academy-github-evidence.mjs
       - name: Run complete Command Center verification
         run: npm run verify
-      - name: Verify endpoint, Academy evidence, and owner approval gates directly
+      - name: Verify endpoint, Academy evidence, owner approval, and GitHub synchronization gates directly
         run: |
           npm run verify:endpoint
           npm run verify:academy-evidence
           npm run verify:approval
+          npm run verify:github-evidence
       - name: Verify no endpoint credentials are embedded
         shell: bash
         run: |
@@ -73,6 +77,9 @@ jobs:
           grep -F 'publicationAuthorized: false' electron/academy-release-approval.cjs
           grep -F 'checkoutAuthorized: false' electron/academy-release-approval.cjs
           grep -F 'hmac-sha256-device-bound' electron/academy-release-approval.cjs
+          grep -F 'DECISION_MARKER' electron/academy-github-evidence.cjs
+          grep -F 'MAX_ARTIFACT_BYTES' electron/academy-github-evidence.cjs
+          grep -F 'crc32(content)' electron/academy-github-evidence.cjs
 
   windows-release:
     name: Windows installer, portable executable, and endpoint verification media
@@ -153,7 +160,8 @@ jobs:
     steps:
       - run: |
           echo "Source contract: PASSED"
-          echo "Device-bound owner approval control: PASSED"
+          echo "Authenticated GitHub evidence synchronization: PASSED"
+          echo "Device-bound owner approval and authenticated submission: PASSED"
           echo "Windows package and verification media: PASSED"
           echo "Actual installation on the owner's endpoint: REQUIRES execution of the packaged installer on that endpoint"
           echo "Endpoint-ready status: must be proven by the generated heartbeat and loopback readiness receipt"
