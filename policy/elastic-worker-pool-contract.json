@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "1.0",
+  "contractId": "obserra-elastic-production-pool-36",
+  "effectiveDate": "2026-08-07",
+  "owner": "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC",
+  "totalLogicalWorkers": 36,
+  "assignmentMode": "interchangeable-task-based",
+  "allowedWorkstreams": [
+    "academy-course-production",
+    "command-center-release"
+  ],
+  "prohibitedWorkstreams": [
+    "unrelated-application-development",
+    "customer-system-mutation",
+    "learner-device-mutation",
+    "vendor-system-mutation",
+    "third-party-system-mutation",
+    "unapproved-production-publication",
+    "unapproved-commerce-activation"
+  ],
+  "allocationRules": {
+    "allWorkersAccountedFor": true,
+    "crossWorkstreamRoleSwitchingAllowed": true,
+    "minimumWorkersPerActiveWorkstream": 4,
+    "academyPriorityUntilSixtyCourseGate": true,
+    "commandCenterParallelWorkAllowed": true,
+    "idleWorkersAllowedOnlyWhenBothWorkstreamsHaveNoEligibleTasks": true,
+    "applicationWorkerReservation": 0
+  },
+  "academyContract": {
+    "targetOwnerReviewCourses": 60,
+    "allowedRoles": [
+      "instructional-author",
+      "learner-materials-producer",
+      "assessment-author",
+      "media-producer",
+      "accessibility-producer",
+      "rights-record-producer",
+      "certificate-packager",
+      "compliance-validator"
+    ],
+    "requiredStages": [
+      "protected-authoring",
+      "learner-materials",
+      "assessment-and-answer-key",
+      "video-script-and-media-production",
+      "captions-transcripts-and-accessibility",
+      "rights-and-source-records",
+      "certificate-package",
+      "compliance-staging"
+    ],
+    "publicationDefault": false,
+    "checkoutDefault": false,
+    "releaseRequiresOwnerApproval": true,
+    "requiredEvidence": [
+      "source-traceability",
+      "assessment-integrity",
+      "accessibility-equivalence",
+      "media-audio-verification",
+      "caption-and-transcript-verification",
+      "rights-clearance",
+      "entitlement-validation",
+      "certificate-validation",
+      "security-validation",
+      "rollback-evidence",
+      "owner-acceptance"
+    ]
+  },
+  "commandCenterContract": {
+    "allowedRoles": [
+      "security-validator",
+      "connector-validator",
+      "release-packager",
+      "recovery-validator",
+      "endpoint-installation-preparer"
+    ],
+    "ownerOnly": true,
+    "localOnly": true,
+    "readOnlyByDefault": true,
+    "firstPartyMutationOnly": true,
+    "ownerApprovalRequiredForMutation": true,
+    "rollbackRequiredForMutation": true,
+    "evidenceRequiredForMutation": true,
+    "endpointInstallationRequiresOwnerExecution": true
+  },
+  "universalRules": [
+    "secure-by-design",
+    "secure-by-default",
+    "least-privilege",
+    "zero-trust",
+    "tenant-isolation",
+    "no-secret-logging",
+    "no-secret-commits",
+    "source-traceability",
+    "human-oversight",
+    "full-auditability",
+    "fail-closed",
+    "idempotent-execution",
+    "checkpoint-before-claim",
+    "no-fabricated-evidence",
+    "no-false-production-claims",
+    "no-automatic-publication",
+    "no-automatic-purchase-enablement",
+    "no-owner-approval-bypass"
+  ]
+}
