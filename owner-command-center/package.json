@@ -1,8 +1,8 @@
 {
   "name": "obserra-owner-ai-command-center",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "private": true,
-  "description": "Owner-only local AI command center for the Obserra ecosystem.",
+  "description": "Owner-only Obserra desktop command center with standard installers and explicit device enrollment.",
   "main": "electron/main-with-remediation.cjs",
   "type": "module",
   "scripts": {
@@ -14,7 +14,12 @@
     "verify:github-evidence": "node scripts/verify-academy-github-evidence.mjs",
     "verify:remote-cache": "node scripts/verify-academy-remote-evidence-cache.mjs",
     "verify": "node scripts/verify-local-only.mjs && node scripts/verify-installer-config.mjs && node scripts/verify-connector-contract.mjs && node scripts/verify-academy-action-runtime.mjs && node scripts/verify-endpoint-enrollment.mjs && node scripts/verify-academy-production-evidence.mjs && node scripts/verify-academy-release-approval.mjs && node scripts/verify-academy-github-evidence.mjs && node scripts/verify-academy-remote-evidence-cache.mjs && node scripts/verify-ai-remediation.mjs && node scripts/verify-remediation-runtime.mjs",
-    "package:windows": "electron-builder --win nsis portable",
+    "package:windows": "electron-builder --win nsis portable --x64 --arm64 --publish never",
+    "package:windows:x64": "electron-builder --win nsis portable --x64 --publish never",
+    "package:windows:arm64": "electron-builder --win nsis portable --arm64 --publish never",
+    "package:mac": "electron-builder --mac dmg zip --universal --publish never",
+    "package:linux:x64": "electron-builder --linux AppImage deb --x64 --publish never",
+    "package:linux:arm64": "electron-builder --linux AppImage deb --arm64 --publish never",
     "package:media": "powershell -ExecutionPolicy Bypass -File scripts/build-removable-media-package.ps1"
   },
   "dependencies": {
@@ -27,21 +32,54 @@
   "build": {
     "appId": "com.obserra.ownercommandcenter",
     "productName": "Obserra Owner AI Command Center",
-    "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}",
-    "directories": {"output": "dist"},
-    "files": ["electron/**/*","src/**/*","scripts/**/*","HIGH-AVAILABILITY.md","INSTALL-AND-RECOVERY.md","ENDPOINT-OPERATIONS.md","package.json"],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "scripts/**/*",
+      "resources/**/*",
+      "HIGH-AVAILABILITY.md",
+      "INSTALL-AND-RECOVERY.md",
+      "ENDPOINT-OPERATIONS.md",
+      "package.json"
+    ],
     "asar": true,
     "compression": "maximum",
     "win": {
-      "target": [{"target":"nsis","arch":["x64"]},{"target":"portable","arch":["x64"]}],
+      "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
       "requestedExecutionLevel": "asInvoker",
-      "verifyUpdateCodeSignature": true
+      "verifyUpdateCodeSignature": true,
+      "extraFiles": [
+        {
+          "from": "resources/Obserra-Command-Center-Bootstrap.json",
+          "to": "Obserra-Command-Center-Bootstrap.json"
+        }
+      ]
     },
     "nsis": {
-      "oneClick": true,
+      "artifactName": "Obserra-Owner-AI-Command-Center-Setup-${version}-${arch}.${ext}",
+      "oneClick": false,
       "perMachine": false,
-      "allowElevation": false,
-      "allowToChangeInstallationDirectory": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Obserra Owner AI Command Center",
@@ -49,6 +87,80 @@
       "runAfterFinish": true,
       "deleteAppDataOnUninstall": false
     },
-    "portable": {"artifactName":"Obserra-Owner-AI-Command-Center-Portable-${version}-${arch}.${ext}"}
+    "portable": {
+      "artifactName": "Obserra-Owner-AI-Command-Center-Portable-${version}-${arch}.${ext}"
+    },
+    "mac": {
+      "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}",
+      "category": "public.app-category.business",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "extraFiles": [
+        {
+          "from": "resources/Obserra-Command-Center-Bootstrap.json",
+          "to": "MacOS/Obserra-Command-Center-Bootstrap.json"
+        }
+      ]
+    },
+    "dmg": {
+      "artifactName": "Obserra-Owner-AI-Command-Center-${version}-universal.${ext}",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220,
+          "type": "file"
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "linux": {
+      "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}",
+      "category": "Utility",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "extraFiles": [
+        {
+          "from": "resources/Obserra-Command-Center-Bootstrap.json",
+          "to": "Obserra-Command-Center-Bootstrap.json"
+        }
+      ]
+    },
+    "appImage": {
+      "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}"
+    },
+    "deb": {
+      "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}"
+    }
   }
 }
