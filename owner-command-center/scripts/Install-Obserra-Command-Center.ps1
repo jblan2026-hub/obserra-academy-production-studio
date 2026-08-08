@@ -13,6 +13,7 @@ $manifestPath = Join-Path $here "SHA256SUMS.json"
 $verificationScript = Join-Path $here "Test-Obserra-Command-Center-Endpoint.ps1"
 $endpointDirectory = Join-Path $env:LOCALAPPDATA "Obserra\OwnerCommandCenter"
 $installedBootstrap = Join-Path $endpointDirectory "Obserra-Command-Center-Bootstrap.json"
+$runtimeInstallationReceiptPath = Join-Path $endpointDirectory "installation-receipt.json"
 $installerVerificationPath = Join-Path $endpointDirectory "installer-verification.json"
 
 function Assert-PackageIntegrity {
@@ -103,6 +104,10 @@ $verificationParameters = @{
 if ($RequireControlPlaneOperational) { $verificationParameters.RequireControlPlaneOperational = $true }
 $verification = & $verificationScript @verificationParameters
 if (-not $verification.Verified) { throw "Endpoint verification did not return a verified result." }
+if (-not (Test-Path $runtimeInstallationReceiptPath)) { throw "The running Command Center did not create installation-receipt.json." }
+$runtimeInstallationReceipt = Get-Content $runtimeInstallationReceiptPath -Raw | ConvertFrom-Json
+if ($runtimeInstallationReceipt.endpointReady -ne $true) { throw "The runtime installation receipt is not endpoint ready." }
+if ([string]$runtimeInstallationReceipt.deviceId -ne [string]$verification.DeviceId) { throw "Runtime installation receipt identity mismatch." }
 
 $installerReceipt = [ordered]@{
     schemaVersion = "1.0"
@@ -119,6 +124,7 @@ $installerReceipt = [ordered]@{
     bootstrapProfileId = [string]$verification.BootstrapProfileId
     readinessUrl = [string]$verification.ReadinessUrl
     receiptPath = [string]$verification.ReceiptPath
+    runtimeInstallationReceiptPath = $runtimeInstallationReceiptPath
     verifiedAt = (Get-Date).ToUniversalTime().ToString("o")
 }
 $installerReceipt | ConvertTo-Json -Depth 5 | Set-Content $installerVerificationPath -Encoding UTF8
