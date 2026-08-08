@@ -76,6 +76,8 @@ env:
   ACADEMY_OLLAMA_UPSTREAM_PORT: "11434"
   ACADEMY_OLLAMA_PROXY_TIMEOUT_MS: "3600000"
   ACADEMY_OLLAMA_PROXY_KEEPALIVE_MS: "15000"
+  OLLAMA_VERSION: "0.30.8"
+  OLLAMA_LINUX_AMD64_SHA256: ffe2b2c2f2f5f5b30c081ec353c2e0bb2d9ead516064a8e22663b24b8fd8dca0
   OLLAMA_NO_CLOUD: "1"
   OLLAMA_KEEP_ALIVE: "30m"
   STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
@@ -110,22 +112,60 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install Node dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
-
-      - name: Install pinned local Ollama runtime
+      - name: Assert commercial model providers are disabled
         shell: bash
         run: |
           set -euo pipefail
-          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION=0.30.8 sh
+          test "$ACADEMY_AUTHORING_PROVIDER" = "local"
+          test "$ACADEMY_RESEARCH_PROVIDER" = "local"
+          test "$ACADEMY_REVIEW_PROVIDER" = "local"
+          test -z "$OPENAI_API_KEY"
+          test -z "$ANTHROPIC_API_KEY"
+          test "$STUDIO_ALLOW_PAID_AI" = "false"
+          test "$OLLAMA_NO_CLOUD" = "1"
+          test "$LOCAL_AI_BASE_URL" = "http://127.0.0.1:11436"
+
+      - name: Preflight protected checkpoint gateway before expensive setup
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
+
+      - name: Apply governed course policy
+        run: npm run apply:course-policy
+
+      - name: Restore reusable protected checkpoints
+        run: node studio/restore-academy-hollywood-checkpoints.mjs
+
+      - name: Reject stale restored packages
+        run: node studio/prune-stale-restored-course-packages.mjs
+
+      - name: Download authoritative primary-source cache at zero model cost
+        run: node studio/fetch-free-authoritative-source-cache.mjs
+
+      - name: Build deterministic course source context
+        run: node studio/build-free-course-source-context.mjs
+
+      - name: Install checksum-verified pinned Ollama archive without systemd setup
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/ollama-linux-amd64-${OLLAMA_VERSION}.tar.zst"
+          if ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends zstd
+          fi
+          curl --fail --location --silent --show-error \
+            --retry 3 --retry-delay 2 --retry-all-errors \
+            "https://github.com/ollama/ollama/releases/download/v${OLLAMA_VERSION}/ollama-linux-amd64.tar.zst" \
+            --output "$archive"
+          printf '%s  %s\n' "$OLLAMA_LINUX_AMD64_SHA256" "$archive" | sha256sum --check --strict
+          sudo tar --zstd --extract --file "$archive" --directory /usr
+          rm -f "$archive"
           ollama --version
 
       - name: Start local-only Ollama and pull the governed model
         shell: bash
         run: |
           set -euo pipefail
-          export OLLAMA_NO_CLOUD=1
-          nohup ollama serve > /tmp/academy-ollama.log 2>&1 &
+          nohup env OLLAMA_NO_CLOUD=1 OLLAMA_KEEP_ALIVE="$OLLAMA_KEEP_ALIVE" ollama serve > /tmp/academy-ollama.log 2>&1 &
           for attempt in $(seq 1 90); do
             if curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
             sleep 2
@@ -144,37 +184,6 @@ jobs:
             sleep 1
           done
           curl --fail --silent http://127.0.0.1:11436/health
-
-      - name: Assert commercial model providers are disabled
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$ACADEMY_AUTHORING_PROVIDER" = "local"
-          test "$ACADEMY_RESEARCH_PROVIDER" = "local"
-          test "$ACADEMY_REVIEW_PROVIDER" = "local"
-          test -z "$OPENAI_API_KEY"
-          test -z "$ANTHROPIC_API_KEY"
-          test "$STUDIO_ALLOW_PAID_AI" = "false"
-          test "$OLLAMA_NO_CLOUD" = "1"
-          test "$LOCAL_AI_BASE_URL" = "http://127.0.0.1:11436"
-
-      - name: Preflight protected checkpoint gateway
-        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
-
-      - name: Apply governed course policy
-        run: npm run apply:course-policy
-
-      - name: Restore reusable protected checkpoints
-        run: node studio/restore-academy-hollywood-checkpoints.mjs
-
-      - name: Reject stale restored packages
-        run: node studio/prune-stale-restored-course-packages.mjs
-
-      - name: Download authoritative primary-source cache at zero model cost
-        run: node studio/fetch-free-authoritative-source-cache.mjs
-
-      - name: Build deterministic course source context
-        run: node studio/build-free-course-source-context.mjs
 
       - name: Research, author, independently review, and checkpoint this shard
         run: node .github/scripts/run-academy-zero-cost-shard.mjs
@@ -196,26 +205,33 @@ jobs:
     steps:
       - name: Checkout governed Academy source
         uses: actions/checkout@v4
+
       - name: Configure Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install Node dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+
       - name: Preflight protected checkpoint gateway
         run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); })"
+
       - name: Apply governed course policy
         run: npm run apply:course-policy
+
       - name: Restore all protected packages, research, and independent reviews
         run: node studio/restore-academy-hollywood-checkpoints.mjs
+
       - name: Reject stale restored packages
         run: node studio/prune-stale-restored-course-packages.mjs
+
       - name: Merge restored research into governed runtime registry
         run: node studio/merge-61-course-research-registry.mjs
+
       - name: Materialize all course assets
         run: node studio/materialize-hollywood-course-assets.mjs
+
       - name: Validate all 61 structural packages and source mappings
         run: node studio/validate-academy-hollywood-surge.mjs
+
       - name: Confirm 61 protected checkpoints
         run: node studio/verify-protected-61-checkpoint-count.mjs
 
@@ -229,29 +245,16 @@ jobs:
     steps:
       - name: Checkout governed Academy source
         uses: actions/checkout@v4
+
       - name: Configure Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install Node dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Install local media and private backup tooling
-        shell: bash
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ffmpeg git-lfs python3 python3-venv curl ca-certificates
-          git lfs install --local
-          python3 -m venv .academy-tools
-          .academy-tools/bin/python -m pip install --disable-pip-version-check --no-cache-dir "piper-tts==1.5.0"
-          echo "${GITHUB_WORKSPACE}/.academy-tools/bin" >> "$GITHUB_PATH"
-      - name: Download governed local Piper voice model
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$ACADEMY_LOCAL_TTS_DATA_DIR"
-          .academy-tools/bin/python -m piper.download_voices "$ACADEMY_LOCAL_TTS_MODEL" --data-dir "$ACADEMY_LOCAL_TTS_DATA_DIR"
-      - name: Require and verify private backup destination
+
+      - name: Preflight protected checkpoint gateway
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); })"
+
+      - name: Require and verify private backup destination before media setup
         shell: bash
         run: |
           set -euo pipefail
@@ -259,24 +262,51 @@ jobs:
           export GH_TOKEN="$ACADEMY_PRIVATE_BACKUP_TOKEN"
           visibility="$(gh repo view "$ACADEMY_PRIVATE_BACKUP_REPOSITORY" --json visibility --jq '.visibility')"
           test "$visibility" = "PRIVATE"
-      - name: Preflight protected checkpoint gateway
-        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); })"
+
       - name: Apply governed course policy
         run: npm run apply:course-policy
+
       - name: Restore all final protected content evidence
         run: node studio/restore-academy-hollywood-checkpoints.mjs
+
       - name: Reject stale restored packages
         run: node studio/prune-stale-restored-course-packages.mjs
+
       - name: Merge restored source research into runtime registry
         run: node studio/merge-61-course-research-registry.mjs
+
       - name: Materialize final learner, instructor, assessment, accessibility, rights, and certificate assets
         run: node studio/materialize-hollywood-course-assets.mjs
-      - name: Validate structural readiness before media rendering
+
+      - name: Validate structural readiness before media tooling installation
         run: node studio/validate-academy-hollywood-surge.mjs
+
+      - name: Install local media and private backup tooling only after content validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1 || ! command -v git-lfs >/dev/null 2>&1 || ! python3 -c 'import venv' >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ffmpeg git-lfs python3 python3-venv curl ca-certificates
+          fi
+          git lfs install --local
+          python3 -m venv .academy-tools
+          .academy-tools/bin/python -m pip install --disable-pip-version-check --no-cache-dir "piper-tts==1.5.0"
+          echo "${GITHUB_WORKSPACE}/.academy-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Download governed local Piper voice model
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ACADEMY_LOCAL_TTS_DATA_DIR"
+          .academy-tools/bin/python -m piper.download_voices "$ACADEMY_LOCAL_TTS_MODEL" --data-dir "$ACADEMY_LOCAL_TTS_DATA_DIR"
+
       - name: Render final 1080p module media locally with Piper and FFmpeg
         run: node studio/render-all-61-local-media.mjs
+
       - name: Verify every course and every final module video
         run: node studio/verify-all-61-course-completion.mjs
+
       - name: Prove restored course evidence used only local models
         shell: bash
         run: |
@@ -299,9 +329,11 @@ jobs:
           if (media.externalPaidMediaProviderUsed !== false || Number(media.estimatedApiCostUsd) !== 0) throw new Error('Media evidence is not zero-cost.');
           console.log('All 61 restored course records and media evidence prove local-only generation.');
           NODE
+
       - name: Back up all protected materials, videos, certificates, and evidence to private GitHub
         shell: bash
         run: bash studio/backup-61-courses-to-private-github.sh
+
       - name: Record go-live evidence gate
         if: always()
         shell: bash
