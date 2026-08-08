@@ -27,6 +27,7 @@ env:
   ACADEMY_EXPECTED_SURGE_COURSES: 60
   ACADEMY_SURGE_EXCLUDED_COURSE_IDS: pmp-exam-prep-business-application
   ACADEMY_EXPECTED_REVIEW_COURSES: 61
+  DATABASE_URL: postgresql://validation:validation@127.0.0.1:5432/obserra_validation?schema=public
 
 jobs:
   source-contract:
