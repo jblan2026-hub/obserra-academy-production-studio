@@ -30,10 +30,11 @@ jobs:
       run:
         working-directory: owner-command-center
     steps:
-      - name: Checkout
+      - name: Checkout governed branch head
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
 
       - name: Configure Node.js
         uses: actions/setup-node@v4
@@ -51,20 +52,13 @@ jobs:
         run: |
           node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); const l=JSON.parse(fs.readFileSync('package-lock.json','utf8')); if(l.name!==p.name||l.version!==p.version) throw new Error('Lockfile identity mismatch'); if(Number(l.lockfileVersion)<3) throw new Error('npm lockfileVersion 3 or later is required'); const root=l.packages?.['']; if(!root) throw new Error('Lockfile root package is missing'); for(const group of ['dependencies','devDependencies']) for(const name of Object.keys(p[group]||{})) if(!(name in (root[group]||{}))) throw new Error('Lockfile root is missing '+group+' entry '+name); console.log('Command Center lockfile identity and direct dependency coverage passed.');"
 
-      - name: Require committed lockfile to remain current on pull requests
-        if: github.event_name == 'pull_request'
-        shell: pwsh
-        run: |
-          $status = git status --porcelain -- package-lock.json
-          if ($status) {
-            Write-Host $status
-            git diff -- package-lock.json
-            throw "owner-command-center/package-lock.json is missing or stale. Regenerate it through the governed lockfile workflow."
-          }
-
       - name: Commit validated lockfile to governed branch
-        if: github.event_name == 'push' && github.ref_name == 'agent/academy-36-worker-course-surge'
+        if: >-
+          (github.event_name == 'push' && github.ref_name == 'agent/academy-36-worker-course-surge') ||
+          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'agent/academy-36-worker-course-surge')
         shell: pwsh
+        env:
+          TARGET_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
         run: |
           $PSNativeCommandUseErrorActionPreference = $false
           git config user.name "github-actions[bot]"
@@ -77,8 +71,18 @@ jobs:
           }
           git commit -m "Lock Command Center dependencies"
           if ($LASTEXITCODE -ne 0) { throw "Unable to commit the validated Command Center lockfile." }
-          git push origin "HEAD:$env:GITHUB_REF_NAME"
+          git push origin "HEAD:$env:TARGET_BRANCH"
           if ($LASTEXITCODE -ne 0) { throw "Unable to push the validated Command Center lockfile." }
+
+      - name: Require committed lockfile to remain current
+        shell: pwsh
+        run: |
+          $status = git status --porcelain -- package-lock.json
+          if ($status) {
+            Write-Host $status
+            git diff -- package-lock.json
+            throw "owner-command-center/package-lock.json remains missing or stale after governed generation."
+          }
 
       - name: Upload validated lockfile
         uses: actions/upload-artifact@v4
