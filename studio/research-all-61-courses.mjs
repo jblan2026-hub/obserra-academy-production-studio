@@ -6,8 +6,9 @@ import { fileURLToPath } from "node:url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
-const concurrency = Math.max(1, Math.min(36, Number(process.env.ACADEMY_RESEARCH_CONCURRENCY || process.env.ACADEMY_PAID_RESEARCH_CONCURRENCY || 4)));
-const maxAttempts = Math.max(1, Math.min(3, Number(process.env.ACADEMY_RESEARCH_MAX_ATTEMPTS || 2)));
+const concurrency = Math.max(1, Math.min(36, Number(process.env.ACADEMY_RESEARCH_CONCURRENCY || process.env.ACADEMY_PAID_RESEARCH_CONCURRENCY || 2)));
+const maxAttempts = Math.max(1, Math.min(3, Number(process.env.ACADEMY_RESEARCH_MAX_ATTEMPTS || 1)));
+const canaryCount = Math.max(1, Math.min(3, Number(process.env.ACADEMY_PAID_CANARY_COUNT || 1)));
 
 function stableHash(value) {
   return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -82,8 +83,22 @@ async function runWithRetry(courseId) {
 
 const reusable = courses.filter(reusableResearch);
 const queue = courses.filter((courseId) => !reusable.includes(courseId));
-const results = reusable.map((courseId) => ({ courseId, attempt: 0, ok: true, reused: true, code: 0, error: null }));
+const results = reusable.map((courseId) => ({ courseId, attempt: 0, ok: true, reused: true, canary: false, code: 0, error: null }));
 let circuitOpen = false;
+let canaryFailed = false;
+
+for (let index = 0; index < Math.min(canaryCount, queue.length); index += 1) {
+  const courseId = queue.shift();
+  console.log(`[Academy Studio] Paid research canary ${index + 1}/${canaryCount} assigned ${courseId}.`);
+  const result = await runWithRetry(courseId);
+  results.push({ ...result, reused: false, canary: true });
+  if (!result.ok) {
+    canaryFailed = true;
+    circuitOpen = true;
+    console.error(`[Academy Studio] Paid research canary failed for ${courseId}; batch research will not start.`);
+    break;
+  }
+}
 
 async function worker(workerId) {
   while (queue.length > 0 && !circuitOpen) {
@@ -91,7 +106,7 @@ async function worker(workerId) {
     if (!courseId) return;
     console.log(`[Academy Studio] Paid research slot ${workerId}/${concurrency} assigned ${courseId}.`);
     const result = await runWithRetry(courseId);
-    results.push({ ...result, workerId, reused: false });
+    results.push({ ...result, workerId, reused: false, canary: false });
     if ([42, 43].includes(result.code)) {
       circuitOpen = true;
       console.error(`[Academy Studio] Paid research circuit opened after nonretryable provider failure on ${courseId}; remaining courses will not consume credits.`);
@@ -99,29 +114,36 @@ async function worker(workerId) {
   }
 }
 
-await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(1, queue.length)) }, (_, index) => worker(index + 1)));
-for (const courseId of queue.splice(0)) {
-  results.push({ courseId, attempt: 0, ok: false, reused: false, code: 42, error: "not-started-provider-circuit-open" });
+if (!circuitOpen) {
+  await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(1, queue.length)) }, (_, index) => worker(index + 1)));
+}
+const deferred = queue.splice(0);
+for (const courseId of deferred) {
+  results.push({ courseId, attempt: 0, ok: false, reused: false, canary: false, deferred: true, code: null, error: canaryFailed ? "not-started-paid-canary-failed" : "not-started-provider-circuit-open" });
 }
 
 const failed = results.filter((result) => !result.ok);
 const summary = {
-  schemaVersion: "1.1",
+  schemaVersion: "1.2",
   generatedAt: new Date().toISOString(),
   objective: "complete-all-61-academy-courses-only-credit-last",
   portfolioWorkerCount: 36,
   applicationWorkerAllocation: 0,
   logicalResearchWorkers: 36,
   paidResearchConcurrency: concurrency,
+  paidCanaryCount: canaryCount,
   discoveredCourses: courses.length,
   reused: results.filter((result) => result.reused).length,
+  canaryCompleted: results.filter((result) => result.canary && result.ok).length,
   newlyCompleted: results.filter((result) => result.ok && !result.reused).length,
   completed: results.filter((result) => result.ok).length,
-  failed: failed.length,
+  failed: failed.filter((result) => !result.deferred).length,
+  deferred: results.filter((result) => result.deferred).length,
   providerCircuitOpened: circuitOpen,
+  canaryFailed,
   results
 };
 fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
 fs.writeFileSync(path.join(root, "catalog", "academy-61-source-research-summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
-console.log(`[Academy Studio] Authoritative research ready for ${summary.completed}/61 courses: ${summary.reused} reused, ${summary.newlyCompleted} newly researched.`);
+console.log(`[Academy Studio] Authoritative research ready for ${summary.completed}/61 courses: ${summary.reused} reused, ${summary.newlyCompleted} newly researched, ${summary.deferred} deferred without paid calls.`);
 if (failed.length > 0) process.exit(2);
