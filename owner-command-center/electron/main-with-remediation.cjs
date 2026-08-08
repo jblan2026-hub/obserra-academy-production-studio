@@ -5,6 +5,7 @@ const Store = require("electron-store");
 const { createRemediationQueue } = require("./remediation-queue.cjs");
 
 const APP_USER_MODEL_ID = "com.obserra.ownercommandcenter";
+const MAX_RUNTIME_EVIDENCE_BYTES = 5 * 1024 * 1024;
 const SENSITIVE_FIELD = /(?:authorization|bearer|credential|secret|password|api[-_]?key|access[-_]?token|refresh[-_]?token)/i;
 const hasSingleInstanceLock = app.requestSingleInstanceLock({
   application: "Obserra Owner AI Command Center",
@@ -41,10 +42,19 @@ function sanitizeRuntimeDetail(value, fieldName = "") {
   return redactRuntimeText(value);
 }
 
+function rotateRuntimeEvidence(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  if (fs.statSync(filePath).size < MAX_RUNTIME_EVIDENCE_BYTES) return;
+  const previousPath = `${filePath}.1`;
+  fs.rmSync(previousPath, { force: true });
+  fs.renameSync(filePath, previousPath);
+}
+
 function writeRuntimeEvidence(event, detail = {}) {
   try {
     const filePath = runtimeEvidencePath();
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    rotateRuntimeEvidence(filePath);
     fs.appendFileSync(
       filePath,
       `${JSON.stringify({
