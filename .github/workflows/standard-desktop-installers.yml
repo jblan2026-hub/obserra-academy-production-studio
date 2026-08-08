@@ -205,7 +205,12 @@ jobs:
       - name: Install Command Center dependencies
         run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false --prefer-offline
       - name: Resolve package version
-        run: echo "APP_VERSION=$(node -p \"require('./package.json').version\")" >> "$GITHUB_ENV"
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(node -e "process.stdout.write(require('./package.json').version)")
+          test -n "$version"
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
       - name: Build macOS universal packages
         run: npx electron-builder --mac dmg zip --universal --publish never --config.compression=normal
         env:
@@ -267,7 +272,12 @@ jobs:
       - name: Install Command Center dependencies
         run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false --prefer-offline
       - name: Resolve package version
-        run: echo "APP_VERSION=$(node -p \"require('./package.json').version\")" >> "$GITHUB_ENV"
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(node -e "process.stdout.write(require('./package.json').version)")
+          test -n "$version"
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
       - name: Build Linux packages
         run: npx electron-builder --linux AppImage deb --${{ matrix.arch }} --publish never --config.compression=normal
       - name: Verify Linux package inventory
