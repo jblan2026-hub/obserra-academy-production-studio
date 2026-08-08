@@ -12,8 +12,9 @@ function Invoke-Git {
     param([Parameter(Mandatory)][string[]]$Arguments)
 
     & git @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "Git command failed with exit code $LASTEXITCODE: git $($Arguments -join ' ')"
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw ('Git command failed with exit code {0}: git {1}' -f $exitCode, ($Arguments -join ' '))
     }
 }
 
@@ -57,7 +58,10 @@ if (Test-Path -LiteralPath $repo) {
         Invoke-Git -Arguments @('-C', $repo, 'fetch', 'origin', $Branch)
 
         $status = & git -C $repo status --porcelain
-        if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect existing repository status.' }
+        $statusExitCode = $LASTEXITCODE
+        if ($statusExitCode -ne 0) {
+            throw ('Unable to inspect existing repository status. Git exit code: {0}' -f $statusExitCode)
+        }
         if ($status) {
             throw "The existing Academy source checkout has uncommitted changes at $repo. Commit or move those changes before bootstrap so nothing is overwritten."
         }
@@ -99,9 +103,6 @@ Set-Location -LiteralPath $repo
 Write-Host ''
 Write-Host 'Running local production storage mapper...' -ForegroundColor Yellow
 & $setupScript -ProductionRoot $root -RepositoryRoot $repo
-if ($LASTEXITCODE -ne 0) {
-    throw "Academy production storage mapper exited with code $LASTEXITCODE."
-}
 
 $envScript = Join-Path $root 'academy-local-paths.ps1'
 if (Test-Path -LiteralPath $envScript) {
