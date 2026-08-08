@@ -45,6 +45,7 @@ const REQUIRED_UNIVERSAL_RULES = Object.freeze([
 const REQUIRED_ACADEMY_RULES = Object.freeze([
   "commercial-cinematic-quality-gate",
   "original-instructional-content-only",
+  "claim-level-reference-and-applicability-required",
   "no-placeholder-media-as-final",
   "human-media-qc-required",
   "rights-cleared-assets-only",
@@ -130,7 +131,7 @@ function resolveGovernedPath(relativePath, name) {
 function readProductionStandard(referencePath) {
   const standardPath = resolveGovernedPath(referencePath, "academy productionStandardPath");
   const standard = readJson(standardPath, "Commercial cinematic production standard");
-  if (standard.schemaVersion !== "1.0") {
+  if (standard.schemaVersion !== "1.1") {
     throw new Error(`Unsupported commercial production standard schema: ${standard.schemaVersion ?? "missing"}`);
   }
   if (standard.standardId !== "obserra-commercial-cinematic-course-production-v1") {
@@ -145,11 +146,11 @@ function readProductionStandard(referencePath) {
     "production standard qualityClaimAllowedOnlyAfterAcceptance",
   );
   assertStringArray(standard.claimPolicy?.prohibitedInterimClaims, "production standard prohibitedInterimClaims", 5);
-  assertStringArray(standard.requiredCourseDeliverables, "production standard requiredCourseDeliverables", 8);
+  assertStringArray(standard.requiredCourseDeliverables, "production standard requiredCourseDeliverables", 10);
   assertStringArray(
     standard.requiredInstructionalLessonDeliverables,
     "production standard requiredInstructionalLessonDeliverables",
-    15,
+    18,
   );
   if (standard.pictureMaster?.minimumRaster !== "3840x2160") {
     throw new Error("Commercial picture masters must target 3840x2160 or an explicitly approved equivalent.");
@@ -189,6 +190,7 @@ function readProductionStandard(referencePath) {
     assertBoolean(standard.audioMaster?.[flag], `production standard audioMaster.${flag}`);
   }
   for (const group of [
+    "referenceAndApplicability",
     "editorialAndVisualQuality",
     "accessibility",
     "rightsAndProvenance",
@@ -203,8 +205,8 @@ function readProductionStandard(referencePath) {
       assertBoolean(value, `production standard ${group}.${name}`);
     }
   }
-  assertStringArray(standard.prohibitedFinalSubstitutes, "production standard prohibitedFinalSubstitutes", 10);
-  assertStringArray(standard.requiredReleaseEvidence, "production standard requiredReleaseEvidence", 12);
+  assertStringArray(standard.prohibitedFinalSubstitutes, "production standard prohibitedFinalSubstitutes", 12);
+  assertStringArray(standard.requiredReleaseEvidence, "production standard requiredReleaseEvidence", 14);
   return { standard, standardPath };
 }
 
@@ -271,7 +273,7 @@ function readContract() {
   if (!sameMembers(contract.academyContract?.mandatoryRules ?? [], REQUIRED_ACADEMY_RULES)) {
     throw new Error("The Academy commercial production rule catalog is incomplete or contains unapproved rules.");
   }
-  assertStringArray(contract.academyContract?.requiredEvidence, "academy requiredEvidence", 15);
+  assertStringArray(contract.academyContract?.requiredEvidence, "academy requiredEvidence", 16);
   assertBoolean(contract.academyContract?.publicationDefault, "academy publicationDefault", false);
   assertBoolean(contract.academyContract?.checkoutDefault, "academy checkoutDefault", false);
   assertBoolean(
@@ -604,6 +606,10 @@ export function verifyWorkerPoolContract() {
   check("commercial-standard-id", commercialProductionStandard.standardId === "obserra-commercial-cinematic-course-production-v1");
   check("commercial-quality-tier", commercialProductionStandard.qualityTier === "commercial-hollywood-grade");
   check("commercial-claim-fail-closed", commercialProductionStandard.claimPolicy.qualityClaimAllowedOnlyAfterAcceptance === true);
+  check("commercial-reference-applicability", commercialProductionStandard.referenceAndApplicability.claimLevelSourceIdsRequired === true
+    && commercialProductionStandard.referenceAndApplicability.appliesToRequired === true
+    && commercialProductionStandard.referenceAndApplicability.unresolvedReferencesBlockCommercialRelease === true
+    && commercialProductionStandard.referenceAndApplicability.inventedCitationProhibited === true);
   check("commercial-picture-master", commercialProductionStandard.pictureMaster.minimumRaster === "3840x2160");
   check("commercial-audio-master", commercialProductionStandard.audioMaster.sampleRateHz === 48000
     && commercialProductionStandard.audioMaster.minimumBitDepth >= 24
@@ -611,6 +617,7 @@ export function verifyWorkerPoolContract() {
   check("commercial-human-qc", commercialProductionStandard.qualityControl.humanEditorialQcRequired === true
     && commercialProductionStandard.qualityControl.humanVisualQcRequired === true
     && commercialProductionStandard.qualityControl.humanAudioQcRequired === true
+    && commercialProductionStandard.qualityControl.humanReferenceAndApplicabilityQcRequired === true
     && commercialProductionStandard.qualityControl.ownerAcceptanceRequired === true);
   check("command-center-role-coverage", sameMembers(
     workerPoolContract.commandCenterContract.allowedRoles,
