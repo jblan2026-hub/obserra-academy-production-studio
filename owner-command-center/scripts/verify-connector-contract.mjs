@@ -43,8 +43,10 @@ if (bootstrap.requireEnrollment !== true || bootstrap.autoEnroll !== false) {
 if (!mediaBuilderSource.includes("resources\\Obserra-Command-Center-Bootstrap.json")) {
   throw new Error("Optional release-media packaging must derive from the governed generic bootstrap");
 }
-if (!/profile\.schemaVersion\s*!==\s*["']1\.0["']/.test(mainSource)) {
-  throw new Error("Electron runtime must accept the same bootstrap schema 1.0");
+const acceptsExactBootstrapV1 = /profile\.schemaVersion\s*!==\s*["']1\.0["']/.test(mainSource);
+const acceptsVersionedBootstrapSet = /\[[^\]]*["']1\.0["'][^\]]*\]\.includes\(profile\.schemaVersion\)/.test(mainSource);
+if (!acceptsExactBootstrapV1 && !acceptsVersionedBootstrapSet) {
+  throw new Error("Electron runtime must accept distributable bootstrap schema 1.0");
 }
 if (!/id:\s*["']eios["'][\s\S]*credentialKey:\s*["']eiosToken["']/.test(connectorSource)) {
   throw new Error("EIOS connector must use a dedicated encrypted credential key");
