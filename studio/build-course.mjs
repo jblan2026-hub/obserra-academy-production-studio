@@ -70,9 +70,8 @@ function recursiveFiles(directory, relativeRoot = "") {
 }
 
 function assertFinalEvidence(evidence) {
-  if (manifest.release?.publishToAcademy !== true
-      || !["approved", "published"].includes(manifest.release?.status)) {
-    throw new Error("FINAL packaging requires an approved or published manifest with publishToAcademy=true.");
+  if (!["approved", "published"].includes(manifest.release?.status)) {
+    throw new Error("FINAL packaging requires an approved or published manifest status.");
   }
   if (evidence?.schemaVersion !== "1.0"
       || evidence?.courseId !== courseId
@@ -189,8 +188,10 @@ const releaseRecord = {
   version: manifest.release.version,
   packageStage: finalRequested ? "FINAL" : "COMPLIANCE-STAGED",
   manifestReleaseStatus: manifest.release.status,
-  publishToAcademy: finalRequested && manifest.release.publishToAcademy === true,
-  checkoutAllowed: finalRequested && manifest.release.publishToAcademy === true,
+  manifestRequestedPublication: manifest.release.publishToAcademy === true,
+  publishToAcademy: false,
+  checkoutAllowed: false,
+  activationStatus: "owner-controlled-disabled",
   qualityClaimAllowed: finalRequested,
   commercialQualityStatus: finalRequested
     ? commercialProductionStandard.qualityTier
@@ -207,7 +208,7 @@ const releaseRecord = {
   fileInventory,
   generatedAt: new Date().toISOString(),
   claimBoundary: finalRequested
-    ? "This record proves that the governed package was assembled after required evidence and owner acceptance. It does not represent external accreditation, certification, guild approval, legal sufficiency, or regulatory approval."
+    ? "This record proves that the governed FINAL package was assembled after required evidence and owner acceptance. Publication and checkout remain independently disabled until the owner activates them. It does not represent external accreditation, certification, guild approval, legal sufficiency, or regulatory approval."
     : "This is a compliance-staged production package. It is not final, learner-ready, publication-ready, purchasable, or authorized for a commercial quality claim.",
 };
 fs.writeFileSync(path.join(releaseDir, "release-record.json"), `${JSON.stringify(releaseRecord, null, 2)}\n`, {
