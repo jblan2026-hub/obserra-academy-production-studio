@@ -19,6 +19,7 @@ on:
     branches:
       - main
       - agent/continue-course-buildout
+      - agent/academy-36-worker-course-surge
     paths:
       - "owner-command-center/**"
       - "studio/**"
