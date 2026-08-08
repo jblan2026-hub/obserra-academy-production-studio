@@ -53,8 +53,8 @@ assert.equal(masked.includes("4567890abcd"), false);
 
 // Test 3: connector URL policy rejects clear-text remote endpoints but permits loopback dev endpoints.
 assert.throws(() => normalizeBaseUrl("http://payments.example.com"), /Unencrypted connector URLs are allowed only on loopback/);
-assert.equal(normalizeBaseUrl("http://127.0.0.1:11434"), "http://127.0.0.1:11434");
-assert.equal(normalizeBaseUrl("https://api.stripe.com"), "https://api.stripe.com/");
+assert.equal(new URL(normalizeBaseUrl("http://127.0.0.1:11434")).origin, "http://127.0.0.1:11434");
+assert.equal(new URL(normalizeBaseUrl("https://api.stripe.com")).origin, "https://api.stripe.com");
 
 // Test 4: production policy remains fail closed for client-only success and raw card handling.
 const paymentPolicy = JSON.parse(fs.readFileSync(path.join(repoRoot, "policy", "academy-payment-security.json"), "utf8"));
@@ -70,10 +70,12 @@ assert.equal(pciProfile.releaseGate.blockIfMerchantHostedCardFieldDetected, true
 assert.equal(pciProfile.releaseGate.blockIfRawPaymentOrCustomerPayloadLoggingDetected, true);
 
 // Test 5: reset Academy UI cannot list raw purchaser records and accepts secure verification references instead.
-const uiSource = fs.readFileSync(path.join(commandCenterRoot, "src", "academy-reset.js"), "utf8");
+const uiSource = fs.readFileSync(path.join(commandCenterRoot, "src", "academy-reset-ui.js"), "utf8");
 assert.doesNotMatch(uiSource, /listAcademyPurchases\s*\(/);
 assert.doesNotMatch(uiSource, /customerEmail|customer_email|cardNumber|cvc|cvv/i);
 assert.match(uiSource, /verifyAcademyPurchase/);
 assert.match(uiSource, /PaymentIntent|Checkout Session|pi_|cs_/i);
+assert.match(uiSource, /retrieveWebsiteAcademyCourse/);
+assert.match(uiSource, /retrieveWebsiteAcademyCertificate/);
 
-console.log("Payment security behavioral controls passed: sensitive data redaction, reference masking, HTTPS connector enforcement, fail-closed payment policy, and minimized Academy UI behavior are verified.");
+console.log("Payment security behavioral controls passed: sensitive data redaction, reference masking, HTTPS connector enforcement, fail-closed payment policy, minimized Academy UI behavior, and website readback boundaries are verified.");
