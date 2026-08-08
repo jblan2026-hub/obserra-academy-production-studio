@@ -3,6 +3,11 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+import {
+  buildAuthoringPerformanceMetrics,
+  orderTargetsByEstimatedWork,
+  retryDelayMs,
+} from "./academy-authoring-performance.mjs";
 import { classificationFromAuthoringExit } from "./authoring-provider-errors.mjs";
 import {
   assertAcademyWorkerAllocation,
@@ -14,7 +19,7 @@ import {
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const reportPath = path.join(root, "catalog", "academy-hollywood-course-audit.json");
 const summaryPath = path.join(root, "catalog", "academy-hollywood-parallel-summary.json");
-const failureContractVersion = "2.0";
+const failureContractVersion = "2.1";
 const allocation = assertAcademyWorkerAllocation();
 
 function boundedNumber(value, fallback, minimum, maximum) {
@@ -39,22 +44,40 @@ const processTimeoutMs = boundedNumber(
   45 * 60 * 1000,
 );
 const terminationGraceMs = 10000;
-const heartbeatIntervalMs = 60 * 1000;
+const heartbeatIntervalMs = 30 * 1000;
 
 if (!fs.existsSync(reportPath)) {
   throw new Error(`Cinematic course audit report not found: ${reportPath}`);
 }
 const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
-const targets = Array.isArray(report.targetCourseIds)
+const unorderedTargets = Array.isArray(report.targetCourseIds)
   ? report.targetCourseIds.map((courseId) => ({ courseId }))
   : [];
+const targets = orderTargetsByEstimatedWork(root, unorderedTargets);
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function generatedPackageBytes(courseId) {
+  const packagePath = path.join(
+    root,
+    "courses",
+    courseId,
+    "generated",
+    "authoring",
+    "course-package.json",
+  );
+  try {
+    return fs.statSync(packagePath).size;
+  } catch {
+    return 0;
+  }
+}
+
 function runAuthoring(courseId, attempt, descriptor) {
   return new Promise((resolve) => {
+    const attemptStartedAt = Date.now();
     let settled = false;
     let timedOut = false;
     let forceKillTimer = null;
@@ -65,7 +88,12 @@ function runAuthoring(courseId, attempt, descriptor) {
       settled = true;
       if (timeoutTimer) clearTimeout(timeoutTimer);
       if (forceKillTimer) clearTimeout(forceKillTimer);
-      resolve(result);
+      resolve({
+        ...result,
+        attemptStartedAt: new Date(attemptStartedAt).toISOString(),
+        attemptCompletedAt: new Date().toISOString(),
+        attemptElapsedMs: Date.now() - attemptStartedAt,
+      });
     };
 
     const child = spawn(
@@ -139,17 +167,50 @@ function runAuthoring(courseId, attempt, descriptor) {
 }
 
 async function authorWithRetry(courseId, descriptor) {
+  const courseStartedAt = Date.now();
+  const attemptHistory = [];
+
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     console.log(`[Academy Studio] ${descriptor.workerName} role=${descriptor.currentRole} authoring ${courseId}, attempt ${attempt}/${maxAttempts}.`);
     const result = await runAuthoring(courseId, attempt, descriptor);
-    if (result.ok) return { courseId, ...result };
-    if (result.retryable === false) return { courseId, ...result };
+    attemptHistory.push({
+      attempt,
+      ok: result.ok,
+      elapsedMs: result.attemptElapsedMs,
+      failureCategory: result.failureCategory,
+      retryable: result.retryable,
+    });
+
+    if (result.ok) {
+      return {
+        courseId,
+        ...result,
+        elapsedMs: Date.now() - courseStartedAt,
+        outputBytes: generatedPackageBytes(courseId),
+        attemptHistory,
+      };
+    }
+    if (result.retryable === false) {
+      return {
+        courseId,
+        ...result,
+        elapsedMs: Date.now() - courseStartedAt,
+        outputBytes: 0,
+        attemptHistory,
+      };
+    }
     if (attempt < maxAttempts) {
-      const waitMs = baseDelayMs * (2 ** (attempt - 1));
-      console.warn(`[Academy Studio] ${courseId} failed attempt ${attempt} with ${result.failureCategory}; retrying in ${waitMs} ms.`);
+      const waitMs = retryDelayMs(baseDelayMs, attempt, courseId);
+      console.warn(`[Academy Studio] ${courseId} failed attempt ${attempt} with ${result.failureCategory}; retrying in ${waitMs} ms with bounded deterministic jitter.`);
       await delay(waitMs);
     } else {
-      return { courseId, ...result };
+      return {
+        courseId,
+        ...result,
+        elapsedMs: Date.now() - courseStartedAt,
+        outputBytes: 0,
+        attemptHistory,
+      };
     }
   }
   return {
@@ -159,6 +220,9 @@ async function authorWithRetry(courseId, descriptor) {
     failureCategory: "unreachable_retry_state",
     retryable: false,
     worker: descriptor,
+    elapsedMs: Date.now() - courseStartedAt,
+    outputBytes: 0,
+    attemptHistory,
   };
 }
 
@@ -169,7 +233,6 @@ function shouldHaltPortfolio(result) {
     || category.includes("quota")
     || category.includes("billing")
     || category.includes("checkpoint")
-    || category.includes("provider_request_invalid")
   );
 }
 
@@ -184,36 +247,55 @@ function haltQueue(results, queue, result) {
 }
 
 async function worker(workerId, queue, results) {
+  const workerStartedAt = Date.now();
+  let completedByWorker = 0;
+  let productiveMs = 0;
+
   while (queue.length > 0 && !results.halted) {
     const course = queue.shift();
-    if (!course) return;
+    if (!course) break;
     const assignmentIndex = results.started;
     const currentRole = interchangeableCourseRoles[assignmentIndex % interchangeableCourseRoles.length];
     const descriptor = workerDescriptor(workerId, currentRole);
     results.started += 1;
     results.assignments.push({
       courseId: course.courseId,
+      estimatedWork: course.estimatedWork,
+      schedulingPolicy: "longest-estimated-work-first",
+      queuePosition: assignmentIndex + 1,
       workerId,
       workerName: descriptor.workerName,
       currentRole,
       assignedAt: new Date().toISOString(),
     });
-    console.log(`[Academy Studio] ${descriptor.workerName} accepted ${course.courseId} as ${currentRole}; all course-production capabilities remain available for reassignment.`);
+    console.log(`[Academy Studio] ${descriptor.workerName} accepted ${course.courseId} as ${currentRole}; estimatedWork=${course.estimatedWork}; all course-production capabilities remain available for reassignment.`);
     const result = await authorWithRetry(course.courseId, descriptor);
-    results.completed.push(result);
+    completedByWorker += 1;
+    productiveMs += Math.max(0, Number(result.elapsedMs || 0));
+    results.completed.push({
+      ...result,
+      estimatedWork: course.estimatedWork,
+    });
     if (result.ok) {
-      console.log(`[Academy Studio] ${descriptor.workerName} completed and checkpointed ${course.courseId}.`);
+      console.log(`[Academy Studio] ${descriptor.workerName} completed and checkpointed ${course.courseId} in ${Math.round(result.elapsedMs / 1000)} seconds; outputBytes=${result.outputBytes}.`);
     } else {
       console.error(`[Academy Studio] ${descriptor.workerName} failed ${course.courseId}: ${result.error}`);
       if (shouldHaltPortfolio(result)) haltQueue(results, queue, result);
     }
   }
+
+  results.workerPerformance.push({
+    workerId,
+    completedCourses: completedByWorker,
+    productiveMs,
+    elapsedMs: Date.now() - workerStartedAt,
+  });
 }
 
 if (targets.length === 0) {
   fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
   fs.writeFileSync(summaryPath, `${JSON.stringify({
-    schemaVersion: "2.0",
+    schemaVersion: "2.1",
     generatedAt: new Date().toISOString(),
     allocation,
     requestedCourses: 0,
@@ -221,19 +303,26 @@ if (targets.length === 0) {
     completedCourses: 0,
     successfulCourses: 0,
     failedCourses: 0,
+    performance: buildAuthoringPerformanceMetrics({
+      results: [],
+      elapsedMs: 0,
+      launchedWorkerCount: 0,
+      requestedCourses: 0,
+    }),
     message: "No missing, stale, or older-contract course packages require cinematic authoring.",
   }, null, 2)}\n`);
   console.log("[Academy Studio] No cinematic course packages require authoring.");
   process.exit(0);
 }
 
-console.log(`[Academy Studio] Starting owner-approved Academy surge for ${targets.length} course(s) with ${concurrency} interchangeable workers. Application allocation=0; course allocation=36; publication authority=false.`);
+console.log(`[Academy Studio] Starting owner-approved Academy surge for ${targets.length} course(s) with ${concurrency} interchangeable workers. Scheduling=longest-estimated-work-first; application allocation=0; course allocation=36; publication authority=false.`);
 const queue = [...targets];
 const launchedWorkerCount = Math.min(concurrency, targets.length);
 const results = {
   started: 0,
   completed: [],
   assignments: [],
+  workerPerformance: [],
   halted: false,
   haltReason: null,
   haltExitCode: null,
@@ -246,7 +335,9 @@ const startedAt = Date.now();
 const heartbeat = setInterval(() => {
   const active = Math.max(0, results.started - results.completed.length);
   const elapsedMinutes = Math.max(1, Math.round((Date.now() - startedAt) / 60000));
-  console.log(`[Academy Studio] 36-worker surge heartbeat: ${results.completed.length}/${targets.length} complete, ${active} active, ${queue.length} queued, ${elapsedMinutes} minute(s) elapsed, halted=${results.halted}.`);
+  const successful = results.completed.filter((result) => result.ok).length;
+  const failures = results.completed.length - successful;
+  console.log(`[Academy Studio] 36-worker surge heartbeat: ${results.completed.length}/${targets.length} complete, ${successful} successful, ${failures} failed, ${active} active, ${queue.length} queued, ${elapsedMinutes} minute(s) elapsed, halted=${results.halted}.`);
 }, heartbeatIntervalMs);
 heartbeat.unref?.();
 
@@ -257,10 +348,17 @@ try {
   clearInterval(heartbeat);
 }
 
+const elapsedMs = Date.now() - startedAt;
 const failures = results.completed.filter((result) => !result.ok);
+const performance = buildAuthoringPerformanceMetrics({
+  results: results.completed,
+  elapsedMs,
+  launchedWorkerCount,
+  requestedCourses: targets.length,
+});
 fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
 fs.writeFileSync(summaryPath, `${JSON.stringify({
-  schemaVersion: "2.0",
+  schemaVersion: "2.1",
   failureContractVersion,
   generatedAt: new Date().toISOString(),
   provider,
@@ -270,6 +368,8 @@ fs.writeFileSync(summaryPath, `${JSON.stringify({
   workerRoster,
   interchangeableRoles: interchangeableCourseRoles,
   mandatoryContractDomains,
+  schedulingPolicy: "longest-estimated-work-first",
+  orderedTargets: targets.map(({ courseId, estimatedWork }) => ({ courseId, estimatedWork })),
   maxAttempts,
   processTimeoutMs,
   checkpointPersistenceRequired: String(process.env.ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED ?? "true").toLowerCase() === "true",
@@ -281,11 +381,15 @@ fs.writeFileSync(summaryPath, `${JSON.stringify({
   halted: results.halted,
   haltReason: results.haltReason,
   queuedCoursesSkipped: results.queuedCoursesSkipped,
-  elapsedMs: Date.now() - startedAt,
+  elapsedMs,
+  performance,
+  workerPerformance: results.workerPerformance,
   assignments: results.assignments,
   results: results.completed,
-  claimBoundary: "A successful worker run proves protected package generation and checkpoint persistence only. It does not establish verified references, mastered media, rights clearance, accessibility acceptance, review approval, LCMS publication, or learner availability.",
+  claimBoundary: "A successful worker run proves protected package generation and checkpoint persistence only. Performance metrics describe the observed governed build. They do not establish verified references, mastered media, rights clearance, accessibility acceptance, review approval, LCMS publication, or learner availability.",
 }, null, 2)}\n`);
+
+console.log(`[Academy Studio] Performance summary: throughput=${performance.throughputCoursesPerHour} courses/hour; firstPassYield=${performance.firstPassYieldPercent}%; retryRate=${performance.retryRatePercent}%; p50=${Math.round(performance.p50SuccessfulCourseMs / 1000)}s; p95=${Math.round(performance.p95SuccessfulCourseMs / 1000)}s; utilization=${performance.estimatedWorkerUtilizationPercent}%.`);
 
 if (failures.length > 0) {
   console.error(`[Academy Studio] Cinematic parallel authoring failed for ${failures.length} course(s): ${failures.map((item) => item.courseId).join(", ")}`);
