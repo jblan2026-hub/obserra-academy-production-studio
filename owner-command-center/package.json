@@ -3,6 +3,11 @@
   "version": "0.4.0",
   "private": true,
   "description": "Owner-only Obserra desktop command center with standard installers and explicit device enrollment.",
+  "homepage": "https://www.obserrallc.com",
+  "author": {
+    "name": "Obserra Executive Protection & Intelligence LLC",
+    "email": "info@obserrallc.com"
+  },
   "main": "electron/bootstrap-main.cjs",
   "type": "module",
   "scripts": {
@@ -133,6 +138,12 @@
     "linux": {
       "artifactName": "Obserra-Owner-AI-Command-Center-${version}-${arch}.${ext}",
       "category": "Utility",
+      "desktopName": "Obserra Owner AI Command Center",
+      "executableName": "obserra-owner-ai-command-center",
+      "maintainer": "Obserra Executive Protection & Intelligence LLC <info@obserrallc.com>",
+      "vendor": "Obserra Executive Protection & Intelligence LLC",
+      "synopsis": "Private owner command center for the Obserra ecosystem",
+      "description": "Owner-only desktop command center for governed Obserra operations, evidence, monitoring, and approvals.",
       "target": [
         {
           "target": "AppImage",
