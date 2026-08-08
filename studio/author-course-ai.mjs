@@ -7,6 +7,7 @@ import {
   ACADEMY_AUTHORING_POLICY_VERSION,
   ACADEMY_AUTHORING_QUALITY_REQUIREMENTS as quality,
   academyAuthoringQualityContract,
+  requiredFinalAssessmentQuestions,
 } from "./academy-authoring-quality-contract.mjs";
 import {
   ProviderAuthoringError,
@@ -23,7 +24,7 @@ const arg = (name) => {
 function boundedNumber(value, fallback, minimum, maximum) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
-  return Math.max(minimum, Math.min(maximum, parsed));
+  return Math.max(minimum, Math.min(maximum, Math.trunc(parsed)));
 }
 
 const courseId = arg("--course");
@@ -38,6 +39,18 @@ const requestTimeoutMs = boundedNumber(
   15 * 60 * 1000,
   60 * 1000,
   30 * 60 * 1000,
+);
+const narrativeTargetWords = boundedNumber(
+  process.env.ACADEMY_AUTHORING_NARRATIVE_TARGET_WORDS,
+  1500,
+  quality.lessonNarrativeWords,
+  2400,
+);
+const openAiMaxOutputTokens = boundedNumber(
+  process.env.OPENAI_MAX_OUTPUT_TOKENS,
+  64000,
+  8000,
+  120000,
 );
 
 if (!courseId) {
@@ -55,6 +68,7 @@ if (!fs.existsSync(manifestPath)) {
 }
 
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+const requiredAssessmentQuestions = requiredFinalAssessmentQuestions(manifest);
 const proprietaryNotice =
   "OBSERRA PROPRIETARY INFORMATION. NOT FOR DISTRIBUTION.";
 const legalName = "OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC";
@@ -68,6 +82,16 @@ function sourceManifestHash() {
     authoringPolicyVersion: ACADEMY_AUTHORING_POLICY_VERSION,
     manifest,
   });
+}
+
+function writeJsonAtomic(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
+  const temporaryPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, {
+    encoding: "utf8",
+    mode: 0o600,
+  });
+  fs.renameSync(temporaryPath, filePath);
 }
 
 function authoringPrompt() {
@@ -91,8 +115,9 @@ Access model: one-time purchase, named learner, access until completion
 Certificate issuer: ${legalName}
 Handling notice: ${proprietaryNotice}
 Manifest framework tags: ${JSON.stringify(manifest.tags?.frameworks ?? [])}
+Required original final-assessment question count: ${requiredAssessmentQuestions}
 
-Return one valid JSON object only. Use this exact top-level structure:
+Return one complete valid JSON object only. Do not return Markdown, commentary, ellipses, abbreviated sections, partial arrays, or placeholders. Do not stop before every listed module, workbook entry, source record, assessment question, instructor-guide element, marketing element, and brand element is present. Use this exact top-level structure:
 {
   "courseSummary": {"executiveValue": "", "instructionalStrategy": "", "sourceAndReviewNotes": []},
   "sourceRegister": [{"id": "SRC-001", "sourceType": "authoritative-source-needed", "claimOrTopic": "", "moduleIds": [], "verificationInstruction": "", "usageBoundary": ""}],
@@ -128,13 +153,13 @@ Return one valid JSON object only. Use this exact top-level structure:
 
 Mandatory production-quality requirements:
 1. Every listed module must appear exactly once and preserve its manifest ID, title, duration, and format.
-2. Each lessonNarrative must contain at least ${quality.lessonNarrativeWords} substantive words specific to that module. Use mature multi-paragraph prose that explains business context, operational context, decision authority, escalation, evidence preservation, implementation implications, limitations, and practical application. Do not pad the narrative with repetition, slogans, generic filler, or duplicated passages.
+2. Each lessonNarrative must contain at least ${quality.lessonNarrativeWords} substantive words specific to that module. To prevent word-count variance, target ${narrativeTargetWords} to ${narrativeTargetWords + 200} substantive words per module. Use mature multi-paragraph prose that explains business context, operational context, decision authority, escalation, evidence preservation, implementation implications, limitations, and practical application. Do not pad the narrative with repetition, slogans, generic filler, or duplicated passages.
 3. Each module must include at least ${quality.learningObjectives} distinct learning objectives, ${quality.keyConcepts} developed key concepts, one substantive executive example, one substantive operational example, one realistic evidence-rich scenario, and one applied exercise that produces a reviewable learner artifact.
 4. Each module must include at least ${quality.knowledgeChecks} original knowledge checks. Each knowledge check must contain at least ${quality.finalAssessmentOptions} credible options, one valid correctIndex, and an explanatory rationale.
 5. Each module must include at least ${quality.slideNarratives} complete slide narratives. Every slide must include a title, substantive content, speaker notes, and visual direction.
 6. Each module videoScript must include an opening, a closing, and at least ${quality.videoSegments} scene-level segments. Every segment must include professional narration and specific visual direction suitable for captions, transcripts, source cards, audio description, reduced-motion treatment, and rights review.
 7. Each module must include at least ${quality.accessibilityNotes} specific accessibility notes addressing caption or transcript equivalence, keyboard or nonpointer alternatives, readable hierarchy, color-independent meaning, and alternate descriptions where visuals carry instructional meaning.
-8. The finalAssessment must contain at least ${quality.finalAssessmentQuestions} original questions distributed across all modules and mapped to the assessment blueprint. Every question must include at least ${quality.finalAssessmentOptions} credible options, a valid correctIndex, rationale, moduleId, cognitiveLevel, and one or more sourceIds that map to the sourceRegister.
+8. The finalAssessment must contain at least ${requiredAssessmentQuestions} original questions distributed across all modules and mapped to the assessment blueprint. Every question must include at least ${quality.finalAssessmentOptions} credible options, a valid correctIndex, rationale, moduleId, cognitiveLevel, and one or more sourceIds that map to the sourceRegister.
 9. Assessment questions must primarily test application, analysis, prioritization, evidence evaluation, escalation, and defensible judgment rather than trivia or memorization. Do not repeat scenarios, stems, distractor patterns, or answer-position patterns mechanically.
 10. Build a sourceRegister with unique IDs that identifies every topic requiring authoritative verification before publication. Each record must include sourceType, claimOrTopic, applicable moduleIds, verificationInstruction, and usageBoundary. Do not invent citations, URLs, standards language, statistics, case facts, quotations, document numbers, dates, or source identifiers.
 11. frameworkAlignment is informational mapping only. Include only relevant frameworks, identify applicable moduleIds, require verification, and state conditional applicability. Never state that course completion establishes compliance, certification, attestation, authorization, audit sufficiency, or legal sufficiency.
@@ -201,14 +226,24 @@ async function callOpenAI(prompt) {
       body: JSON.stringify({
         model: process.env.OPENAI_AUTHORING_MODEL || "gpt-5",
         input: prompt,
+        max_output_tokens: openAiMaxOutputTokens,
         text: { format: { type: "json_object" } },
-        reasoning: { effort: process.env.OPENAI_REASONING_EFFORT || "high" },
+        reasoning: {
+          effort:
+            process.env.OPENAI_REASONING_EFFORT ||
+            (requiredAssessmentQuestions > 60 ? "low" : "medium"),
+        },
         store: false,
       }),
     },
   );
   if (!response.ok) throw await providerHttpError("openai", response);
   const payload = await response.json();
+  if (payload.status === "incomplete") {
+    throw new Error(
+      `OpenAI response was incomplete: ${JSON.stringify(payload.incomplete_details ?? {})}`,
+    );
+  }
   const text =
     payload.output_text ||
     payload.output
@@ -257,32 +292,9 @@ function parseJson(text) {
   return JSON.parse(trimmed);
 }
 
-async function main() {
-  const outputDir = path.join(courseDir, "generated", "authoring");
-  const outputPath = path.join(outputDir, "course-package.json");
-  if (fs.existsSync(outputPath) && !force) {
-    console.log(
-      `[Academy Studio] Preserved existing AI-authored package for ${courseId}. Use --force to regenerate.`,
-    );
-    return;
-  }
-
-  fs.mkdirSync(outputDir, { recursive: true });
-  const prompt = authoringPrompt();
-  fs.writeFileSync(
-    path.join(outputDir, "authoring-prompt.txt"),
-    `${proprietaryNotice}\n\n${prompt}\n`,
-  );
-
-  const raw =
-    provider === "anthropic"
-      ? await callAnthropic(prompt)
-      : await callOpenAI(prompt);
-  const authored = parseJson(raw);
-  assertAuthoredPackageReady({ manifest, authored });
-
-  const envelope = {
-    schemaVersion: "1.3",
+function baseEnvelope(authored, qualityGate) {
+  return {
+    schemaVersion: "1.4",
     courseId,
     provider,
     model:
@@ -290,20 +302,81 @@ async function main() {
         ? process.env.ANTHROPIC_AUTHORING_MODEL || "claude-sonnet-4-5"
         : process.env.OPENAI_AUTHORING_MODEL || "gpt-5",
     authoringPolicyVersion: ACADEMY_AUTHORING_POLICY_VERSION,
-    authoringQualityContract: academyAuthoringQualityContract(),
+    authoringQualityContract: academyAuthoringQualityContract(manifest),
     generatedAt: new Date().toISOString(),
     sourceManifestHash: sourceManifestHash(),
     reviewStatus: "draft-ai-generated",
     legalName,
     proprietaryNotice,
-    qualityGate: {
+    qualityGate,
+    content: authored,
+  };
+}
+
+async function main() {
+  const outputDir = path.join(courseDir, "generated", "authoring");
+  const outputPath = path.join(outputDir, "course-package.json");
+  const partialPath = path.join(outputDir, "course-package.partial.json");
+  if (fs.existsSync(outputPath) && !force) {
+    console.log(
+      `[Academy Studio] Preserved existing AI-authored package for ${courseId}. Use --force to regenerate.`,
+    );
+    return;
+  }
+
+  fs.mkdirSync(outputDir, { recursive: true, mode: 0o700 });
+  const prompt = authoringPrompt();
+  fs.writeFileSync(
+    path.join(outputDir, "authoring-prompt.txt"),
+    `${proprietaryNotice}\n\n${prompt}\n`,
+    { encoding: "utf8", mode: 0o600 },
+  );
+
+  const raw =
+    provider === "anthropic"
+      ? await callAnthropic(prompt)
+      : await callOpenAI(prompt);
+  const authored = parseJson(raw);
+
+  writeJsonAtomic(
+    partialPath,
+    baseEnvelope(authored, {
+      name: "authored-package-production-depth-readiness",
+      passed: false,
+      findingCount: null,
+      state: "awaiting-validation",
+    }),
+  );
+
+  try {
+    assertAuthoredPackageReady({ manifest, authored });
+  } catch (error) {
+    writeJsonAtomic(
+      partialPath,
+      baseEnvelope(authored, {
+        name: "authored-package-production-depth-readiness",
+        passed: false,
+        findingCount: null,
+        state: "validation-failed",
+        technicalReason: String(error instanceof Error ? error.message : error).slice(
+          0,
+          3000,
+        ),
+      }),
+    );
+    throw error;
+  }
+
+  writeJsonAtomic(
+    outputPath,
+    baseEnvelope(authored, {
       name: "authored-package-production-depth-readiness",
       passed: true,
       findingCount: 0,
-    },
-    content: authored,
-  };
-  fs.writeFileSync(outputPath, `${JSON.stringify(envelope, null, 2)}\n`);
+      state: "validated",
+    }),
+  );
+  fs.rmSync(partialPath, { force: true });
   console.log(
     `[Academy Studio] Generated governed production-depth AI course package for ${courseId} through ${provider} under policy ${ACADEMY_AUTHORING_POLICY_VERSION}.`,
   );

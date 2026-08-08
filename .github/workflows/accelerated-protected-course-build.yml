@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - agent/academy-build-acceleration
+      - agent/academy-resumable-quality-repair
     paths:
       - "courses/**"
       - "studio/**"
@@ -15,6 +16,7 @@ on:
       - ".github/workflows/accelerated-protected-course-build.yml"
   pull_request:
     branches:
+      - agent/academy-build-acceleration
       - agent/academy-production-integration
       - main
     paths:
@@ -39,15 +41,22 @@ env:
   NPM_CONFIG_PROGRESS: "false"
   NPM_CONFIG_UPDATE_NOTIFIER: "false"
   ACADEMY_AUTHORING_PROVIDER: openai
-  ACADEMY_AUTHORING_CONCURRENCY: 16
+  ACADEMY_AUTHORING_CONCURRENCY: 12
   ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
   ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
+  ACADEMY_AUTHORING_NARRATIVE_TARGET_WORDS: 1500
   ACADEMY_AUTHORING_REPAIR_ATTEMPTS: 2
-  ACADEMY_AUTHORING_REPAIR_CONCURRENCY: 4
+  ACADEMY_AUTHORING_REPAIR_CONCURRENCY: 6
+  ACADEMY_AUTHORING_REPAIR_NARRATIVE_TARGET_WORDS: 1650
+  ACADEMY_AUTHORING_REPAIR_TIMEOUT_MS: 1500000
   ACADEMY_PREFLIGHT_MAX_ATTEMPTS: 3
   ACADEMY_PREFLIGHT_RETRY_BASE_MS: 2000
   ACADEMY_PREFLIGHT_TIMEOUT_MS: 60000
   ACADEMY_EXPECTED_REVIEW_COURSES: 61
+  OPENAI_MAX_OUTPUT_TOKENS: 64000
+  OPENAI_PMP_MAX_OUTPUT_TOKENS: 100000
+  OPENAI_REASONING_EFFORT: medium
+  OPENAI_REPAIR_REASONING_EFFORT: low
   OBSERRA_PORTFOLIO_WORKER_COUNT: 36
   OBSERRA_APPLICATION_WORKER_COUNT: 20
   ACADEMY_COURSE_WORKER_COUNT: 16
@@ -56,7 +65,7 @@ env:
 
 jobs:
   authoring:
-    name: Audit, author with 16 workers, and package protected courses
+    name: Audit, author with 16 allocated workers, and repair protected courses
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     outputs:
@@ -129,11 +138,14 @@ jobs:
         if: steps.audit.outputs.authoring_required == 'true'
         run: node studio/preflight-accelerated-authoring.mjs
 
-      - name: Author owner-review courses with 16 controlled workers
+      - name: Author owner-review courses with bounded provider concurrency
+        id: initial_authoring
         if: steps.audit.outputs.authoring_required == 'true'
+        continue-on-error: true
         run: npm run author:parallel
 
-      - name: Validate and selectively repair authored packages
+      - name: Validate and selectively repair every incomplete package
+        if: always() && !cancelled() && steps.audit.outputs.blocking_findings == '0'
         run: node studio/validate-and-repair-authored-packages.mjs
 
       - name: Re-audit protected packages
@@ -194,7 +206,7 @@ jobs:
             catalog/learner-catalog-readiness.json
             catalog/authoring-quality-repair.json
           if-no-files-found: warn
-          retention-days: 180
+          retention-days: 90
           compression-level: 6
 
       - name: Record authoring completion summary
@@ -205,12 +217,14 @@ jobs:
             echo "- Governed course inventory: 61"
             echo "- Fixed portfolio allocation: 36 total"
             echo "- Application reservation: 20"
-            echo "- Course worker maximum: 16"
+            echo "- Course worker allocation: 16"
+            echo "- Simultaneous provider authoring limit: 12"
+            echo "- Selective repair provider limit: 6"
             echo "- Authoring required: ${{ steps.audit.outputs.authoring_required }}"
             echo "- Blocking findings: ${{ steps.audit.outputs.blocking_findings }}"
-            echo "- Provider preflight uses bounded retries and governed model fallback"
-            echo "- Incomplete generated packages are selectively retried before catalog validation"
-            echo "- Protected packages are retained for owner review even when a downstream gate fails"
+            echo "- Initial authoring outcome: ${{ steps.initial_authoring.outcome }}"
+            echo "- Initial partial failures continue into bounded selective repair"
+            echo "- Partial packages are retained for diagnostics and recovery"
             echo "- Database credentials were intentionally excluded from this job"
           } >> "$GITHUB_STEP_SUMMARY"
 

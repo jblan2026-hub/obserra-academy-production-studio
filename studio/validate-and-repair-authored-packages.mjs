@@ -21,13 +21,13 @@ const maximumRepairAttempts = boundedNumber(
 );
 const repairConcurrency = boundedNumber(
   process.env.ACADEMY_AUTHORING_REPAIR_CONCURRENCY,
-  4,
+  6,
   1,
   8,
 );
 const processTimeoutMs = boundedNumber(
   process.env.ACADEMY_AUTHORING_REPAIR_TIMEOUT_MS,
-  20 * 60 * 1000,
+  25 * 60 * 1000,
   2 * 60 * 1000,
   30 * 60 * 1000,
 );
@@ -54,21 +54,24 @@ function writeJson(filePath, value) {
 
 function packagePaths(courseId) {
   const courseRoot = path.join(coursesRoot, courseId);
+  const authoringRoot = path.join(courseRoot, "generated", "authoring");
   return {
     manifestPath: path.join(courseRoot, "course-manifest.json"),
-    packagePath: path.join(
-      courseRoot,
-      "generated",
-      "authoring",
-      "course-package.json",
-    ),
+    packagePath: path.join(authoringRoot, "course-package.json"),
+    partialPath: path.join(authoringRoot, "course-package.partial.json"),
   };
 }
 
 function validateCoursePackage(courseId) {
-  const { manifestPath, packagePath } = packagePaths(courseId);
+  const { manifestPath, packagePath, partialPath } = packagePaths(courseId);
   if (!fs.existsSync(manifestPath)) return [`${courseId}:missing-manifest`];
-  if (!fs.existsSync(packagePath)) return [`${courseId}:missing-authored-package`];
+
+  const candidatePath = fs.existsSync(packagePath)
+    ? packagePath
+    : fs.existsSync(partialPath)
+      ? partialPath
+      : null;
+  if (candidatePath === null) return [`${courseId}:missing-authored-package`];
 
   let manifest;
   let envelope;
@@ -78,7 +81,7 @@ function validateCoursePackage(courseId) {
     return [`${courseId}:invalid-manifest-json:${error.message}`];
   }
   try {
-    envelope = readJson(packagePath);
+    envelope = readJson(candidatePath);
   } catch (error) {
     return [`${courseId}:invalid-authored-json:${error.message}`];
   }
@@ -87,6 +90,9 @@ function validateCoursePackage(courseId) {
     manifest,
     authored: envelope?.content,
   });
+  if (candidatePath === partialPath) {
+    findings.push("partial-authored-package-requires-repair");
+  }
   if (envelope?.authoringPolicyVersion !== ACADEMY_AUTHORING_POLICY_VERSION) {
     findings.push(
       `authoring-policy-${envelope?.authoringPolicyVersion || "missing"}-expected-${ACADEMY_AUTHORING_POLICY_VERSION}`,
@@ -116,11 +122,25 @@ function regenerate(courseId) {
         path.join(root, "studio", "author-course-ai.mjs"),
         "--course",
         courseId,
+        "--provider",
+        process.env.ACADEMY_AUTHORING_PROVIDER || "openai",
         "--force",
       ],
       {
         cwd: root,
-        env: { ...process.env },
+        env: {
+          ...process.env,
+          ACADEMY_AUTHORING_NARRATIVE_TARGET_WORDS:
+            process.env.ACADEMY_AUTHORING_REPAIR_NARRATIVE_TARGET_WORDS ||
+            process.env.ACADEMY_AUTHORING_NARRATIVE_TARGET_WORDS ||
+            "1650",
+          OPENAI_MAX_OUTPUT_TOKENS:
+            courseId === "pmp-exam-prep-business-application"
+              ? process.env.OPENAI_PMP_MAX_OUTPUT_TOKENS || "100000"
+              : process.env.OPENAI_MAX_OUTPUT_TOKENS || "64000",
+          OPENAI_REASONING_EFFORT:
+            process.env.OPENAI_REPAIR_REASONING_EFFORT || "low",
+        },
         shell: false,
         windowsHide: true,
         stdio: ["ignore", "pipe", "pipe"],
@@ -196,7 +216,7 @@ async function main() {
     attempt += 1
   ) {
     console.log(
-      `[Academy Studio] Selective authoring repair attempt ${attempt}/${maximumRepairAttempts} for ${pending.length} package(s) that do not satisfy policy ${ACADEMY_AUTHORING_POLICY_VERSION}.`,
+      `[Academy Studio] Selective authoring repair attempt ${attempt}/${maximumRepairAttempts} for ${pending.length} package(s) that do not satisfy policy ${ACADEMY_AUTHORING_POLICY_VERSION}; provider concurrency is ${repairConcurrency}.`,
     );
     const regenerated = await runBounded(
       pending,
@@ -221,7 +241,7 @@ async function main() {
     (courseId) => initial[courseId].length > 0 && final[courseId].length === 0,
   );
   const report = {
-    schemaVersion: "2.0",
+    schemaVersion: "2.1",
     generatedAt: new Date().toISOString(),
     authoringQualityContract: academyAuthoringQualityContract(),
     discoveredCourses: ids.length,
@@ -232,6 +252,7 @@ async function main() {
     failedCourses: failed,
     maximumRepairAttempts,
     repairConcurrency,
+    processTimeoutMs,
     attempts,
     initialFindings: initial,
     finalFindings: final,
