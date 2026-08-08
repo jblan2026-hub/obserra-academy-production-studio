@@ -99,7 +99,7 @@ writeJson(path.join(catalogRoot, "academy-release-approval-gate.json"), {
 try {
   const evidence = getAcademyProductionEvidence(root);
   assert.equal(evidence.available, true);
-  assert.equal(evidence.source, "authoritative-repository-evidence");
+  assert.equal(evidence.source, "authoritative-local-repository-evidence");
   assert.equal(evidence.workerStatus.configuredPortfolioWorkers, 36);
   assert.equal(evidence.workerStatus.configuredCourseWorkers, 36);
   assert.equal(evidence.workerStatus.configuredApplicationWorkers, 0);
@@ -134,6 +134,7 @@ try {
 
   console.log(JSON.stringify({
     gate: "command-center-academy-production-evidence",
+    evidenceSource: evidence.source,
     controlPlaneOperationalWithoutProductionInference: evidence.controlPlaneOperational,
     authoritativeProductionEvidence: evidence.productionOperational,
     publicationRemainsLockedWithoutReleaseExecution: evidence.publicationLocked,
