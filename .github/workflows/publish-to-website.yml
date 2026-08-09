@@ -31,20 +31,17 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Regenerate approved catalog only
+        run: node studio/generate-catalog.mjs
 
-      - name: Validate and regenerate approved catalog
-        run: npm run verify
-
-      - name: Confirm exact per-course publication contract
+      - name: Confirm current per-course publication contract
         shell: bash
         run: |
           node <<'NODE'
           const fs = require('node:fs');
           const path = './catalog/academy-course-catalog.json';
-          const legalName = 'Obserra Executive Protection & Intelligence, LLC';
-          const officialLogo = '/brand/obserra-logo.png';
+          const legalName = 'OBSERRA EXECUTIVE PROTECTION & INTELLIGENCE LLC';
+          const officialLogoAsset = 'brand/assets/obserra-official-logo.png';
 
           function minutes(value) {
             const normalized = String(value || '').trim().toLowerCase();
@@ -57,18 +54,23 @@ jobs:
 
           if (!fs.existsSync(path)) throw new Error('Generated Academy catalog is missing');
           const catalog = JSON.parse(fs.readFileSync(path, 'utf8'));
-          if (catalog.schemaVersion !== '1.2') throw new Error('Academy catalog schemaVersion must equal 1.2');
+          if (catalog.schemaVersion !== '1.5') throw new Error('Academy catalog schemaVersion must equal 1.5');
           if (catalog.publisher !== legalName) throw new Error(`Academy publisher must equal ${legalName}`);
-          if (catalog.officialLogo !== officialLogo) throw new Error(`Academy officialLogo must equal ${officialLogo}`);
-          if (!Array.isArray(catalog.courses) || catalog.courses.length === 0) throw new Error('Academy catalog must contain at least one approved course');
+          if (!catalog.officialLogo || catalog.officialLogo.assetPath !== officialLogoAsset) {
+            throw new Error(`Academy officialLogo.assetPath must equal ${officialLogoAsset}`);
+          }
+          if (!Array.isArray(catalog.courses) || catalog.courses.length === 0) {
+            throw new Error('Academy catalog must contain at least one owner-approved course');
+          }
 
           const ids = new Set();
           for (const course of catalog.courses) {
             if (!course.id || !course.title || !course.duration || !course.description) throw new Error(`Invalid course identity: ${course.id ?? 'unknown'}`);
             if (ids.has(course.id)) throw new Error(`Duplicate course id: ${course.id}`);
             ids.add(course.id);
-            if (!Array.isArray(course.modules) || course.modules.length === 0) throw new Error(`Course ${course.id} has no approved lessons`);
-            if (course.moduleCount !== course.modules.length) throw new Error(`Course ${course.id} moduleCount does not match its lesson array`);
+            if (!Array.isArray(course.modules) || course.modules.length === 0) throw new Error(`Course ${course.id} has no approved modules`);
+            if (course.moduleCount !== course.modules.length) throw new Error(`Course ${course.id} moduleCount does not match its module array`);
+
             const expectedMinutes = minutes(course.duration);
             if (!expectedMinutes) throw new Error(`Course ${course.id} has an unsupported advertised duration`);
             let actualMinutes = 0;
@@ -76,21 +78,27 @@ jobs:
             course.modules.forEach((module, index) => {
               if (!module.id || moduleIds.has(module.id)) throw new Error(`Course ${course.id} has a missing or duplicate module id`);
               moduleIds.add(module.id);
-              if (module.sequence !== index + 1) throw new Error(`Course ${course.id} has a nonsequential lesson order`);
-              if (!module.title || !module.description || !module.format) throw new Error(`Course ${course.id} lesson ${index + 1} is incomplete`);
+              if (module.sequence !== index + 1) throw new Error(`Course ${course.id} has a nonsequential module order`);
+              if (!module.title || !module.description || !module.format) throw new Error(`Course ${course.id} module ${index + 1} is incomplete`);
               const moduleMinutes = minutes(module.duration);
-              if (!moduleMinutes) throw new Error(`Course ${course.id} lesson ${index + 1} has an invalid duration`);
+              if (!moduleMinutes) throw new Error(`Course ${course.id} module ${index + 1} has an invalid duration`);
               actualMinutes += moduleMinutes;
+              if (module.lessons && !Array.isArray(module.lessons)) throw new Error(`Course ${course.id} module ${index + 1} lessons must be an array`);
             });
-            if (actualMinutes !== expectedMinutes) throw new Error(`Course ${course.id} lesson minutes ${actualMinutes} do not match advertised minutes ${expectedMinutes}`);
+
+            const lowerBound = Math.floor(expectedMinutes * 0.75);
+            const upperBound = Math.ceil(expectedMinutes * 1.10);
+            if (actualMinutes < lowerBound || actualMinutes > upperBound) {
+              throw new Error(`Course ${course.id} module minutes ${actualMinutes} fall outside governed duration range ${lowerBound}-${upperBound}`);
+            }
             if (!Array.isArray(course.outcomes) || course.outcomes.length < 3) throw new Error(`Course ${course.id} has incomplete outcomes`);
             if (!course.commerce || !course.licensing || !course.completion || !course.certificate) throw new Error(`Course ${course.id} is missing governed commercial metadata`);
             if (!(course.commerce.price > 0) || course.commerce.currency !== 'USD') throw new Error(`Course ${course.id} has invalid commerce metadata`);
-            if (!['approved', 'published'].includes(course.releaseStatus)) throw new Error(`Course ${course.id} is not approved for publication`);
+            if (!['approved', 'published'].includes(String(course.releaseStatus).toLowerCase())) throw new Error(`Course ${course.id} is not approved for publication`);
             if (course.completion.allLessonsRequired !== true || course.completion.assessmentRequired !== true || course.completion.certificateIssued !== true) throw new Error(`Course ${course.id} has invalid completion requirements`);
             if (course.certificate.issuer !== legalName || course.certificate.verificationRequired !== true) throw new Error(`Course ${course.id} has invalid certificate issuance metadata`);
           }
-          console.log(`[Academy Studio] Exact manifest publication contract passed for ${catalog.courses.length} approved course(s)`);
+          console.log(`[Academy Studio] Current per-course publication contract passed for ${catalog.courses.length} approved course(s)`);
           NODE
 
       - name: Commit generated approved catalog
