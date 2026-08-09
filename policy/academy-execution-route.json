@@ -1,9 +1,9 @@
 {
   "schemaVersion": "1.0",
-  "policyVersion": "2026.08.08.1",
+  "policyVersion": "2026.08.08.2",
   "status": "enforced",
   "failClosed": true,
-  "objective": "Complete, verify, and privately back up all 61 Obserra Academy courses through one zero-commercial-API-cost execution route.",
+  "objective": "Complete, verify, and privately back up all 61 Obserra Academy courses through one zero-commercial-API-cost execution route with concurrent canary and uniquely assigned portfolio course work.",
   "canonicalWorkflow": ".github/workflows/academy-zero-cost-sharded-completion.yml",
   "allowedWorkflowPaths": [
     ".github/workflows/academy-zero-cost-sharded-completion.yml"
@@ -14,8 +14,8 @@
   ],
   "executionStages": [
     "prepare-free-runtime",
-    "complete-and-verify-one-canary-course",
-    "run-20-local-course-workers",
+    "complete-and-verify-one-canary-course-concurrently",
+    "run-19-local-course-workers-excluding-canary",
     "restore-and-validate-61-protected-checkpoints",
     "render-verify-and-privately-back-up-61-courses"
   ],
