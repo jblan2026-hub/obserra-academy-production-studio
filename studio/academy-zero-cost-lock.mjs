@@ -3,7 +3,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
-export const ACADEMY_ZERO_COST_LOCK_VERSION = "2026.08.08.2";
+export const ACADEMY_ZERO_COST_LOCK_VERSION = "2026.08.08.3";
 
 const LOCKED = true;
 const LOCAL_PROVIDER = "local";
@@ -244,8 +244,6 @@ function validateCanonicalWorkflow(policy) {
     "OPENAI_API_KEY: \"\"",
     "ANTHROPIC_API_KEY: \"\"",
     "needs: prepare-free-runtime",
-    "needs: canary-course",
-    "max-parallel: 20",
     "node studio/academy-zero-cost-lock.mjs",
     "render-canary-course-local-media.mjs",
     "verify-canary-course-completion.mjs",
@@ -257,6 +255,16 @@ function validateCanonicalWorkflow(policy) {
       throw new Error(`ACADEMY_ZERO_COST_LOCK: canonical workflow contract is missing: ${fragment}`);
     }
   }
+
+  const legacyCanaryGate = workflow.includes("needs: canary-course") && workflow.includes("max-parallel: 20");
+  const concurrentCourseWorkers =
+    workflow.includes("ACADEMY_SKIP_COURSE_ID: ai-data-privacy-ip") &&
+    workflow.includes("max-parallel: 19") &&
+    workflow.includes("needs: [canary-course, content-shards]");
+  if (!legacyCanaryGate && !concurrentCourseWorkers) {
+    throw new Error("ACADEMY_ZERO_COST_LOCK: canonical workflow has neither the legacy canary gate nor the approved concurrent canary-plus-19-worker schedule.");
+  }
+
   const lockChecks = workflow.match(/node studio\/academy-zero-cost-lock\.mjs/g)?.length ?? 0;
   if (lockChecks < 4) {
     throw new Error(`ACADEMY_ZERO_COST_LOCK: canonical workflow requires at least four explicit lock checks; found ${lockChecks}.`);
