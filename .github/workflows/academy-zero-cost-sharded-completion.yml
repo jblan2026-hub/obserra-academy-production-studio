@@ -1,5 +1,5 @@
 name: Academy Zero Cost Resilient Completion
-run-name: zero-cost canary then 20-worker completion • ${{ github.ref_name }} • ${{ github.sha }}
+run-name: zero-cost concurrent canary plus 19 course workers • ${{ github.ref_name }} • ${{ github.sha }}
 
 on:
   workflow_dispatch:
@@ -15,6 +15,7 @@ on:
       - "studio/verify-canary-course-completion.mjs"
       - "studio/local-ollama-keepalive-proxy.mjs"
       - "studio/research-course-authoritative-sources.mjs"
+      - "studio/research-course-authoritative-sources-local.mjs"
       - "studio/author-course-hollywood.mjs"
       - "studio/author-course-hollywood-with-checkpoint.mjs"
       - "studio/review-course-quality.mjs"
@@ -27,6 +28,7 @@ on:
       - "studio/render-all-61-local-media.mjs"
       - "studio/verify-all-61-course-completion.mjs"
       - "studio/backup-61-courses-to-private-github.sh"
+      - "policy/academy-execution-route.json"
       - "courses/**"
       - "sources/**"
 
@@ -52,7 +54,7 @@ env:
   ACADEMY_CANARY_COURSE_ID: ai-data-privacy-ip
   ACADEMY_MINIMUM_LESSON_WORDS: "1200"
   ACADEMY_MINIMUM_EXACT_SOURCES_PER_COURSE: "2"
-  ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS: "2"
+  ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS: "3"
   ACADEMY_EXECUTION_MODE: local-ollama-zero-commercial-api-cost-locked
   ACADEMY_AUTHORING_PROVIDER: local
   ACADEMY_RESEARCH_PROVIDER: local
@@ -120,9 +122,11 @@ env:
 
 jobs:
   prepare-free-runtime:
-    name: Prepare shared sources and local model once
+    name: Prepare shared zero-cost runtime and 60-course matrix
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    outputs:
+      course_matrix: ${{ steps.course-matrix.outputs.matrix }}
     steps:
       - name: Checkout governed Academy source
         uses: actions/checkout@v4
@@ -140,8 +144,34 @@ jobs:
       - name: Preflight protected checkpoint gateway before runtime preparation
         run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
 
+      - name: Build exact 60-course matrix excluding canary
+        id: course-matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          matrix="$(node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const ids = fs.readdirSync('courses', { withFileTypes: true })
+            .filter((entry) => entry.isDirectory())
+            .map((entry) => entry.name)
+            .filter((id) => fs.existsSync(path.join('courses', id, 'course-manifest.json')))
+            .filter((id) => {
+              const manifest = JSON.parse(fs.readFileSync(path.join('courses', id, 'course-manifest.json'), 'utf8'));
+              return !['retired', 'archived'].includes(String(manifest.release?.status || 'draft').toLowerCase());
+            })
+            .sort();
+          if (ids.length !== 61) throw new Error(`Expected 61 active courses, found ${ids.length}.`);
+          const canary = process.env.ACADEMY_CANARY_COURSE_ID;
+          if (!ids.includes(canary)) throw new Error(`Canary ${canary} is not in the active portfolio.`);
+          const portfolio = ids.filter((id) => id !== canary);
+          if (portfolio.length !== 60) throw new Error(`Expected 60 non-canary courses, found ${portfolio.length}.`);
+          process.stdout.write(JSON.stringify(portfolio));
+          NODE
+          )"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
       - name: Restore shared governed public evidence cache
-        id: source-cache
         uses: actions/cache@v4
         with:
           path: .academy-cache/authoritative-sources
@@ -150,7 +180,6 @@ jobs:
             academy-public-evidence-v3-
 
       - name: Restore shared checksum verified Ollama archive and model cache
-        id: ollama-cache
         uses: actions/cache@v4
         with:
           path: |
@@ -209,13 +238,12 @@ jobs:
           pkill -f "ollama serve" || true
 
   canary-course:
-    name: Complete and inspect one course end to end
+    name: Complete and verify ai-data-privacy-ip end to end
     needs: prepare-free-runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
-      ACADEMY_SHARD_COUNT: "61"
-      ACADEMY_SHARD_INDEX: "0"
+      ACADEMY_COURSE_ID: ai-data-privacy-ip
     steps:
       - name: Checkout governed Academy source
         uses: actions/checkout@v4
@@ -256,7 +284,7 @@ jobs:
       - name: Apply governed course policy
         run: node studio/apply-course-policy.mjs
 
-      - name: Restore reusable protected canary checkpoint
+      - name: Restore reusable protected canary checkpoint only
         run: node studio/restore-academy-hollywood-checkpoints.mjs
 
       - name: Reject stale restored canary evidence
@@ -265,7 +293,7 @@ jobs:
       - name: Build deterministic canary source context
         run: node studio/build-free-course-source-context.mjs
 
-      - name: Start the memory bounded local model
+      - name: Start the memory bounded local canary model
         shell: bash
         run: |
           set -euo pipefail
@@ -326,7 +354,7 @@ jobs:
           mkdir -p "$ACADEMY_LOCAL_TTS_DATA_DIR"
           .academy-tools/bin/python -m piper.download_voices "$ACADEMY_LOCAL_TTS_MODEL" --data-dir "$ACADEMY_LOCAL_TTS_DATA_DIR"
 
-      - name: Render only the complete canary course locally
+      - name: Render the complete canary course locally
         run: node studio/render-canary-course-local-media.mjs --course "$ACADEMY_CANARY_COURSE_ID"
 
       - name: Verify canary content materials certificate and every video
@@ -341,7 +369,7 @@ jobs:
             echo "- Course: $ACADEMY_CANARY_COURSE_ID"
             echo "- Commercial AI and media providers: hard blocked"
             echo "- Local model context: $LOCAL_AI_NUM_CTX"
-            echo "- Full portfolio workers remain blocked unless this job passes"
+            echo "- Other portfolio courses execute concurrently and exclude the canary"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Emit canary diagnostics on failure
@@ -358,18 +386,18 @@ jobs:
           ps aux --sort=-rss | head -n 30 || true
 
   content-shards:
-    name: Local worker ${{ matrix.shard }} of 20
-    needs: canary-course
+    name: Course ${{ matrix.course_id }}
+    needs: prepare-free-runtime
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     strategy:
       fail-fast: false
-      max-parallel: 20
+      max-parallel: 19
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+        course_id: ${{ fromJSON(needs.prepare-free-runtime.outputs.course_matrix) }}
     env:
-      ACADEMY_SHARD_COUNT: "20"
-      ACADEMY_SHARD_INDEX: ${{ matrix.shard }}
+      ACADEMY_COURSE_ID: ${{ matrix.course_id }}
+      ACADEMY_SKIP_COURSE_ID: ai-data-privacy-ip
     steps:
       - name: Checkout governed Academy source
         uses: actions/checkout@v4
@@ -381,10 +409,10 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Prove the zero cost lock is active before worker setup
+      - name: Prove the zero cost lock is active before course work
         run: node studio/academy-zero-cost-lock.mjs
 
-      - name: Preflight protected checkpoint gateway before worker setup
+      - name: Preflight protected checkpoint gateway before course setup
         run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
 
       - name: Restore shared governed public evidence cache
@@ -403,23 +431,23 @@ jobs:
             ~/.ollama/models
           key: academy-ollama-${{ env.OLLAMA_VERSION }}-qwen2-5-7b-instruct-v2
 
-      - name: Activate the zero cost network lock for worker Node processes
+      - name: Activate the zero cost network lock for course Node processes
         shell: bash
         run: echo "NODE_OPTIONS=--import=${GITHUB_WORKSPACE}/studio/academy-zero-cost-lock.mjs" >> "$GITHUB_ENV"
 
       - name: Apply governed course policy
         run: node studio/apply-course-policy.mjs
 
-      - name: Restore reusable protected worker checkpoints
+      - name: Restore reusable protected checkpoint for this course only
         run: node studio/restore-academy-hollywood-checkpoints.mjs
 
-      - name: Reject stale restored worker evidence
+      - name: Reject stale restored course evidence
         run: node studio/prune-stale-restored-course-packages.mjs
 
-      - name: Build deterministic source context for this worker
+      - name: Build deterministic source context
         run: node studio/build-free-course-source-context.mjs
 
-      - name: Start one memory bounded local model for this worker
+      - name: Start one memory bounded local model for this course
         shell: bash
         run: |
           set -euo pipefail
@@ -455,13 +483,15 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:11436/health
 
-      - name: Research author independently review and checkpoint this worker scope
+      - name: Research author independently review and checkpoint this exact course
         run: node .github/scripts/run-academy-zero-cost-shard.mjs
 
-      - name: Emit worker diagnostics on failure
+      - name: Emit exact-course diagnostics on failure
         if: failure()
         shell: bash
         run: |
+          echo "--- course ---"
+          echo "$ACADEMY_COURSE_ID"
           echo "--- Ollama log tail ---"
           tail -n 200 /tmp/academy-ollama.log || true
           echo "--- keepalive proxy log tail ---"
@@ -472,7 +502,7 @@ jobs:
 
   finalize-content:
     name: Restore and validate all 61 protected course checkpoints
-    needs: content-shards
+    needs: [canary-course, content-shards]
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -620,14 +650,14 @@ jobs:
         shell: bash
         run: bash studio/backup-61-courses-to-private-github.sh
 
-      - name: Record go live evidence gate
+      - name: Record completion evidence gate
         if: always()
         shell: bash
         run: |
           {
             echo "## Obserra Academy 61 Course Zero Cost Completion"
-            echo "- Full portfolio fanout was blocked until one complete canary passed"
-            echo "- Real worker parallelism: 20 workers aligned to observed runner capacity"
+            echo "- One end-to-end canary and 19 exact-course content workers run concurrently"
+            echo "- Remaining 60 courses are isolated as one-course jobs and queue immediately"
             echo "- Protected content generation: native local Ollama only"
             echo "- Media generation: local Piper and FFmpeg only"
             echo "- Commercial AI and media paths: hard blocked and fail closed"
