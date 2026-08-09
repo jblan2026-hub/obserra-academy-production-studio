@@ -10,16 +10,17 @@ import {
 
 const root = process.cwd();
 const coursesRoot = path.join(root, "courses");
-const shardIndex = Number(process.env.ACADEMY_SHARD_INDEX);
-const shardCount = Number(process.env.ACADEMY_SHARD_COUNT || 16);
-const maxAttempts = Math.max(1, Math.min(2, Number(process.env.ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS || 2)));
+const directCourseId = String(process.env.ACADEMY_COURSE_ID || "").trim();
+const shardIndex = Number(process.env.ACADEMY_SHARD_INDEX ?? 0);
+const shardCount = Number(process.env.ACADEMY_SHARD_COUNT || 1);
+const maxAttempts = Math.max(1, Math.min(3, Number(process.env.ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS || 3)));
 const skippedCourseId = String(process.env.ACADEMY_SKIP_COURSE_ID || "").trim();
-const PIPELINE_REVISION = "2026.08.08.5";
+const PIPELINE_REVISION = "2026.08.08.6";
 const researchScript = String(process.env.ACADEMY_RESEARCH_PROVIDER || "local").trim().toLowerCase() === "local"
   ? "studio/research-course-authoritative-sources-local.mjs"
   : "studio/research-course-authoritative-sources.mjs";
 
-if (!Number.isInteger(shardIndex) || shardIndex < 0 || shardIndex >= shardCount) {
+if (!directCourseId && (!Number.isInteger(shardIndex) || shardIndex < 0 || shardIndex >= shardCount)) {
   throw new Error(`Invalid ACADEMY_SHARD_INDEX=${process.env.ACADEMY_SHARD_INDEX}; expected 0..${shardCount - 1}.`);
 }
 
@@ -33,13 +34,22 @@ const courseIds = fs.readdirSync(coursesRoot, { withFileTypes: true })
   })
   .sort();
 
-if (courseIds.length !== 61) throw new Error(`Zero-cost shard runner requires exactly 61 active courses; discovered ${courseIds.length}.`);
+if (courseIds.length !== 61) throw new Error(`Zero-cost course runner requires exactly 61 active courses; discovered ${courseIds.length}.`);
+if (directCourseId && !courseIds.includes(directCourseId)) {
+  throw new Error(`ACADEMY_COURSE_ID=${directCourseId} is not an active governed course.`);
+}
 if (skippedCourseId && !courseIds.includes(skippedCourseId)) {
   throw new Error(`ACADEMY_SKIP_COURSE_ID=${skippedCourseId} is not an active governed course.`);
 }
+if (directCourseId && skippedCourseId && directCourseId === skippedCourseId) {
+  throw new Error(`ACADEMY_COURSE_ID=${directCourseId} cannot also be the skipped course.`);
+}
+
 const schedulableCourseIds = skippedCourseId ? courseIds.filter((courseId) => courseId !== skippedCourseId) : courseIds;
-const selected = schedulableCourseIds.filter((_courseId, index) => index % shardCount === shardIndex);
-if (!selected.length) throw new Error(`Shard ${shardIndex}/${shardCount} received no courses.`);
+const selected = directCourseId
+  ? [directCourseId]
+  : schedulableCourseIds.filter((_courseId, index) => index % shardCount === shardIndex);
+if (!selected.length) throw new Error(`Course runner received no courses.`);
 
 function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function stableHash(value) { return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex"); }
@@ -128,7 +138,7 @@ function courseState(courseId) {
 const results = [];
 for (const [position, courseId] of selected.entries()) {
   const startedAt = new Date().toISOString();
-  console.log(`[Academy Studio] Pipeline ${PIPELINE_REVISION}, shard ${shardIndex + 1}/${shardCount}, course ${position + 1}/${selected.length}: ${courseId}.`);
+  console.log(`[Academy Studio] Pipeline ${PIPELINE_REVISION}, course ${position + 1}/${selected.length}: ${courseId}.`);
 
   let state = courseState(courseId);
   if (state.researchValid && state.packageValid && state.reviewValid) {
@@ -180,7 +190,7 @@ for (const [position, courseId] of selected.entries()) {
   if (!deterministic.ok) {
     const gate = readGate(courseId);
     const remediationPath = writeRemediationContext(courseId, gate);
-    console.warn(`[Academy Studio] ${courseId} failed deterministic production gate. One local remediation pass is authorized from ${path.relative(root, remediationPath)}.`);
+    console.warn(`[Academy Studio] ${courseId} failed deterministic production gate. Local remediation is required from ${path.relative(root, remediationPath)}.`);
     const remediation = await withRetry(
       () => runNode(["studio/author-course-hollywood-with-checkpoint.mjs", "--course", courseId, "--provider", "local", "--force"], `${courseId} remediation authoring`),
       `${courseId} local deterministic remediation`,
@@ -227,9 +237,10 @@ for (const [position, courseId] of selected.entries()) {
 
 const passed = results.filter((item) => item.passed).length;
 const report = {
-  schemaVersion: "1.3",
+  schemaVersion: "1.4",
   pipelineRevision: PIPELINE_REVISION,
   generatedAt: new Date().toISOString(),
+  directCourseId: directCourseId || null,
   shardIndex,
   shardCount,
   expectedPortfolioCourses: 61,
@@ -245,6 +256,9 @@ const report = {
   results,
 };
 fs.mkdirSync(path.join(root, "catalog"), { recursive: true });
-fs.writeFileSync(path.join(root, "catalog", `academy-zero-cost-shard-${String(shardIndex).padStart(2, "0")}.json`), `${JSON.stringify(report, null, 2)}\n`);
-console.log(`[Academy Studio] Zero-cost shard ${shardIndex + 1}/${shardCount}: ${passed}/${selected.length} course(s) fully checkpointed, ${report.reusedCourses} reused, ${report.remediatedCourses} remediated, ${report.failedCourses} failed without abandoning later courses.`);
+const reportName = directCourseId
+  ? `academy-zero-cost-course-${directCourseId}.json`
+  : `academy-zero-cost-shard-${String(shardIndex).padStart(2, "0")}.json`;
+fs.writeFileSync(path.join(root, "catalog", reportName), `${JSON.stringify(report, null, 2)}\n`);
+console.log(`[Academy Studio] Zero-cost course runner: ${passed}/${selected.length} course(s) fully checkpointed, ${report.reusedCourses} reused, ${report.remediatedCourses} remediated, ${report.failedCourses} failed.`);
 if (passed !== selected.length) process.exit(2);
