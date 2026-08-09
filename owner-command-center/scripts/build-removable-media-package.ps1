@@ -96,7 +96,7 @@ Copy-Item -LiteralPath (Join-Path $root "scripts\Install-Obserra-Command-Center.
 Copy-Item -LiteralPath (Join-Path $root "scripts\Test-Obserra-Command-Center-Endpoint.ps1") -Destination (Join-Path $destinationPath "Test-Obserra-Command-Center-Endpoint.ps1")
 
 $bootstrap = [ordered]@{
-    schemaVersion = "1.1"
+    schemaVersion = "1.0"
     profileId = "obserra-owner-command-center-live-endpoint"
     targetHostname = $TargetHostname.ToLowerInvariant()
     generatedAt = (Get-Date).ToUniversalTime().ToString("o")
