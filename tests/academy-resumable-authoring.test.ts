@@ -10,21 +10,23 @@ function read(relativePath: string): string {
   return fs.readFileSync(path.join(root, relativePath), "utf8");
 }
 
-test("initial Academy authoring can continue into selective repair", () => {
+test("legacy accelerated authoring is guarded and cannot compete with the zero-cost course lane", () => {
   const workflow = read(
     ".github/workflows/accelerated-protected-course-build.yml",
   );
 
-  assert.match(workflow, /id: initial_authoring/);
-  assert.match(workflow, /continue-on-error: true/);
-  assert.match(
-    workflow,
-    /Validate and selectively repair every incomplete package/,
-  );
-  assert.match(workflow, /if: always\(\) && !cancelled\(\)/);
-  assert.match(workflow, /ACADEMY_AUTHORING_CONCURRENCY: 12/);
-  assert.match(workflow, /ACADEMY_AUTHORING_REPAIR_CONCURRENCY: 6/);
-  assert.match(workflow, /Course worker allocation: 16/);
+  assert.match(workflow, /Legacy Academy route guard/);
+  assert.match(workflow, /Reject legacy paid or public-artifact Academy route/);
+  assert.match(workflow, /academy-zero-cost-sharded-completion\.yml/);
+  assert.match(workflow, /local deterministic research/);
+  assert.match(workflow, /local Ollama authoring/);
+  assert.match(workflow, /private backup only/);
+  assert.match(workflow, /no commercial fallback/);
+  assert.match(workflow, /no protected public artifacts/);
+  assert.doesNotMatch(workflow, /OPENAI_API_KEY/);
+  assert.doesNotMatch(workflow, /ACADEMY_AUTHORING_PROVIDER:\s*openai/);
+  assert.doesNotMatch(workflow, /actions\/upload-artifact/);
+  assert.doesNotMatch(workflow, /id:\s*initial_authoring/);
 });
 
 test("authoring targets above the quality floor and preserves partial evidence", () => {
