@@ -1,7 +1,4 @@
-export type ClerkIdentityEnvironment = Readonly<{
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?: string;
-  CLERK_SECRET_KEY?: string;
-}>;
+export type ClerkIdentityEnvironment = Readonly<Record<string, string | undefined>>;
 
 export type ClerkIdentityReadiness = Readonly<{
   provider: "clerk";
