@@ -77,7 +77,7 @@ jobs:
           node --check electron/remediation-queue.cjs
           node --check src/app.js
           node --check src/security-dashboard.js
-          node --check src/refresh-15s.js
+          node --check src/live-refresh.js
           node -e "JSON.parse(require('fs').readFileSync('package.json','utf8')); JSON.parse(require('fs').readFileSync('policy/connector-catalog.json','utf8')); console.log('JSON policy validation passed')"
 
       - name: Run Command Center security and Academy Operations gates
