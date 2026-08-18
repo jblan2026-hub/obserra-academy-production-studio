@@ -11,48 +11,6 @@ permissions:
   contents: read
 
 jobs:
-  generate-lockfiles:
-    name: Generate deterministic npm lockfiles
-    if: github.event_name == 'pull_request' && github.head_ref == 'hotfix/clerk-failclosed-availability-20260818'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: write
-    steps:
-      - name: Check out controlled repair branch
-        uses: actions/checkout@v4
-        with:
-          ref: hotfix/clerk-failclosed-availability-20260818
-          fetch-depth: 0
-          persist-credentials: true
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Generate root lockfile without executing lifecycle scripts
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-      - name: Generate Owner Command Center lockfile without executing lifecycle scripts
-        working-directory: owner-command-center
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-      - name: Validate generated lockfiles
-        run: |
-          test -s package-lock.json
-          test -s owner-command-center/package-lock.json
-          node -e "JSON.parse(require('fs').readFileSync('package-lock.json','utf8')); JSON.parse(require('fs').readFileSync('owner-command-center/package-lock.json','utf8')); console.log('lockfiles valid')"
-      - name: Commit lockfiles only
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- package-lock.json owner-command-center/package-lock.json
-          if git diff --cached --quiet; then
-            echo "Lockfiles already synchronized."
-            exit 0
-          fi
-          git diff --cached --check
-          git diff --cached --stat
-          git commit -m "build: lock Studio and Command Center dependencies"
-          git push origin HEAD:hotfix/clerk-failclosed-availability-20260818
-
   validate-authenticated-build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -73,7 +31,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Validate Prisma schema
         run: npm run db:validate
