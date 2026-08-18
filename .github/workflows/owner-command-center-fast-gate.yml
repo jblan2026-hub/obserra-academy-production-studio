@@ -57,7 +57,6 @@ jobs:
           node --check electron/academy-preview.cjs
           node --check electron/owner-ai.cjs
           node --check electron/discovery.cjs
-          node --check electron/site-discovery.cjs
           node --check electron/threat-policy.cjs
           node --check electron/vulnerability-scan.cjs
           node --check electron/security-enforcement.cjs
