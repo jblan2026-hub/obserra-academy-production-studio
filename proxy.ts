@@ -8,19 +8,11 @@ const isPublicRoute = createRouteMatcher([
   "/api/health(.*)",
 ]);
 
-let configuredClerkProxy: ReturnType<typeof clerkMiddleware> | null = null;
-
-function getConfiguredClerkProxy() {
-  if (!configuredClerkProxy) {
-    configuredClerkProxy = clerkMiddleware(async (auth, request) => {
-      if (!isPublicRoute(request)) {
-        await auth.protect();
-      }
-    });
+const configuredClerkProxy = clerkMiddleware(async (auth, request) => {
+  if (!isPublicRoute(request)) {
+    await auth.protect();
   }
-
-  return configuredClerkProxy;
-}
+});
 
 function unavailableHeaders(contentType: string) {
   return {
@@ -91,7 +83,7 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
     return identityUnavailableResponse(request);
   }
 
-  return getConfiguredClerkProxy()(request, event);
+  return configuredClerkProxy(request, event);
 }
 
 export const config = {
