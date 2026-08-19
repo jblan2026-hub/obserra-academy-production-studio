@@ -25,7 +25,14 @@ function unavailableHeaders(contentType: string) {
 }
 
 function identityUnavailableResponse(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith("/api/")) {
+  const pathname = request.nextUrl.pathname;
+  const isApiRequest =
+    pathname === "/api" ||
+    pathname.startsWith("/api/") ||
+    pathname === "/trpc" ||
+    pathname.startsWith("/trpc/");
+
+  if (isApiRequest) {
     return NextResponse.json(
       {
         service: "obserra-academy-production-studio",
