@@ -1,6 +1,8 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
+import { spawnSync } from "node:child_process";
 
 const root = process.cwd();
 const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
@@ -8,7 +10,7 @@ const failures = [];
 const check = (name, condition) => { if (!condition) failures.push(name); };
 
 const remediation = read("owner-command-center/electron/ai-remediation.cjs");
-const worker = read("owner-command-center/scripts/remediate-approved-finding.cjs");
+const workerPath = path.join(root, "owner-command-center/scripts/remediate-approved-finding.cjs");
 const verifier = read("owner-command-center/scripts/verify-ai-remediation.mjs");
 const manifestSchema = JSON.parse(read("owner-command-center/policy/ai-remediation-schema.json"));
 
@@ -70,14 +72,36 @@ for (const pattern of [
   /forcePushAllowed:\s*false/
 ]) check(`remediation contract ${pattern}`, pattern.test(remediation));
 
-check("worker validates manifest", /validatePlan/.test(worker));
-check("worker executes approved remediation", /executeApprovedRemediation/.test(worker));
-check("worker rejects incomplete owner approval evidence", /approvedBy/.test(worker) && /approvedAt/.test(worker));
+const approvalEvidenceDir = fs.mkdtempSync(path.join(os.tmpdir(), "obserra-remediation-approval-"));
+try {
+  for (const missingField of ["approvedBy", "approvedAt"]) {
+    const invalidPlan = structuredClone(plans[0]);
+    delete invalidPlan[missingField];
+    const manifestPath = path.join(approvalEvidenceDir, `missing-${missingField}.json`);
+    fs.writeFileSync(manifestPath, JSON.stringify(invalidPlan, null, 2), { encoding: "utf8", mode: 0o600 });
+    const result = spawnSync(process.execPath, [workerPath, manifestPath], {
+      cwd: root,
+      encoding: "utf8",
+      timeout: 10_000,
+    });
+    check(`worker rejects approval evidence missing ${missingField}`, result.status !== 0);
+  }
+} finally {
+  fs.rmSync(approvalEvidenceDir, { recursive: true, force: true });
+}
+
 check("release verifier enforces draft PR", /draft/i.test(verifier));
 check("manifest schema requires approval id", manifestSchema.required?.includes("ownerApprovalId"));
 check("manifest schema requires approval actor", manifestSchema.required?.includes("approvedBy"));
 check("manifest schema requires approval timestamp", manifestSchema.required?.includes("approvedAt"));
-check("manifest schema covers three targets", manifestSchema.properties?.target?.enum?.includes("website") && manifestSchema.properties?.target?.enum?.includes("studio") && manifestSchema.properties?.target?.enum?.includes("eios"));
+const schemaTargets = manifestSchema.properties?.target?.enum;
+check(
+  "manifest schema covers exactly three targets",
+  Array.isArray(schemaTargets) &&
+    schemaTargets.length === targets.length &&
+    schemaTargets.every((target) => targets.includes(target)) &&
+    targets.every((target) => schemaTargets.includes(target)),
+);
 
 const digest = crypto.createHash("sha256").update(JSON.stringify(plans)).digest("hex");
 check("deterministic evidence digest", digest.length === 64);
