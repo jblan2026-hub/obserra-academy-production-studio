@@ -8,7 +8,6 @@ const failures = [];
 const check = (name, condition) => { if (!condition) failures.push(name); };
 
 const remediation = read("owner-command-center/electron/ai-remediation.cjs");
-const worker = read("owner-command-center/scripts/run-approved-remediation.mjs");
 const verifier = read("owner-command-center/scripts/verify-ai-remediation.mjs");
 const manifestSchema = JSON.parse(read("owner-command-center/policy/remediation-manifest.schema.json"));
 
@@ -67,8 +66,8 @@ for (const pattern of [
   /forcePushAllowed:\s*false/
 ]) check(`remediation contract ${pattern}`, pattern.test(remediation));
 
-check("worker validates manifest", /validatePlan/.test(worker));
-check("worker executes approved remediation", /executeApprovedRemediation/.test(worker));
+check("runtime validates manifest", /function\s+validatePlan\s*\(/.test(remediation));
+check("runtime executes approved remediation", /async\s+function\s+executeApprovedRemediation\s*\(/.test(remediation));
 check("release verifier enforces draft PR", /draft/i.test(verifier));
 check("manifest schema requires approval", JSON.stringify(manifestSchema).includes("ownerApprovalId"));
 check("manifest schema covers three targets", JSON.stringify(manifestSchema).includes("website") && JSON.stringify(manifestSchema).includes("studio") && JSON.stringify(manifestSchema).includes("eios"));
