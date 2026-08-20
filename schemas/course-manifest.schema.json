@@ -18,11 +18,42 @@
         "audience": { "type": "string", "minLength": 10 },
         "description": { "type": "string", "minLength": 40 },
         "duration": { "type": "string", "minLength": 3 },
+        "instructionalHours": { "type": "number", "exclusiveMinimum": 0 },
+        "lessonCount": { "type": "integer", "minimum": 1 },
+        "aiNative": { "type": "boolean" },
+        "sourceOfTruth": { "type": "string", "minLength": 10 },
         "prerequisites": { "type": "array", "items": { "type": "string" } },
         "outcomes": { "type": "array", "minItems": 3, "items": { "type": "string", "minLength": 10 } },
+        "examAlignment": {
+          "type": "object",
+          "properties": {
+            "outlineVersion": { "type": "string" },
+            "examProvider": { "type": "string" },
+            "domainWeights": {
+              "type": "object",
+              "additionalProperties": { "type": "number", "minimum": 0, "maximum": 100 }
+            },
+            "deliveryApproachMix": {
+              "type": "object",
+              "additionalProperties": { "type": "number", "minimum": 0, "maximum": 100 }
+            },
+            "examQuestionCount": { "type": "integer", "minimum": 1 },
+            "examTimeMinutes": { "type": "integer", "minimum": 1 },
+            "trainingHoursDesigned": { "type": "number", "minimum": 0 },
+            "trainingHoursClaim": { "type": "string" },
+            "independentProvider": { "type": "boolean" },
+            "pmiAuthorizedTrainingPartner": { "type": "boolean" },
+            "officialPmiCoursewareUsed": { "type": "boolean" },
+            "examSuccessGuaranteed": { "type": "boolean" },
+            "originalPracticeQuestionsRequired": { "type": "boolean" },
+            "examDumpsProhibited": { "type": "boolean" },
+            "currentAsOf": { "type": "string", "format": "date" }
+          },
+          "additionalProperties": false
+        },
         "modules": {
           "type": "array",
-          "minItems": 3,
+          "minItems": 1,
           "items": {
             "type": "object",
             "required": ["id", "title", "duration", "format", "description"],
@@ -31,7 +62,26 @@
               "title": { "type": "string", "minLength": 5 },
               "duration": { "type": "string", "minLength": 3 },
               "format": { "enum": ["Interactive lesson", "Video lesson", "Scenario", "Lab", "Workshop", "Assessment"] },
-              "description": { "type": "string", "minLength": 20 }
+              "description": { "type": "string", "minLength": 20 },
+              "lessons": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["id", "title", "durationMinutes", "format", "description", "objectives", "sourceIds"],
+                  "properties": {
+                    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+                    "title": { "type": "string", "minLength": 5 },
+                    "durationMinutes": { "type": "integer", "minimum": 1 },
+                    "format": { "type": "string", "minLength": 3 },
+                    "description": { "type": "string", "minLength": 20 },
+                    "objectives": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 5 } },
+                    "sourceIds": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
+                    "videoPackage": { "type": "string", "minLength": 3 }
+                  },
+                  "additionalProperties": false
+                }
+              }
             },
             "additionalProperties": false
           }
@@ -82,10 +132,17 @@
         "technical": { "$ref": "#/$defs/review" },
         "legal": { "$ref": "#/$defs/review" },
         "brand": { "$ref": "#/$defs/review" },
-        "accessibility": { "$ref": "#/$defs/review" }
+        "accessibility": { "$ref": "#/$defs/review" },
+        "assessmentIntegrity": { "$ref": "#/$defs/review" },
+        "videoProduction": { "$ref": "#/$defs/review" },
+        "aiTutor": { "$ref": "#/$defs/review" }
       },
       "additionalProperties": false
-    }
+    },
+    "branding": { "type": "object" },
+    "disclaimer": { "type": "object" },
+    "tags": { "type": "object" },
+    "trademarkNotice": { "type": "string" }
   },
   "$defs": {
     "review": {

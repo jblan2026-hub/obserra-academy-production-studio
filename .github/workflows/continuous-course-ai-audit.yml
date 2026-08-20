@@ -1,18 +1,45 @@
 name: Continuous Academy Course AI Audit
+run-name: Academy protected audit • ${{ github.ref_name }} • ${{ github.sha }}
 
 on:
   workflow_dispatch:
   schedule:
     - cron: "17 * * * *"
-  push:
-    branches: [main]
+  pull_request:
+    branches:
+      - main
     paths:
       - "courses/**/course-manifest.json"
+      - "studio/apply-course-policy.mjs"
       - "studio/audit-course-build-readiness.mjs"
       - "studio/author-course-ai.mjs"
+      - "studio/author-courses-parallel.mjs"
+      - "studio/bootstrap-protected-database.mjs"
       - "studio/build-all-courses.mjs"
       - "studio/generate-catalog.mjs"
+      - "studio/validate-learner-catalog.mjs"
+      - "package.json"
+      - "prisma/schema.prisma"
       - ".github/workflows/continuous-course-ai-audit.yml"
+      - ".gitignore"
+  push:
+    branches:
+      - main
+      - agent/continue-course-buildout
+    paths:
+      - "courses/**/course-manifest.json"
+      - "studio/apply-course-policy.mjs"
+      - "studio/audit-course-build-readiness.mjs"
+      - "studio/author-course-ai.mjs"
+      - "studio/author-courses-parallel.mjs"
+      - "studio/bootstrap-protected-database.mjs"
+      - "studio/build-all-courses.mjs"
+      - "studio/generate-catalog.mjs"
+      - "studio/validate-learner-catalog.mjs"
+      - "package.json"
+      - "prisma/schema.prisma"
+      - ".github/workflows/continuous-course-ai-audit.yml"
+      - ".gitignore"
 
 permissions:
   contents: write
@@ -20,16 +47,29 @@ permissions:
   issues: write
 
 concurrency:
-  group: continuous-academy-course-ai-audit
+  group: continuous-academy-course-ai-audit-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   audit-author-build:
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'agent/continue-course-buildout')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
+      OBSERRA_PORTFOLIO_WORKER_COUNT: 36
+      OBSERRA_APPLICATION_WORKER_COUNT: 20
       ACADEMY_AUTHORING_PROVIDER: openai
+      ACADEMY_AUTHORING_CONCURRENCY: 16
+      ACADEMY_AUTHORING_MAX_ATTEMPTS: 3
+      ACADEMY_AUTHORING_RETRY_BASE_MS: 5000
+      ACADEMY_EXPECTED_REVIEW_COURSES: 60
+      ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
+      ACADEMY_SUPABASE_REGION: us-east-1
+      ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: ${{ (github.ref == 'refs/heads/agent/continue-course-buildout' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'agent/continue-course-buildout')) && 'true' || 'false' }}
+      STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
+      STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout Studio
@@ -37,14 +77,98 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Mark protected build execution started
+        continue-on-error: true
+        shell: bash
+        run: |
+          BODY="Protected Academy owner-review build execution started. Authoring validation runs independently from protected LCMS database validation. Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Branch: ${{ github.head_ref || github.ref_name }}. Commit: ${{ github.sha }}. Parallel authoring allocation: 16 course workers across 60 owner-review courses within the fixed 36-worker portfolio; 20 workers remain reserved for applications."
+          gh issue edit 17 --body "$BODY"
+
       - name: Configure Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
+
+      - name: Normalize protected secret formatting
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const output = process.env.GITHUB_ENV;
+          if (!output) throw new Error('GITHUB_ENV is unavailable.');
+
+          function trimOuterQuotes(value) {
+            const quoted = (value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"));
+            return quoted ? value.slice(1, -1).trim() : value;
+          }
+
+          function stripDatabaseAssignment(value) {
+            const match = value.match(/^(?:ACADEMY_DATABASE_URL|DATABASE_URL)\s*=\s*(.+)$/is);
+            return match ? trimOuterQuotes(match[1].trim()) : value;
+          }
+
+          function normalizeDatabaseUrl(raw) {
+            let value = stripDatabaseAssignment(trimOuterQuotes(raw.trim()));
+            if (!value) return '';
+            if (/\r|\n/.test(value)) throw new Error('DATABASE_URL contains an unexpected newline.');
+
+            if (!/^postgres(?:ql)?:\/\//i.test(value)) {
+              const projectRef = String(process.env.ACADEMY_SUPABASE_PROJECT_REF ?? '').trim();
+              const region = String(process.env.ACADEMY_SUPABASE_REGION ?? '').trim();
+              if (!projectRef || !region) {
+                throw new Error('Supabase project metadata is required when ACADEMY_DATABASE_URL contains only the protected database password.');
+              }
+              const username = `postgres.${projectRef}`;
+              const host = `aws-0-${region}.pooler.supabase.com`;
+              value = `postgresql://${encodeURIComponent(username)}:${encodeURIComponent(value)}@${host}:5432/postgres?schema=public&sslmode=require&connect_timeout=30`;
+            }
+
+            try {
+              const parsed = new URL(value);
+              if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+              return parsed.toString();
+            } catch {
+              const schemeEnd = value.indexOf('://');
+              const scheme = value.slice(0, schemeEnd + 3);
+              const remainder = value.slice(schemeEnd + 3);
+              const at = remainder.lastIndexOf('@');
+              if (at <= 0) throw new Error('DATABASE_URL must include PostgreSQL credentials and a host.');
+
+              const credentials = remainder.slice(0, at);
+              const hostAndPath = remainder.slice(at + 1);
+              const colon = credentials.indexOf(':');
+              if (colon <= 0) throw new Error('DATABASE_URL must include a username and password.');
+
+              const username = credentials.slice(0, colon);
+              const password = credentials.slice(colon + 1);
+              if (!username || !password || !hostAndPath) throw new Error('DATABASE_URL is missing required connection components.');
+
+              let decodedPassword = password;
+              try { decodedPassword = decodeURIComponent(password); } catch {}
+              const candidate = `${scheme}${encodeURIComponent(username)}:${encodeURIComponent(decodedPassword)}@${hostAndPath}`;
+              const parsed = new URL(candidate);
+              if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) throw new Error('DATABASE_URL uses an invalid protocol.');
+              return parsed.toString();
+            }
+          }
+
+          const apiKey = trimOuterQuotes(String(process.env.OPENAI_API_KEY ?? '').trim());
+          if (apiKey && /\r|\n/.test(apiKey)) throw new Error('OPENAI_API_KEY contains an unexpected newline.');
+          const databaseUrl = normalizeDatabaseUrl(String(process.env.DATABASE_URL ?? ''));
+
+          if (apiKey) fs.appendFileSync(output, `OPENAI_API_KEY=${apiKey}\n`);
+          if (databaseUrl) fs.appendFileSync(output, `DATABASE_URL=${databaseUrl}\n`);
+          console.log(`[Academy Studio] Protected secret formatting normalized. authoringCredential=${Boolean(apiKey)} databaseCredential=${Boolean(databaseUrl)}`);
+          NODE
 
       - name: Install dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: Normalize governed course policy before audit
+        run: npm run apply:course-policy
 
       - name: Audit every course from its own manifest
         id: audit
@@ -53,64 +177,152 @@ jobs:
 
       - name: Stop unsafe automatic repair for invalid manifests
         if: steps.audit.outputs.blocking_findings != '0'
+        shell: bash
         run: |
-          gh issue create \
-            --title "Academy course manifest alignment failure" \
-            --body "The continuous Academy audit found ${{ steps.audit.outputs.blocking_findings }} blocking manifest alignment finding(s). Automatic authoring and build were stopped. Review catalog/continuous-course-audit.json from workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          TITLE="Academy course manifest alignment failure"
+          BODY="The continuous Academy audit found ${{ steps.audit.outputs.blocking_findings }} blocking manifest alignment finding(s). Automatic authoring and build were stopped. Review catalog/continuous-course-audit.json from workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          ISSUE_NUMBER="$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty' || true)"
+          if [ -n "$ISSUE_NUMBER" ]; then
+            gh issue edit "$ISSUE_NUMBER" --body "$BODY" || true
+          else
+            gh issue create --title "$TITLE" --body "$BODY" || true
+          fi
           exit 1
 
-      - name: Require AI authoring credential when authoring is needed
-        if: steps.audit.outputs.authoring_required == 'true'
+      - name: Close resolved manifest blocker issue
+        if: steps.audit.outputs.blocking_findings == '0'
+        continue-on-error: true
+        shell: bash
         run: |
-          test -n "$OPENAI_API_KEY" || {
-            gh issue create \
-              --title "Academy AI authoring credential required" \
-              --body "Approved courses require AI authoring, but OPENAI_API_KEY is not configured for the continuous Academy audit workflow. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
-            exit 1
-          }
+          TITLE="Academy course manifest alignment failure"
+          ISSUE_NUMBER="$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty' || true)"
+          if [ -n "$ISSUE_NUMBER" ]; then
+            gh issue close "$ISSUE_NUMBER" --comment "Resolved by workflow run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          fi
 
-      - name: AI author only missing or stale approved courses
+      - name: Require protected authoring credential
+        if: steps.audit.outputs.authoring_required == 'true'
+        shell: bash
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            BODY="The 60-course owner-review learner build requires OPENAI_API_KEY for protected authoring. Course authoring was not attempted. Protected learner content remains untracked. Latest workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            gh issue edit 17 --body "$BODY" || true
+            exit 1
+          fi
+          echo "Protected authoring credential is present. Course generation can proceed independently from LCMS availability."
+
+      - name: AI author owner-review courses with controlled parallel workers
+        if: steps.audit.outputs.authoring_required == 'true'
+        run: npm run author:parallel
+
+      - name: Re-audit authored packages before downstream build
         if: steps.audit.outputs.authoring_required == 'true'
         run: |
+          npm run audit:courses
           node <<'NODE'
           const fs = require('node:fs');
-          const { spawnSync } = require('node:child_process');
           const report = JSON.parse(fs.readFileSync('catalog/continuous-course-audit.json', 'utf8'));
-          const targets = report.courses.filter((course) => course.approved && (course.authoringMissing || course.findings.includes('stale-ai-course-package')));
-          for (const [index, course] of targets.entries()) {
-            console.log(`[Academy Studio] AI authoring ${index + 1}/${targets.length}: ${course.courseId}`);
-            const result = spawnSync(process.execPath, ['studio/author-course-ai.mjs', '--course', course.courseId, '--provider', process.env.ACADEMY_AUTHORING_PROVIDER, '--force'], {
-              stdio: 'inherit',
-              env: process.env,
-            });
-            if (result.status !== 0) process.exit(result.status ?? 1);
+          const unresolved = report.courses.filter((course) =>
+            course.ownerReviewEligible && (
+              course.authoringMissing ||
+              course.findings.includes('stale-ai-course-package') ||
+              course.findings.includes('untraceable-ai-course-package')
+            )
+          );
+          if (unresolved.length > 0) {
+            console.error(`[Academy Studio] ${unresolved.length} owner-review course package(s) remain unresolved after parallel authoring: ${unresolved.map((course) => course.courseId).join(', ')}`);
+            process.exit(2);
           }
           NODE
 
-      - name: Regenerate governed course assets and catalog
-        if: steps.audit.outputs.build_required == 'true' || steps.audit.outputs.authoring_required == 'true'
+      - name: Regenerate governed course assets and catalogs
         run: |
           npm run build:all
           npm run catalog
 
-      - name: Validate every manifest-defined course independently
+      - name: Validate protected learner catalog completeness
+        run: npm run validate:learner-catalog
+
+      - name: Validate manifest-defined courses and protected LCMS load plan
         run: |
           npm run audit:courses
           npm run validate
           npm run load:courses:check
           npm test
 
-      - name: Detect generated changes
+      - name: Require protected LCMS database credential
+        if: steps.audit.outputs.authoring_required == 'true'
+        shell: bash
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            BODY="Course authoring and protected learner catalog validation completed, but ACADEMY_DATABASE_URL is not configured. Protected learner content was not loaded to LCMS. Latest workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            gh issue edit 17 --body "$BODY" || true
+            exit 1
+          fi
+          echo "Protected LCMS database credential is present. Database authentication must pass before loading learner content."
+
+      - name: Bootstrap protected Academy PostgreSQL schema
+        id: protected_db_bootstrap
+        if: steps.audit.outputs.authoring_required == 'true' && env.ACADEMY_DATABASE_BOOTSTRAP_ALLOWED == 'true'
+        continue-on-error: true
+        run: npm run db:bootstrap:protected
+
+      - name: Stop invalid protected database authentication
+        if: steps.audit.outputs.authoring_required == 'true' && env.ACADEMY_DATABASE_BOOTSTRAP_ALLOWED == 'true' && steps.protected_db_bootstrap.outcome != 'success'
+        shell: bash
+        run: |
+          BODY="Course authoring and protected learner catalog validation completed, but protected LCMS database authentication or bootstrap failed. Protected learner content was not loaded. Review workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Issue #17 must remain open until protected database bootstrap and Prisma validation succeed."
+          gh issue edit 17 --body "$BODY" || true
+          exit 1
+
+      - name: Validate protected database schema
+        if: steps.audit.outputs.authoring_required == 'true'
+        run: npm run db:validate
+
+      - name: Close resolved protected database blocker
+        if: steps.audit.outputs.authoring_required == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          gh issue close 17 --comment "Protected Academy database authentication, bootstrap verification, and Prisma schema validation succeeded after course authoring and learner catalog validation in workflow ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}." || true
+
+      - name: Load protected learner content into LCMS
+        if: steps.audit.outputs.authoring_required == 'true'
+        run: npm run load:courses
+
+      - name: Verify protected learner content remains untracked
+        run: |
+          if git ls-files --error-unmatch catalog/academy-learner-course-catalog.json >/dev/null 2>&1; then
+            echo "Protected learner catalog must not be tracked in the public repository."
+            exit 1
+          fi
+          if git ls-files 'courses/*/generated/*' | grep -q .; then
+            echo "Protected generated learner packages must not be tracked in the public repository."
+            exit 1
+          fi
+
+      - name: Detect safe public generated changes
         id: changes
         run: |
-          if git diff --quiet; then
+          git add -A courses catalog .gitignore
+          git reset -- catalog/academy-learner-course-catalog.json catalog/learner-catalog-readiness.json catalog/parallel-authoring-summary.json 2>/dev/null || true
+          git reset -- 'courses/*/generated/*' 2>/dev/null || true
+          if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create governed course build branch
-        if: steps.changes.outputs.changed == 'true'
+      - name: Commit safe public course metadata to controlled branch
+        if: steps.changes.outputs.changed == 'true' && github.ref == 'refs/heads/agent/continue-course-buildout'
+        run: |
+          git config user.name "Obserra Academy AI Builder"
+          git config user.email "academy-ai-builder@users.noreply.github.com"
+          git commit -m "Regenerate governed Academy course metadata"
+          git push origin HEAD:agent/continue-course-buildout
+
+      - name: Create governed public metadata branch
+        if: steps.changes.outputs.changed == 'true' && github.ref == 'refs/heads/main'
         id: branch
         run: |
           BRANCH="automation/academy-course-build-${GITHUB_RUN_ID}"
@@ -118,21 +330,20 @@ jobs:
           git config user.name "Obserra Academy AI Builder"
           git config user.email "academy-ai-builder@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add courses catalog
-          git commit -m "Regenerate manifest aligned Academy courses"
+          git commit -m "Regenerate governed Academy course metadata"
           git push origin "$BRANCH"
 
-      - name: Open draft owner review pull request
-        if: steps.changes.outputs.changed == 'true'
+      - name: Open draft owner review pull request for safe public metadata
+        if: steps.changes.outputs.changed == 'true' && github.ref == 'refs/heads/main'
         run: |
           gh pr create \
             --draft \
             --base main \
             --head "${{ steps.branch.outputs.name }}" \
-            --title "Academy AI course build and catalog alignment" \
-            --body "Automated governed course build generated from each course's own manifest. The workflow independently checked lesson count, lesson durations, advertised hours, descriptions, outcomes, pricing, completion rules, certificate eligibility, official logo, and full legal branding. Owner review is required before merge and website publication. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+            --title "Academy governed course metadata alignment" \
+            --body "Automated governed build authored and validated the full owner-review learner catalog in a protected ephemeral workspace, then authenticated to the protected LCMS and loaded learner content. This PR contains only safe public manifests, metadata, and evidence. Production publication remains separately approval-controlled. Workflow evidence: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
 
-      - name: Publish audit evidence
+      - name: Publish non-sensitive audit evidence
         uses: actions/upload-artifact@v4
         with:
           name: continuous-academy-course-audit-${{ github.run_id }}

@@ -1,0 +1,738 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "batchId": "batch-02",
+  "status": "internal-candidate-review",
+  "originalityAttestation": "All items are original Obserra Academy scenarios. They are not live, recalled, reconstructed, or purported PMP examination questions and do not reproduce official PMI courseware or protected test-bank content.",
+  "requiredReviews": [
+    "credentialed-pmp-sme",
+    "technical",
+    "psychometric",
+    "editorial",
+    "accessibility",
+    "source-traceability",
+    "originality"
+  ],
+  "questions": [
+    {
+      "id": "PMP-B2-031",
+      "domain": "People",
+      "task": "Develop a common vision",
+      "lessonId": "common-vision",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "A transformation sponsor describes success as cost reduction, while operations expects improved resilience and customers expect faster service. Teams are making incompatible design decisions.",
+      "question": "What should the project manager do first?",
+      "options": {
+        "A": "Ask the sponsor to impose the cost objective on all groups.",
+        "B": "Facilitate a shared vision and measurable outcome discussion with the authorized stakeholders.",
+        "C": "Let each workstream optimize its own success criteria.",
+        "D": "Complete the schedule before addressing the conflict."
+      },
+      "correctOption": "B",
+      "rationale": "A shared vision should reconcile intended outcomes and create measurable alignment before dependent design decisions continue.",
+      "distractorRationales": {
+        "A": "This may suppress legitimate outcomes and bypass stakeholder alignment.",
+        "C": "Independent optimization is the source of the current incompatibility.",
+        "D": "A schedule built on conflicting objectives will not resolve the underlying decision problem."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-21500-2021"]
+    },
+    {
+      "id": "PMP-B2-032",
+      "domain": "People",
+      "task": "Lead the project team",
+      "lessonId": "leadership-styles",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "An experienced adaptive team can resolve routine product decisions but asks the project manager to approve every backlog refinement.",
+      "question": "What is the strongest response?",
+      "options": {
+        "A": "Continue approving every refinement to maintain control.",
+        "B": "Clarify delegated decision rights, coach the team, and retain escalation thresholds for material decisions.",
+        "C": "Transfer all governance authority to the team.",
+        "D": "Escalate the team's behavior to the sponsor."
+      },
+      "correctOption": "B",
+      "rationale": "Situational leadership should enable appropriate team autonomy while preserving defined authority and escalation boundaries.",
+      "distractorRationales": {
+        "A": "This reinforces unnecessary dependency.",
+        "C": "Not every governance decision can be delegated by the project manager.",
+        "D": "Coaching and clarification should occur before disproportionate escalation."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "id": "PMP-B2-033",
+      "domain": "People",
+      "task": "Manage conflict",
+      "lessonId": "conflict-management",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "Two architects disagree about resilience. Both provide credible evidence, the decision is not urgent, and neither owns final architecture approval.",
+      "question": "What should the project manager do?",
+      "options": {
+        "A": "Select the lower-cost design.",
+        "B": "Facilitate evidence-based analysis using agreed criteria and route unresolved material risk to the authorized architecture owner.",
+        "C": "Force a midpoint compromise.",
+        "D": "Avoid the dispute until implementation."
+      },
+      "correctOption": "B",
+      "rationale": "The conflict contains useful evidence and an authority boundary; structured collaboration followed by authorized decision is appropriate.",
+      "distractorRationales": {
+        "A": "Cost alone does not resolve resilience and risk requirements.",
+        "C": "A midpoint may satisfy neither technical nor governance need.",
+        "D": "Delay increases decision and rework risk."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "id": "PMP-B2-034",
+      "domain": "People",
+      "task": "Engage stakeholders",
+      "lessonId": "stakeholder-identification-analysis",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A warehouse project is designed with executives and site managers. Maintenance technicians and night-shift supervisors will be heavily affected but were not included.",
+      "question": "What should the project manager do next?",
+      "options": {
+        "A": "Proceed because management represents employees.",
+        "B": "Update the stakeholder analysis and engage appropriate representatives before affected decisions are finalized.",
+        "C": "Invite every employee to every project meeting.",
+        "D": "Treat the omitted groups as a communications issue after launch."
+      },
+      "correctOption": "B",
+      "rationale": "Affected and knowledgeable stakeholders should be identified and engaged at the decision points where their evidence can influence outcomes.",
+      "distractorRationales": {
+        "A": "Representation should be verified rather than assumed.",
+        "C": "Participation should be tailored to purpose and authority.",
+        "D": "Late communication cannot replace timely involvement."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-VA-EHR-STAKEHOLDERS-2020"]
+    },
+    {
+      "id": "PMP-B2-035",
+      "domain": "People",
+      "task": "Align stakeholder expectations",
+      "lessonId": "expectation-alignment-customer-value",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "Sales promised real-time customer status, the contract requires next-business-day status, and operations planned five-day response resolution.",
+      "question": "What should the project manager do first?",
+      "options": {
+        "A": "Direct the team to meet the most demanding expectation.",
+        "B": "Facilitate an authorized alignment of contractual commitments, customer experience, outcome measures, and change options.",
+        "C": "Ignore the sales promise because it is not technical scope.",
+        "D": "Delay the project without analysis."
+      },
+      "correctOption": "B",
+      "rationale": "The project needs one governed expectation model that distinguishes commitments, assumptions, and desired outcomes.",
+      "distractorRationales": {
+        "A": "This creates an unauthorized commitment.",
+        "C": "The promise creates a material trust and commercial issue even if not yet approved scope.",
+        "D": "A delay decision requires impact analysis and authority."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-VA-EHR-INCREMENTAL-IMPROVEMENT-2025"]
+    },
+    {
+      "id": "PMP-B2-036",
+      "domain": "People",
+      "task": "Plan communication and reporting",
+      "lessonId": "communication-reporting-knowledge-transfer",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "An executive report contains accurate detail but does not show the decision needed, data limitations, or the supplier delay affecting the critical path.",
+      "question": "What should the project manager do?",
+      "options": {
+        "A": "Send the report more frequently.",
+        "B": "Redesign the briefing around evidence, change, forecast, options, authority, recommendation, limitations, and required decision.",
+        "C": "Remove supplier information to simplify it.",
+        "D": "Add more pages without changing the structure."
+      },
+      "correctOption": "B",
+      "rationale": "Executive communication should support a responsible decision and preserve access to material evidence and limitations.",
+      "distractorRationales": {
+        "A": "Frequency does not solve decision quality.",
+        "C": "This conceals material evidence.",
+        "D": "Volume is not the primary issue."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+    },
+    {
+      "id": "PMP-B2-037",
+      "domain": "People",
+      "task": "Ensure knowledge transfer",
+      "lessonId": "communication-reporting-knowledge-transfer",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "Operations attended recovery training, but no one has performed the failover procedure and one vendor engineer holds the only detailed knowledge.",
+      "question": "What should the project manager do before transition?",
+      "options": {
+        "A": "Accept attendance as proof of readiness.",
+        "B": "Conduct supervised practice and independent verification, document the procedure, and reduce knowledge concentration.",
+        "C": "Extend the vendor indefinitely without analysis.",
+        "D": "Close the project because training is complete."
+      },
+      "correctOption": "B",
+      "rationale": "Knowledge transfer requires verified capability, continuity, and retained evidence rather than attendance alone.",
+      "distractorRationales": {
+        "A": "Attendance does not demonstrate performance.",
+        "C": "This may increase dependency without solving ownership.",
+        "D": "Operational readiness remains unverified."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-VA-EHR-CHANGE-MANAGEMENT-2023"]
+    },
+    {
+      "id": "PMP-B2-038",
+      "domain": "People",
+      "task": "Manage customer expectations",
+      "lessonId": "expectation-alignment-customer-value",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A customer requests a valuable feature outside approved scope two weeks before release. The change affects privacy review and supplier integration.",
+      "question": "What is the strongest response?",
+      "options": {
+        "A": "Promise the feature to preserve satisfaction.",
+        "B": "Reject it immediately as scope creep.",
+        "C": "Clarify the desired outcome, analyze integrated impact, and route the decision through authorized product and project governance.",
+        "D": "Ask engineering to add it quietly."
+      },
+      "correctOption": "C",
+      "rationale": "The project should acknowledge the need without making an unauthorized commitment and should analyze value, privacy, supplier, schedule, and risk effects.",
+      "distractorRationales": {
+        "A": "The project manager cannot promise unapproved scope.",
+        "B": "The request may warrant an authorized change or alternative.",
+        "D": "This bypasses governance and affected controls."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "id": "PMP-B2-039",
+      "domain": "People",
+      "task": "Lead the project team",
+      "lessonId": "performance-coaching-problem-solving",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "A strong analyst misses deadlines after being assigned conflicting priorities by two managers. The project manager initially views the problem as poor performance.",
+      "question": "What should the project manager do first?",
+      "options": {
+        "A": "Begin disciplinary action.",
+        "B": "Analyze role, priority, workload, authority, and capability causes before selecting a coaching or governance response.",
+        "C": "Replace the analyst.",
+        "D": "Ignore the missed deadlines."
+      },
+      "correctOption": "B",
+      "rationale": "Performance problems should be diagnosed before action; conflicting priorities may be a system and authority issue rather than individual capability.",
+      "distractorRationales": {
+        "A": "This is premature and may exceed project authority.",
+        "C": "Replacement does not address the conflicting system.",
+        "D": "The delivery impact still requires action."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "id": "PMP-B2-040",
+      "domain": "People",
+      "task": "Engage stakeholders",
+      "lessonId": "stakeholder-identification-analysis",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A community group has low formal power but will experience significant environmental and access impacts from a project. Executives want to focus only on decision-makers.",
+      "question": "What should the project manager do?",
+      "options": {
+        "A": "Exclude the group because it cannot approve the project.",
+        "B": "Tailor a legitimate engagement path so material impacts and evidence reach authorized decision-makers.",
+        "C": "Give the group executive approval authority.",
+        "D": "Wait until project closure."
+      },
+      "correctOption": "B",
+      "rationale": "Stakeholder engagement should account for affected people and material evidence without misrepresenting decision authority.",
+      "distractorRationales": {
+        "A": "Formal power is not the only basis for engagement.",
+        "C": "The project manager cannot invent authority.",
+        "D": "Late engagement prevents meaningful influence."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "id": "PMP-B2-041",
+      "domain": "Process",
+      "task": "Develop an integrated project management plan",
+      "lessonId": "integrated-project-management-plan",
+      "difficulty": "hard",
+      "cognitiveLevel": "analyze",
+      "scenario": "The scope assumes nine months, the schedule twelve months, the supplier contract eight months, and the benefits plan immediate legacy retirement.",
+      "question": "What should the project manager do first?",
+      "options": {
+        "A": "Select the longest date.",
+        "B": "Facilitate an integrated planning review to reconcile assumptions, dependencies, authority, and affected plans.",
+        "C": "Ask the scheduler to resolve all conflicts alone.",
+        "D": "Continue because each plan has an owner."
+      },
+      "correctOption": "B",
+      "rationale": "The project plans describe incompatible realities and require cross-functional integration and governed decisions.",
+      "distractorRationales": {
+        "A": "One date does not resolve cost, contract, benefits, or resource conflicts.",
+        "C": "The conflicts exceed scheduling alone.",
+        "D": "Separate ownership does not create integration."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015", "GAO-COST-GUIDE-2020"]
+    },
+    {
+      "id": "PMP-B2-042",
+      "domain": "Process",
+      "task": "Tailor the development approach",
+      "lessonId": "tailor-development-approach",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "Hardware has fixed verification gates, software needs frequent clinician feedback, and both must share interface and cybersecurity evidence.",
+      "question": "Which approach is strongest?",
+      "options": {
+        "A": "Use one adaptive method and remove formal gates.",
+        "B": "Freeze all software requirements before feedback.",
+        "C": "Use a governed hybrid approach with explicit integration, configuration, evidence, and shared milestones.",
+        "D": "Allow workstreams to operate independently."
+      },
+      "correctOption": "C",
+      "rationale": "Different workstreams have different uncertainty and control needs but require one integrated product and governance model.",
+      "distractorRationales": {
+        "A": "This removes required assurance without analysis.",
+        "B": "It prevents necessary discovery.",
+        "D": "It creates interface and forecast fragmentation."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+    },
+    {
+      "id": "PMP-B2-043",
+      "domain": "Process",
+      "task": "Develop and manage scope",
+      "lessonId": "scope-requirements-backlog",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A two-hour reporting change adds sensitive data, changes retention, requires supplier-interface work, and affects testing and training.",
+      "question": "What should the project manager do?",
+      "options": {
+        "A": "Approve because coding is minimal.",
+        "B": "Analyze integrated scope, privacy, supplier, schedule, quality, and stakeholder impact and obtain authorization.",
+        "C": "Reject every late request.",
+        "D": "Let the developer decide."
+      },
+      "correctOption": "B",
+      "rationale": "Development effort is only one dimension of the change; affected controls and commitments require integrated analysis.",
+      "distractorRationales": {
+        "A": "It ignores material non-code effects.",
+        "C": "A late request may still warrant a governed decision.",
+        "D": "The decision exceeds implementation authority."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+    },
+    {
+      "id": "PMP-B2-044",
+      "domain": "Process",
+      "task": "Ensure value-based delivery",
+      "lessonId": "value-prioritization-benefits",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A revenue feature competes with a policy-required data control, an accessibility defect, and a low-risk internal automation.",
+      "question": "How should the project manager support prioritization?",
+      "options": {
+        "A": "Select the largest revenue estimate.",
+        "B": "Use transparent value, obligation, risk, stakeholder impact, dependency, learning, confidence, and authority criteria.",
+        "C": "Select the easiest item.",
+        "D": "Attempt all work without changing capacity."
+      },
+      "correctOption": "B",
+      "rationale": "Value includes obligations, risk protection, stakeholder impact, timing, learning, and strategic outcomes, not revenue alone.",
+      "distractorRationales": {
+        "A": "It ignores controlling obligations and harm.",
+        "C": "Ease is not sufficient prioritization evidence.",
+        "D": "This creates an infeasible plan."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-PMP-EXAM-UPDATE-2026"]
+    },
+    {
+      "id": "PMP-B2-045",
+      "domain": "Process",
+      "task": "Estimate work",
+      "lessonId": "estimation-dependencies-resources",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "An activity has optimistic, most likely, and pessimistic durations of 6, 12, and 24 days.",
+      "question": "Using the beta weighted three-point formula, what is the expected duration?",
+      "options": {
+        "A": "12 days",
+        "B": "13 days",
+        "C": "14 days",
+        "D": "18 days"
+      },
+      "correctOption": "B",
+      "rationale": "The calculation is (6 + 4×12 + 24) ÷ 6 = 78 ÷ 6 = 13 days.",
+      "distractorRationales": {
+        "A": "This is only the most-likely estimate.",
+        "C": "This is not the weighted result.",
+        "D": "This overstates the weighted calculation."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015"]
+    },
+    {
+      "id": "PMP-B2-046",
+      "domain": "Process",
+      "task": "Plan and manage resources",
+      "lessonId": "resource-strategy-capacity",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "A 40-hour specialist has 18 hours of operational and governance commitments and 6 hours of approved leave each week.",
+      "question": "What planned project capacity should be used before other variability?",
+      "options": {
+        "A": "40 hours",
+        "B": "34 hours",
+        "C": "22 hours",
+        "D": "16 hours"
+      },
+      "correctOption": "D",
+      "rationale": "40 − 18 − 6 = 16 hours of nominal planned capacity before additional variability.",
+      "distractorRationales": {
+        "A": "This ignores other approved obligations.",
+        "B": "This subtracts leave only.",
+        "C": "This subtracts operational commitments only."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015"]
+    },
+    {
+      "id": "PMP-B2-047",
+      "domain": "Process",
+      "task": "Plan and manage procurement",
+      "lessonId": "procurement-contract-supplier-risk",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A supplier has the lowest price but weak data portability, unclear subcontractor controls, and no termination assistance.",
+      "question": "What should the project manager recommend?",
+      "options": {
+        "A": "Select the supplier because price is lowest.",
+        "B": "Complete a governed life-cycle value and risk evaluation including data, security, performance, supply chain, transition, and exit.",
+        "C": "Reject all external suppliers.",
+        "D": "Start work before contracting."
+      },
+      "correctOption": "B",
+      "rationale": "Procurement should evaluate life-cycle value, risk, performance, rights, dependencies, and exit rather than acquisition price alone.",
+      "distractorRationales": {
+        "A": "It ignores material life-cycle risk.",
+        "C": "The evidence does not justify rejecting all suppliers.",
+        "D": "This creates unauthorized and unmanaged commitment."
+      },
+      "sourceIds": ["PMI-ECO-2026", "FAR-PART-16-CONTRACT-TYPES-2026", "NIST-CSF-2-0-GV-SC-2024"]
+    },
+    {
+      "id": "PMP-B2-048",
+      "domain": "Process",
+      "task": "Plan and manage project finance",
+      "lessonId": "project-finance-budget-forecast",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A project has EV of 600,000 dollars and AC of 750,000 dollars.",
+      "question": "What is the cost performance index?",
+      "options": {
+        "A": "0.80",
+        "B": "1.25",
+        "C": "150,000",
+        "D": "0.20"
+      },
+      "correctOption": "A",
+      "rationale": "CPI = EV ÷ AC = 600,000 ÷ 750,000 = 0.80.",
+      "distractorRationales": {
+        "B": "This reverses the ratio.",
+        "C": "This resembles variance magnitude rather than an index.",
+        "D": "This is not the CPI calculation."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-COST-GUIDE-2020"]
+    },
+    {
+      "id": "PMP-B2-049",
+      "domain": "Process",
+      "task": "Optimize quality and compliance",
+      "lessonId": "quality-compliance-sustainability",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "Functional tests pass, but keyboard-only users cannot complete the workflow and one retention control is missing.",
+      "question": "What should the project manager do before release?",
+      "options": {
+        "A": "Launch because functional acceptance passed.",
+        "B": "Classify the findings, verify applicable requirements, engage authorized owners, correct or govern exceptions, retest, and obtain the release decision.",
+        "C": "Hide the findings in technical debt.",
+        "D": "Allow the project manager to waive both issues."
+      },
+      "correctOption": "B",
+      "rationale": "Release should be based on complete quality, accessibility, compliance, and authority evidence rather than functional testing alone.",
+      "distractorRationales": {
+        "A": "Functional acceptance does not establish fitness and compliance.",
+        "C": "This conceals material release evidence.",
+        "D": "The project manager may not hold waiver authority."
+      },
+      "sourceIds": ["PMI-ECO-2026", "ISO-10006-2017"]
+    },
+    {
+      "id": "PMP-B2-050",
+      "domain": "Process",
+      "task": "Plan and manage the schedule",
+      "lessonId": "schedule-planning-control",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "Three schedule paths are 18, 23, and 20 days.",
+      "question": "Which is the current critical path?",
+      "options": {
+        "A": "18 days",
+        "B": "20 days",
+        "C": "23 days",
+        "D": "All paths are critical"
+      },
+      "correctOption": "C",
+      "rationale": "The longest-duration path through the current network is 23 days.",
+      "distractorRationales": {
+        "A": "This is shorter than the longest path.",
+        "B": "This is not the longest path.",
+        "D": "Paths may have different float."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015"]
+    },
+    {
+      "id": "PMP-B2-051",
+      "domain": "Process",
+      "task": "Evaluate project status",
+      "lessonId": "status-metrics-artifacts",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A dashboard is green because 94 percent of tasks are complete, but the remaining tasks include regulatory approval and production failover.",
+      "question": "What should the project manager do?",
+      "options": {
+        "A": "Keep green because the calculation is correct.",
+        "B": "Explain the metric limitation, show milestone and risk concentration, update the forecast, and identify the required decision.",
+        "C": "Remove the remaining tasks.",
+        "D": "Change the percentage to 100."
+      },
+      "correctOption": "B",
+      "rationale": "Decision-useful status must show material concentration, forecast, evidence, and action rather than a potentially misleading aggregate.",
+      "distractorRationales": {
+        "A": "Mathematical correctness does not guarantee decision usefulness.",
+        "C": "This corrupts the scope and evidence.",
+        "D": "This falsifies status."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-NASA-MAJOR-PROJECTS-2025"]
+    },
+    {
+      "id": "PMP-B2-052",
+      "domain": "Business Environment",
+      "task": "Define project governance",
+      "lessonId": "project-governance",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "An advisory steering committee supports a high-risk release, but no role is authorized to accept the residual enterprise risk.",
+      "question": "What should the project manager do?",
+      "options": {
+        "A": "Record consensus as approval.",
+        "B": "Clarify decision rights, assemble required evidence, and obtain a decision from the authorized risk and executive owners.",
+        "C": "Accept the risk personally.",
+        "D": "Release without a record."
+      },
+      "correctOption": "B",
+      "rationale": "Participation and recommendation do not replace named decision authority and accountable risk acceptance.",
+      "distractorRationales": {
+        "A": "The committee lacks approval authority.",
+        "C": "The project manager cannot invent enterprise-risk authority.",
+        "D": "This bypasses governance and evidence."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "id": "PMP-B2-053",
+      "domain": "Business Environment",
+      "task": "Plan and manage compliance",
+      "lessonId": "project-compliance",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A privacy exception expired before launch, and the sponsor asks the team to rely on it until remediation is complete.",
+      "question": "What should the project manager do?",
+      "options": {
+        "A": "Continue because remediation is planned.",
+        "B": "Stop relying on the expired exception and engage the authorized privacy, legal, risk, and governance process.",
+        "C": "Extend the exception personally.",
+        "D": "Delete the exception record."
+      },
+      "correctOption": "B",
+      "rationale": "An expired exception no longer provides authorized coverage; applicability, risk, control, and release decisions require qualified authority.",
+      "distractorRationales": {
+        "A": "A future plan does not replace current authorization.",
+        "C": "The project manager may not hold exception authority.",
+        "D": "This destroys required evidence."
+      },
+      "sourceIds": ["PMI-ECO-2026", "NIST-CSF-2-0-GV-SC-2024"]
+    },
+    {
+      "id": "PMP-B2-054",
+      "domain": "Business Environment",
+      "task": "Manage and control changes",
+      "lessonId": "integrated-change-control",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "A regulatory change is approved in meeting minutes but not reflected in the backlog, contract, test plan, schedule, or customer communication.",
+      "question": "What should the project manager do?",
+      "options": {
+        "A": "Assume approval is sufficient.",
+        "B": "Update all affected authoritative artifacts, implement through configuration and contract controls, communicate, and verify.",
+        "C": "Wait until closure.",
+        "D": "Ask one developer to remember it."
+      },
+      "correctOption": "B",
+      "rationale": "Change control includes authorized implementation and verification across the integrated project system.",
+      "distractorRationales": {
+        "A": "Approval without implementation is incomplete.",
+        "C": "This leaves the project delivering the old requirement.",
+        "D": "This is not controlled implementation."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015"]
+    },
+    {
+      "id": "PMP-B2-055",
+      "domain": "Business Environment",
+      "task": "Remove impediments and manage issues",
+      "lessonId": "impediments-issues",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A supplier risk has occurred, but the project continues to report it only as 70 percent probability in the risk register.",
+      "question": "What should the project manager do?",
+      "options": {
+        "A": "Continue monitoring probability.",
+        "B": "Manage the realized condition as an issue, execute or adapt the response, assign ownership, and update the forecast.",
+        "C": "Close the risk without action.",
+        "D": "Wait for the supplier to recover."
+      },
+      "correctOption": "B",
+      "rationale": "Once the uncertain event occurs, issue management and response execution replace probability monitoring alone.",
+      "distractorRationales": {
+        "A": "The event is no longer uncertain.",
+        "C": "Closure without response ignores current impact.",
+        "D": "Passive waiting does not manage the issue."
+      },
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "id": "PMP-B2-056",
+      "domain": "Business Environment",
+      "task": "Plan and manage risk",
+      "lessonId": "project-risk-opportunity",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A risk has 25 percent probability and a 400,000-dollar cost impact.",
+      "question": "What is the simplified expected monetary value?",
+      "options": {
+        "A": "25,000 dollars",
+        "B": "100,000 dollars",
+        "C": "160,000 dollars",
+        "D": "400,000 dollars"
+      },
+      "correctOption": "B",
+      "rationale": "EMV = 0.25 × 400,000 = 100,000 dollars.",
+      "distractorRationales": {
+        "A": "This does not use the impact correctly.",
+        "C": "This is not the product of probability and impact.",
+        "D": "This is the full impact, not expected value."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-COST-GUIDE-2020"]
+    },
+    {
+      "id": "PMP-B2-057",
+      "domain": "Business Environment",
+      "task": "Drive continuous improvement",
+      "lessonId": "continuous-improvement-business-readiness",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "Three retrospectives identify late legal engagement, but no owner or process change is assigned.",
+      "question": "What should the project manager do?",
+      "options": {
+        "A": "Continue documenting the lesson.",
+        "B": "Assign an improvement owner, establish an earlier trigger, change the process, and measure whether delays decline.",
+        "C": "Remove legal review.",
+        "D": "Close the lesson because it is known."
+      },
+      "correctOption": "B",
+      "rationale": "Continuous improvement requires implemented and measured system change, not repeated documentation alone.",
+      "distractorRationales": {
+        "A": "This does not change the condition.",
+        "C": "It may remove a controlling requirement.",
+        "D": "The recurrence shows the lesson has not been applied."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-PROPULSION-MODULE-2001"]
+    },
+    {
+      "id": "PMP-B2-058",
+      "domain": "Business Environment",
+      "task": "Support organizational change",
+      "lessonId": "continuous-improvement-business-readiness",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A new workflow is technically ready, but managers still reward the old process, adoption is 28 percent, and training uses an obsolete workflow.",
+      "question": "What should the project manager do?",
+      "options": {
+        "A": "Launch broadly because the system is complete.",
+        "B": "Analyze readiness and adoption, align leadership, process, incentives, training, support, and measures, and use governance for the deployment decision.",
+        "C": "Label users resistant and continue.",
+        "D": "Cancel the project without analysis."
+      },
+      "correctOption": "B",
+      "rationale": "Organizational readiness depends on more than technical completion and requires integrated change and adoption evidence.",
+      "distractorRationales": {
+        "A": "This ignores known adoption and capability gaps.",
+        "C": "It assumes motive and avoids system analysis.",
+        "D": "A stop decision requires evidence and authority."
+      },
+      "sourceIds": ["PMI-ECO-2026", "GAO-VA-EHR-CHANGE-MANAGEMENT-2023"]
+    },
+    {
+      "id": "PMP-B2-059",
+      "domain": "Business Environment",
+      "task": "Evaluate external environment changes",
+      "lessonId": "continuous-improvement-business-readiness",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "A new regional data-transfer rule may affect a project six weeks before launch, but applicability has not been confirmed.",
+      "question": "What should the project manager do first?",
+      "options": {
+        "A": "Ignore it until enforcement begins.",
+        "B": "Verify the change and applicability with qualified authority, analyze impact, and enter the governed decision process.",
+        "C": "Apply the rule globally without analysis.",
+        "D": "Ask the developer to interpret it."
+      },
+      "correctOption": "B",
+      "rationale": "External change should be verified, assessed for applicability, and integrated through qualified authority and governance.",
+      "distractorRationales": {
+        "A": "This may leave inadequate transition time.",
+        "C": "It may impose unnecessary requirements.",
+        "D": "Legal applicability is not a developer decision."
+      },
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "id": "PMP-B2-060",
+      "domain": "Business Environment",
+      "task": "Evaluate external environment changes",
+      "lessonId": "continuous-improvement-business-readiness",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "An AI tool summarizes stakeholder interviews but omits concerns from a minority group and invents two statements not present in the source transcripts.",
+      "question": "What should the project manager do next?",
+      "options": {
+        "A": "Use the summary because it is faster.",
+        "B": "Stop unsafe reliance, preserve and review source evidence, correct the analysis, assess data and model controls, disclose limitations, and govern continued use.",
+        "C": "Delete the source interviews.",
+        "D": "Assume the omitted concerns are unimportant."
+      },
+      "correctOption": "B",
+      "rationale": "AI output should be validated against authoritative evidence and governed with human accountability, bias, data, and monitoring controls.",
+      "distractorRationales": {
+        "A": "Speed does not justify unsupported evidence.",
+        "C": "This destroys the source of truth.",
+        "D": "It creates unsupported stakeholder bias."
+      },
+      "sourceIds": ["PMI-ECO-2026", "PMI-AI-PROJECT-WORK-2026", "PMI-ETHICS-2025"]
+    }
+  ]
+}
