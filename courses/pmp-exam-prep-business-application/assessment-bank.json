@@ -1,0 +1,526 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "status": "internal-review",
+  "originalityAttestation": "All questions and scenarios are original Obserra content. They are not actual, recalled, reconstructed, or purported PMP examination questions and do not reproduce official PMI courseware or proprietary test-bank content.",
+  "assessmentRules": {
+    "passingScore": 80,
+    "graded": true,
+    "aiTutorAnswerDisclosureDuringAttempt": false,
+    "shuffleQuestions": true,
+    "shuffleOptions": true,
+    "showRationaleAfterSubmission": true
+  },
+  "questions": [
+    {
+      "id": "PMP-PEO-001",
+      "domain": "People",
+      "task": "Develop a common vision",
+      "lessonId": "common-vision",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A cloud-modernization project is described by technology leaders as a migration, by finance as a cost-reduction program, and by business units as a threat to local control. Planning workshops repeatedly stall because each group uses different success criteria.",
+      "question": "What should the project manager do next?",
+      "options": [
+        { "id": "A", "text": "Ask the sponsor to select one definition of success and direct all groups to use it." },
+        { "id": "B", "text": "Facilitate a session to create a shared vision, reconcile desired outcomes, and agree on measurable success." },
+        { "id": "C", "text": "Complete the technical plan first and address differing expectations during execution." },
+        { "id": "D", "text": "Record the disagreement as a risk and continue with the current scope baseline." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "ISO-21500-2021"]
+    },
+    {
+      "id": "PMP-PEO-002",
+      "domain": "People",
+      "task": "Manage conflicts",
+      "lessonId": "conflict-management",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "Two technical leads disagree about architecture. Their debate has become personal, but both raise valid concerns and the decision is not urgent.",
+      "question": "What is the strongest first action?",
+      "options": [
+        { "id": "A", "text": "Escalate to the sponsor and request a binding architecture decision." },
+        { "id": "B", "text": "Replace one lead to restore team harmony." },
+        { "id": "C", "text": "Analyze the conflict source and facilitate a fact-based resolution using agreed decision criteria." },
+        { "id": "D", "text": "Avoid the discussion until the team reaches agreement independently." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "id": "PMP-PEO-003",
+      "domain": "People",
+      "task": "Lead the project team",
+      "lessonId": "leadership-styles",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "An experienced adaptive team is blocked because a governance committee has not clarified whether the team may release a low-risk pilot. The team asks the project manager to decide without the committee.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Authorize the release because the team is experienced and the pilot is low risk." },
+        { "id": "B", "text": "Clarify the decision authority and obtain or expedite the required governance decision while keeping the team informed." },
+        { "id": "C", "text": "Tell the team to stop all work until the committee's next scheduled meeting." },
+        { "id": "D", "text": "Transfer accountability for the release decision to the product owner." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "id": "PMP-PEO-004",
+      "domain": "People",
+      "task": "Engage stakeholders",
+      "lessonId": "stakeholder-identification-analysis",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A new warehouse automation project has executive support. During discovery, the project manager learns that maintenance technicians and night-shift supervisors were not included and may be heavily affected.",
+      "question": "What should the project manager do next?",
+      "options": [
+        { "id": "A", "text": "Continue with executive-approved requirements and engage the groups during training." },
+        { "id": "B", "text": "Add the affected groups to the stakeholder analysis and tailor engagement before finalizing requirements." },
+        { "id": "C", "text": "Ask human resources to manage the groups because their concerns are organizational." },
+        { "id": "D", "text": "Record potential resistance as an issue and proceed with procurement." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+    },
+    {
+      "id": "PMP-PEO-005",
+      "domain": "People",
+      "task": "Align stakeholder expectations",
+      "lessonId": "expectation-alignment-customer-value",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "The sponsor expects launch in four months, the regulator requires complete evidence before release, and operations requires an additional month for readiness testing. All expectations are currently documented as mandatory.",
+      "question": "What should the project manager do first?",
+      "options": [
+        { "id": "A", "text": "Create a compressed schedule that meets the sponsor's date." },
+        { "id": "B", "text": "Facilitate alignment on constraints, evidence, outcomes, and trade-offs before committing to a date." },
+        { "id": "C", "text": "Use the regulatory requirement to reject the sponsor's target." },
+        { "id": "D", "text": "Ask operations to reduce readiness testing because launch value is the priority." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "ISO-10006-2017"]
+    },
+    {
+      "id": "PMP-PEO-006",
+      "domain": "People",
+      "task": "Manage stakeholder expectations",
+      "lessonId": "expectation-alignment-customer-value",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "A customer reports declining satisfaction even though the project is meeting the approved scope and schedule.",
+      "question": "What is the strongest response?",
+      "options": [
+        { "id": "A", "text": "Explain that satisfaction is outside the project because scope and schedule are on target." },
+        { "id": "B", "text": "Validate the customer's expected outcomes, compare them with project objectives, and address the identified gap through the appropriate process." },
+        { "id": "C", "text": "Add requested features immediately to restore satisfaction." },
+        { "id": "D", "text": "Escalate the customer complaint to the sponsor without further analysis." }
+      ],
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "id": "PMP-PEO-007",
+      "domain": "People",
+      "task": "Help ensure knowledge transfer",
+      "lessonId": "communication-reporting-knowledge-transfer",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A key architect will leave in six weeks. Most system knowledge is in the architect's personal notes, and the team plans a single handoff meeting during the final week.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Keep the final handoff meeting because the architect remains responsible until departure." },
+        { "id": "B", "text": "Identify critical knowledge now and execute a staged transfer with documentation, shadowing, and verification." },
+        { "id": "C", "text": "Ask the replacement architect to review the personal notes after joining." },
+        { "id": "D", "text": "Record the departure as an accepted risk because notice was provided." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+    },
+    {
+      "id": "PMP-PEO-008",
+      "domain": "People",
+      "task": "Plan and manage communication",
+      "lessonId": "communication-reporting-knowledge-transfer",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "Executives receive a weekly report containing twenty pages of activity. They repeatedly miss two decisions that are delaying the project.",
+      "question": "What should the project manager change?",
+      "options": [
+        { "id": "A", "text": "Send the same report more frequently." },
+        { "id": "B", "text": "Tailor the report to highlight decision needs, impact, owner, deadline, evidence, and consequences of delay." },
+        { "id": "C", "text": "Stop written reporting and schedule daily executive meetings." },
+        { "id": "D", "text": "Escalate that executives are not reading project documentation." }
+      ],
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "id": "PMP-PEO-009",
+      "domain": "People",
+      "task": "Lead the project team",
+      "lessonId": "performance-coaching-problem-solving",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A team member misses commitments for three consecutive iterations. The project manager learns that acceptance criteria change late and the team member supports two other projects.",
+      "question": "What should the project manager do first?",
+      "options": [
+        { "id": "A", "text": "Begin formal performance action because the pattern is repeated." },
+        { "id": "B", "text": "Analyze role, workload, criteria, and system causes with the team member before selecting an intervention." },
+        { "id": "C", "text": "Reassign the team member's work to protect the schedule." },
+        { "id": "D", "text": "Ask the sponsor to provide a replacement resource." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "id": "PMP-PEO-010",
+      "domain": "People",
+      "task": "Lead the project team",
+      "lessonId": "team-diversity-psychological-safety",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "Status meetings are consistently green, but integration defects appear late. A junior engineer says people avoid raising concerns because the sponsor reacts negatively to bad news.",
+      "question": "What is the strongest project-manager response?",
+      "options": [
+        { "id": "A", "text": "Ask the engineer to document the concern privately and continue current reporting." },
+        { "id": "B", "text": "Create a safe risk-reporting mechanism, address the meeting behavior, and verify status with evidence." },
+        { "id": "C", "text": "Change all status indicators to yellow until the culture improves." },
+        { "id": "D", "text": "Escalate the sponsor's behavior to human resources without first protecting project reporting." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "PMI-ETHICS-2025"]
+    },
+    {
+      "id": "PMP-PRO-011",
+      "domain": "Process",
+      "task": "Develop an integrated project management plan and plan delivery",
+      "lessonId": "tailor-development-approach",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A medical-technology project has regulated design evidence and a fixed submission date, while user-experience features remain uncertain and require frequent feedback.",
+      "question": "Which planning response is strongest?",
+      "options": [
+        { "id": "A", "text": "Use a fully predictive approach because the submission date is fixed." },
+        { "id": "B", "text": "Use a fully adaptive approach because requirements are uncertain." },
+        { "id": "C", "text": "Tailor a hybrid approach with controlled evidence gates and iterative development for changeable features." },
+        { "id": "D", "text": "Delay approach selection until all requirements are stable." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+    },
+    {
+      "id": "PMP-PRO-012",
+      "domain": "Process",
+      "task": "Develop an integrated project management plan and plan delivery",
+      "lessonId": "integrated-project-management-plan",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "A scope reduction appears to recover four weeks. The schedule is updated, but procurement, benefits, quality, and operations plans are unchanged.",
+      "question": "What should the project manager do next?",
+      "options": [
+        { "id": "A", "text": "Publish the recovered date because the schedule is the controlling plan." },
+        { "id": "B", "text": "Assess integrated impacts and update affected plans before confirming the new forecast." },
+        { "id": "C", "text": "Ask procurement and operations to adapt during execution." },
+        { "id": "D", "text": "Restore the original scope because integrated updates are too disruptive." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015", "GAO-COST-GUIDE-2020"]
+    },
+    {
+      "id": "PMP-PRO-013",
+      "domain": "Process",
+      "task": "Develop and manage project scope",
+      "lessonId": "scope-requirements-work-breakdown",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A developer adds an unrequested reporting feature because it will impress the customer. The feature introduces two weeks of testing.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Accept the feature because it increases customer value." },
+        { "id": "B", "text": "Evaluate it through the applicable scope or backlog process before committing work." },
+        { "id": "C", "text": "Remove the feature and discipline the developer." },
+        { "id": "D", "text": "Ask the customer to approve the additional test time informally." }
+      ],
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "id": "PMP-PRO-014",
+      "domain": "Process",
+      "task": "Help ensure value-based delivery",
+      "lessonId": "value-based-delivery-benefits",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "An ERP project is on time and on budget. Adoption is low, manual workarounds continue, and inventory accuracy has not improved.",
+      "question": "What should the project manager prioritize?",
+      "options": [
+        { "id": "A", "text": "Close the project because approved deliverables are complete." },
+        { "id": "B", "text": "Evaluate expected outcomes and benefits with stakeholders and address the value gap through governance." },
+        { "id": "C", "text": "Add more features to increase adoption." },
+        { "id": "D", "text": "Transfer the problem to operations because adoption occurs after delivery." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "GAO-NASA-MAJOR-PROJECTS-2025"]
+    },
+    {
+      "id": "PMP-PRO-015",
+      "domain": "Process",
+      "task": "Plan and manage resources",
+      "lessonId": "resources-capacity-optimization",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "Three projects assign the same database engineer at 70 percent capacity during the same month.",
+      "question": "What is the strongest first action?",
+      "options": [
+        { "id": "A", "text": "Ask the engineer to work overtime until the conflict passes." },
+        { "id": "B", "text": "Reconcile capacity and priorities with the relevant owners and update plans and risks." },
+        { "id": "C", "text": "Reduce each project's assignment to 33 percent without consulting sponsors." },
+        { "id": "D", "text": "Keep the assignments because resource managers own capacity." }
+      ],
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "id": "PMP-PRO-016",
+      "domain": "Process",
+      "task": "Plan and manage procurement",
+      "lessonId": "procurement-contracts-suppliers",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A project has highly uncertain technical work and an urgent start. The buyer wants a fixed total price before requirements discovery is complete.",
+      "question": "What should the project manager recommend?",
+      "options": [
+        { "id": "A", "text": "Use a fixed-price contract because it transfers all uncertainty to the seller." },
+        { "id": "B", "text": "Assess scope uncertainty and risk allocation, then select a procurement approach that supports discovery and controlled commitment." },
+        { "id": "C", "text": "Use time and materials without limits because work is uncertain." },
+        { "id": "D", "text": "Delay procurement until every technical requirement is known." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "GAO-PROPULSION-MODULE-2001"]
+    },
+    {
+      "id": "PMP-PRO-017",
+      "domain": "Process",
+      "task": "Plan and manage finance",
+      "lessonId": "finance-reserves-cost-control",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "A known schedule risk is likely to require specialized testing. The project has no documented contingency, and a manager proposes hiding funds in a work package.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Accept the hidden funds because the risk is likely." },
+        { "id": "B", "text": "Quantify the risk and establish transparent contingency through the approved financial and governance process." },
+        { "id": "C", "text": "Use management reserve without informing governance." },
+        { "id": "D", "text": "Exclude the risk until the testing cost occurs." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "GAO-COST-GUIDE-2020", "PMI-ETHICS-2025"]
+    },
+    {
+      "id": "PMP-PRO-018",
+      "domain": "Process",
+      "task": "Plan and optimize quality of products or deliverables",
+      "lessonId": "quality-regulatory-continuous-improvement",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A team plans to inspect all defects at the end of a release but has not defined acceptance criteria or preventive controls.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Increase final inspection staffing." },
+        { "id": "B", "text": "Define quality requirements and acceptance evidence, then plan prevention, assurance, control, and improvement activities." },
+        { "id": "C", "text": "Let the customer define quality after the first release." },
+        { "id": "D", "text": "Accept defects as a normal cost of rapid delivery." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "ISO-10006-2017"]
+    },
+    {
+      "id": "PMP-PRO-019",
+      "domain": "Process",
+      "task": "Plan and manage schedule",
+      "lessonId": "schedule-network-critical-path",
+      "difficulty": "hard",
+      "cognitiveLevel": "analyze",
+      "scenario": "A schedule contains milestone dates but many activities have no logical predecessors or successors. The sponsor asks for the critical path.",
+      "question": "What should the project manager do first?",
+      "options": [
+        { "id": "A", "text": "Identify the longest-duration activity as the critical path." },
+        { "id": "B", "text": "Correct the schedule logic and validate dependencies before relying on a critical-path result." },
+        { "id": "C", "text": "Use the latest milestone as the critical path endpoint." },
+        { "id": "D", "text": "Report that every activity is critical because the schedule is incomplete." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015"]
+    },
+    {
+      "id": "PMP-PRO-020",
+      "domain": "Process",
+      "task": "Plan and manage schedule",
+      "lessonId": "schedule-risk-variation-recovery",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A critical activity is four weeks late. A manager recommends fast tracking all remaining work without analyzing dependencies or quality risk.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Fast track immediately because the activity is critical." },
+        { "id": "B", "text": "Analyze recovery options, dependencies, cost, quality, resources, and risk before recommending a controlled response." },
+        { "id": "C", "text": "Add four weeks to the completion date and update the baseline." },
+        { "id": "D", "text": "Crash all activities with available resources." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015"]
+    },
+    {
+      "id": "PMP-PRO-021",
+      "domain": "Process",
+      "task": "Evaluate project status",
+      "lessonId": "metrics-status-artifacts",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "A dashboard shows 90 percent of tasks complete, but the remaining tasks include integration, acceptance, and regulatory evidence. Executives believe the project is nearly finished.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Keep the metric because it is mathematically correct." },
+        { "id": "B", "text": "Replace or qualify the metric with outcome, dependency, critical-path, acceptance, and risk context." },
+        { "id": "C", "text": "Change completion to 70 percent to be conservative." },
+        { "id": "D", "text": "Stop reporting task completion entirely." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015"]
+    },
+    {
+      "id": "PMP-PRO-022",
+      "domain": "Process",
+      "task": "Manage project closure",
+      "lessonId": "transition-closure-lessons-learned",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "The customer accepts the product, but support ownership, open risks, vendor invoices, and operational training remain unresolved.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Close the project because customer acceptance is complete." },
+        { "id": "B", "text": "Complete transition and closure criteria, resolve or transfer open obligations, and preserve evidence before closing." },
+        { "id": "C", "text": "Transfer every unresolved item to operations and close immediately." },
+        { "id": "D", "text": "Keep the project open indefinitely until all benefits are realized." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "ISO-21502-2020"]
+    },
+    {
+      "id": "PMP-BUS-023",
+      "domain": "Business Environment",
+      "task": "Define and establish project governance",
+      "lessonId": "project-governance-success-metrics",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A project steering committee meets monthly, but no one knows who may accept risk, approve scope changes, or authorize release. Decisions are repeatedly deferred.",
+      "question": "What should the project manager recommend?",
+      "options": [
+        { "id": "A", "text": "Increase meeting frequency." },
+        { "id": "B", "text": "Define decision rights, evidence requirements, thresholds, escalation paths, and success metrics." },
+        { "id": "C", "text": "Give the project manager authority over all project decisions." },
+        { "id": "D", "text": "Ask the sponsor to decide each issue informally between meetings." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "ISO-21500-2021"]
+    },
+    {
+      "id": "PMP-BUS-024",
+      "domain": "Business Environment",
+      "task": "Plan and manage project compliance",
+      "lessonId": "compliance-requirements-consequences",
+      "difficulty": "hard",
+      "cognitiveLevel": "analyze",
+      "scenario": "A healthcare project manager is told that the product is compliant because the team completed a security checklist. Applicability, evidence ownership, and legal review are unclear.",
+      "question": "What should the project manager do first?",
+      "options": [
+        { "id": "A", "text": "Accept the checklist because the security team owns compliance." },
+        { "id": "B", "text": "Confirm applicable requirements and accountable owners, then map controls and evidence before representing compliance." },
+        { "id": "C", "text": "Ask the sponsor to sign a compliance statement." },
+        { "id": "D", "text": "Remove compliance from project scope because it requires legal expertise." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "ISO-10006-2017"]
+    },
+    {
+      "id": "PMP-BUS-025",
+      "domain": "Business Environment",
+      "task": "Manage and control changes",
+      "lessonId": "integrated-change-control",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A sponsor asks the team to implement a major scope change immediately and promises to document approval later.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Implement the change because the sponsor has authority." },
+        { "id": "B", "text": "Analyze impact and use the authorized change process before implementation, unless an approved emergency path applies." },
+        { "id": "C", "text": "Reject the change because the baseline cannot be altered." },
+        { "id": "D", "text": "Ask the team to begin low-risk portions while approval is prepared." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "GAO-SCHEDULE-GUIDE-2015", "GAO-COST-GUIDE-2020"]
+    },
+    {
+      "id": "PMP-BUS-026",
+      "domain": "Business Environment",
+      "task": "Remove impediments and manage issues",
+      "lessonId": "issues-impediments-intervention",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "A dependency identified as a risk has occurred and now blocks testing. The risk owner continues updating the risk register but no issue owner is assigned.",
+      "question": "What should the project manager do next?",
+      "options": [
+        { "id": "A", "text": "Continue monitoring the risk until its probability reaches 100 percent." },
+        { "id": "B", "text": "Treat the realized condition as an issue, assign ownership, evaluate impact, and execute or escalate an intervention." },
+        { "id": "C", "text": "Close the risk because the event has occurred and wait for the team to resolve it." },
+        { "id": "D", "text": "Add contingency reserve without governance approval." }
+      ],
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "id": "PMP-BUS-027",
+      "domain": "Business Environment",
+      "task": "Plan and manage risk",
+      "lessonId": "risk-identification-analysis-response",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A vendor concentration risk has low probability but could stop a critical launch. The team recommends accepting it because mitigation is expensive.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Accept the risk because probability is low." },
+        { "id": "B", "text": "Analyze exposure, timing, alternatives, response cost, risk appetite, and authority before selecting and documenting a response." },
+        { "id": "C", "text": "Avoid the risk by terminating the vendor immediately." },
+        { "id": "D", "text": "Transfer the risk to procurement because it involves a supplier." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "GAO-COST-GUIDE-2020"]
+    },
+    {
+      "id": "PMP-BUS-028",
+      "domain": "Business Environment",
+      "task": "Continuous improvement",
+      "lessonId": "continuous-improvement-organizational-learning",
+      "difficulty": "medium",
+      "cognitiveLevel": "apply",
+      "scenario": "A retrospective documents that late legal review delayed three releases. The same observation appears in the next two retrospectives.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Continue recording the lesson for future projects." },
+        { "id": "B", "text": "Change the process, assign an owner, define an early legal-engagement trigger, and measure whether delays decline." },
+        { "id": "C", "text": "Ask legal to attend every team meeting." },
+        { "id": "D", "text": "Close the lesson because it is already known." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "GAO-PROPULSION-MODULE-2001"]
+    },
+    {
+      "id": "PMP-BUS-029",
+      "domain": "Business Environment",
+      "task": "Support organizational change",
+      "lessonId": "organizational-external-change",
+      "difficulty": "medium",
+      "cognitiveLevel": "analyze",
+      "scenario": "A new workflow is technically ready, but business units fear loss of authority and have not changed performance measures or procedures.",
+      "question": "What should the project manager do?",
+      "options": [
+        { "id": "A", "text": "Launch because resistance normally decreases after implementation." },
+        { "id": "B", "text": "Assess change impacts and coordinate leadership, process, communication, training, and measurement actions before or with deployment." },
+        { "id": "C", "text": "Ask human resources to own all adoption work." },
+        { "id": "D", "text": "Delay the project until every stakeholder supports the change." }
+      ],
+      "sourceIds": ["PMI-ECO-2026"]
+    },
+    {
+      "id": "PMP-BUS-030",
+      "domain": "Business Environment",
+      "task": "Evaluate external business environment changes",
+      "lessonId": "ai-sustainability-modern-projects",
+      "difficulty": "hard",
+      "cognitiveLevel": "evaluate",
+      "scenario": "A project plans to add an AI decision feature after a vendor demonstration. Data rights, bias, model monitoring, human override, security, and regulatory impact have not been assessed.",
+      "question": "What should the project manager do next?",
+      "options": [
+        { "id": "A", "text": "Approve a pilot because the vendor demonstrated business value." },
+        { "id": "B", "text": "Evaluate the business case, data, risk, compliance, human oversight, monitoring, and rollback before committing to the feature." },
+        { "id": "C", "text": "Reject AI because the risks are not yet known." },
+        { "id": "D", "text": "Let the vendor own AI risk because it supplies the model." }
+      ],
+      "sourceIds": ["PMI-ECO-2026", "PMI-AI-PROJECT-WORK-2026", "PMI-PMP-EXAM-UPDATE-2026"]
+    }
+  ]
+}

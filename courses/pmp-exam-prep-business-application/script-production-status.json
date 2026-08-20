@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "recordedAt": "2026-08-07T07:30:00Z",
+  "status": "all-learner-unit-scripts-drafted",
+  "releaseReady": false,
+  "counts": {
+    "courseUnits": 35,
+    "instructionalLessonScripts": 32,
+    "protectedAssessmentExperienceScripts": 3,
+    "totalScripts": 35,
+    "masteredVideos": 0,
+    "captionPackages": 0,
+    "transcriptPackages": 0,
+    "audioDescriptionPackages": 0,
+    "storyboards": 0,
+    "perAssetRightsRecords": 0,
+    "assessmentQuestionsDrafted": 30,
+    "assessmentQuestionsRequired": 180
+  },
+  "completedModules": [
+    {
+      "module": 1,
+      "title": "PMP Exam Architecture and Modern Project Leadership",
+      "units": 4
+    },
+    {
+      "module": 2,
+      "title": "People Domain I: Vision, Leadership, and Team Performance",
+      "units": 5
+    },
+    {
+      "module": 3,
+      "title": "People Domain II: Stakeholders, Conflict, Communication, and Knowledge",
+      "units": 4
+    },
+    {
+      "module": 4,
+      "title": "Process Domain I: Tailoring, Integration, Scope, and Value",
+      "units": 5
+    },
+    {
+      "module": 5,
+      "title": "Process Domain II: Resources, Procurement, Finance, Quality, and Compliance",
+      "units": 4
+    },
+    {
+      "module": 6,
+      "title": "Process Domain III: Schedule, Status, Recovery, and Closure",
+      "units": 4
+    },
+    {
+      "module": 7,
+      "title": "Business Environment I: Governance, Compliance, Change, and Issues",
+      "units": 4
+    },
+    {
+      "module": 8,
+      "title": "Business Environment II: Risk, Improvement, and Future Readiness",
+      "units": 2
+    },
+    {
+      "module": 9,
+      "title": "Protected Examination and Final Readiness",
+      "units": 3
+    }
+  ],
+  "productionStandard": {
+    "officialObserraBrandRequired": true,
+    "sourceGroundingRequired": true,
+    "documentedPublicCaseOrLabeledSyntheticScenarioRequired": true,
+    "factsDataAndLimitationsRequired": true,
+    "businessApplicationRequired": true,
+    "examReasoningRequired": true,
+    "aiTutorHandoffRequired": true,
+    "accessibilityPlanRequired": true,
+    "rightsRecordRequired": true,
+    "ownerFinalReviewOnlyAfterExactPaidLearnerPackageReady": true
+  },
+  "nextGates": [
+    "Expand the original assessment bank from 30 to 180 questions and complete all answer rationales.",
+    "Complete storyboards, shot lists, visual assets, source cards, and motion-graphics specifications for all 32 instructional lessons.",
+    "Render and master all final instructional videos with verified audible 48 kHz audio.",
+    "Produce captions, transcripts, audio description, reduced-motion alternatives, and per-asset rights records.",
+    "Implement and validate the entitlement-scoped learner AI tutor and protected-assessment lockout.",
+    "Complete PMP SME, technical, legal, copyright, trademark, psychometric, accessibility, AI-governance, media, commerce, entitlement, security, and owner-precheck reviews.",
+    "Run complete repository, package, catalog, LCMS, deployment, and rollback validation.",
+    "Stage the exact paid learner package in the owner-only Academy admin final-review queue."
+  ],
+  "truthfulness": {
+    "scriptsMayBeCalledComplete": true,
+    "videosMayBeCalledComplete": false,
+    "courseMayBeCalledProductionReady": false,
+    "courseMayBeSold": false,
+    "ownerFinalReviewMayBegin": false,
+    "accurateCurrentClaim": "All 35 PMP learner-unit scripts are drafted under the Obserra evidence-grounded production standard. Final assessment completion, media production, learner-runtime integration, validation, and all review gates remain open."
+  }
+}
