@@ -9,7 +9,7 @@ const check = (name, condition) => { if (!condition) failures.push(name); };
 
 const remediation = read("owner-command-center/electron/ai-remediation.cjs");
 const verifier = read("owner-command-center/scripts/verify-ai-remediation.mjs");
-const manifestSchema = JSON.parse(read("owner-command-center/policy/remediation-manifest.schema.json"));
+const manifestSchema = JSON.parse(read("owner-command-center/policy/ai-remediation-schema.json"));
 
 const targets = ["website", "studio", "eios"];
 const mappings = ["OWASP-A01-2021", "OWASP-A03-2021", "OWASP-A05-2021", "MITRE-T1190", "MITRE-T1552"];
