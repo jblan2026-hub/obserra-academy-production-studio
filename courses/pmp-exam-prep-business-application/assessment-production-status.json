@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "recordedAt": "2026-08-07T08:00:00Z",
+  "status": "active-assessment-production",
+  "counts": {
+    "requiredOriginalQuestions": 180,
+    "canonicalQuestions": 30,
+    "candidateQuestions": 30,
+    "totalDraftedQuestions": 60,
+    "remainingToDraft": 120,
+    "approvedQuestions": 0,
+    "protectedSectionsRequired": 3,
+    "questionsPerSection": 60
+  },
+  "batches": [
+    {
+      "id": "canonical-bank",
+      "path": "assessment-bank.json",
+      "questions": 30,
+      "status": "internal-review"
+    },
+    {
+      "id": "batch-02",
+      "path": "assessment-candidates/batch-02.json",
+      "questions": 30,
+      "status": "internal-candidate-review"
+    }
+  ],
+  "requiredBeforeCanonicalMerge": [
+    "Credentialed PMP SME review",
+    "Technical and calculation review",
+    "Psychometric and difficulty review",
+    "Editorial and ambiguity review",
+    "Accessibility review",
+    "Source traceability review",
+    "Originality and intellectual-property review",
+    "Deterministic scoring and option-randomization validation"
+  ],
+  "truthfulness": {
+    "fullSimulationComplete": false,
+    "candidateItemsMayBeDeliveredToLearners": false,
+    "assessmentMayBeCalledFinal": false,
+    "accurateCurrentClaim": "Sixty original PMP-aligned scenario items are drafted. Thirty remain in the canonical internal-review bank and thirty are candidate items awaiting review and controlled merge."
+  }
+}

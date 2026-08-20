@@ -1,0 +1,16 @@
+name: Legacy Academy 61 Course Completion Disabled
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  blocked:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject legacy execution route
+        run: |
+          echo "This legacy Academy workflow is disabled. Use .github/workflows/academy-zero-cost-sharded-completion.yml."
+          exit 1

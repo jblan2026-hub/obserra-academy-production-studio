@@ -8,6 +8,8 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "u
 const connectorSource = read("electron/connectors.cjs");
 const bootstrapSource = read("scripts/build-removable-media-package.ps1");
 const mainSource = read("electron/main.cjs");
+const preloadSource = read("electron/preload.cjs");
+const websiteDashboardSource = read("src/website-dashboard.js");
 const policy = JSON.parse(read("policy/connector-catalog.json"));
 
 const requiredIds = ["lcms", "academy", "website", "store", "eios", "stripe", "github", "vercel", "clerk", "localAi"];
@@ -47,6 +49,20 @@ if (!/headers\.Authorization\s*=\s*`Bearer \$\{secret\}`/.test(mainSource)) {
 if (!/intelligencePath:\s*["']\/api\/obserra\/intelligence["']/.test(connectorSource)) {
   throw new Error("Federated intelligence path is not configured");
 }
+if (!preloadSource.includes('analyzeOwnerAINow: () => ipcRenderer.invoke("ownerAI:analyzeNow")')) {
+  throw new Error("Owner website operations requires the constrained Owner AI monitoring bridge");
+}
+if (!preloadSource.includes('getLastSecurityScan: () => ipcRenderer.invoke("security:getLastScan")')) {
+  throw new Error("Owner website operations requires the constrained security evidence bridge");
+}
+for (const requiredToken of ["collectWebsiteOperationsSnapshot", "analyzeOwnerAINow", "intelligenceReports", "getLastSecurityScan", "deploymentState", "criticalCount", "highCount"]) {
+  if (!websiteDashboardSource.includes(requiredToken)) {
+    throw new Error(`Website Operations Center intelligence contract missing: ${requiredToken}`);
+  }
+}
+if (websiteDashboardSource.includes("await refreshWebsiteOperations();")) {
+  throw new Error("Website security scan must not recurse through the in-flight refresh lock");
+}
 for (const resource of policy.resources ?? []) {
   if (resource.writeCapabilitiesRequireOwnerApproval !== true) {
     throw new Error(`Connector ${resource.id} must require owner approval for write capabilities`);
@@ -56,4 +72,4 @@ for (const resource of policy.resources ?? []) {
   }
 }
 
-console.log(`[Owner Command Center] Connector contract verified for ${requiredIds.length} governed resources with authenticated Website and EIOS intelligence.`);
+console.log(`[Owner Command Center] Connector contract verified for ${requiredIds.length} governed resources with authenticated Website and EIOS intelligence, deployment visibility, and security evidence.`);

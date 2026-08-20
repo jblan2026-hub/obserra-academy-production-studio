@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "policyVersion": "2026.08.08.2",
+  "status": "enforced",
+  "failClosed": true,
+  "objective": "Complete, verify, and privately back up all 61 Obserra Academy courses through one zero-commercial-API-cost execution route with concurrent canary and uniquely assigned portfolio course work.",
+  "canonicalWorkflow": ".github/workflows/academy-zero-cost-sharded-completion.yml",
+  "allowedWorkflowPaths": [
+    ".github/workflows/academy-zero-cost-sharded-completion.yml"
+  ],
+  "allowedEvents": [
+    "pull_request",
+    "workflow_dispatch"
+  ],
+  "executionStages": [
+    "prepare-free-runtime",
+    "complete-and-verify-one-canary-course-concurrently",
+    "run-19-local-course-workers-excluding-canary",
+    "restore-and-validate-61-protected-checkpoints",
+    "render-verify-and-privately-back-up-61-courses"
+  ],
+  "providerPolicy": {
+    "research": "local",
+    "authoring": "local",
+    "review": "local",
+    "textToSpeech": "local-piper",
+    "video": "local-ffmpeg",
+    "commercialFallbackAllowed": false
+  },
+  "checkpointPolicy": {
+    "gateway": "https://nwxnyqlyzyufgoadtqxs.supabase.co/functions/v1/academy-checkpoint-gateway",
+    "allowedWorkflow": ".github/workflows/academy-zero-cost-sharded-completion.yml",
+    "required": true
+  },
+  "backupPolicy": {
+    "repository": "jblan2026-hub/ObserraAI",
+    "branch": "academy-backups",
+    "root": "private-backups/academy/61-course-completion",
+    "repositoryVisibilityRequired": "PRIVATE",
+    "publicArtifactsAllowed": false
+  },
+  "blockedWorkflowPaths": [
+    ".github/workflows/academy-36-worker-hollywood-production.yml",
+    ".github/workflows/academy-61-content-checkpoint.yml",
+    ".github/workflows/academy-61-course-completion-only.yml",
+    ".github/workflows/accelerated-protected-course-build.yml",
+    ".github/workflows/continuous-course-ai-audit.yml",
+    ".github/workflows/retry-protected-lcms-load.yml",
+    ".github/workflows/zzz-academy-pr46-runner-priority.yml"
+  ],
+  "changeControl": {
+    "routeChangesRequirePolicyVersionIncrement": true,
+    "routeChangesRequireLockVersionIncrement": true,
+    "legacyRouteReactivationAllowed": false,
+    "restoreUnrelatedMainWorkflowsBeforeMerge": true
+  }
+}

@@ -1,10 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
 import { officialBrand } from "./brand-policy.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
+const COURSE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{1,120}$/;
 
 function slug(value) {
   return String(value ?? "")
@@ -17,6 +19,21 @@ function slug(value) {
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function boundedInteger(value, fallback, minimum, maximum) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed)) return fallback;
+  return Math.max(minimum, Math.min(maximum, parsed));
+}
+
+function parseDurationMinutes(value) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  const hours = normalized.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:hour|hours|hr|hrs)/);
+  const minutes = normalized.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:minute|minutes|min|mins)/);
+  if (hours || minutes) return Math.round(Number(hours?.[1] ?? 0) * 60 + Number(minutes?.[1] ?? 0));
+  const numeric = Number(normalized);
+  return Number.isFinite(numeric) ? Math.round(numeric) : NaN;
 }
 
 function inferFrameworks(manifest) {
@@ -37,6 +54,23 @@ function inferFrameworks(manifest) {
   return matches.length ? matches : ["industry-guidance"];
 }
 
+function completionPolicy(manifest) {
+  const courseMinutes = parseDurationMinutes(manifest.course?.duration);
+  const moduleMinutes = (manifest.course?.modules ?? []).reduce((total, module) => {
+    const minutes = parseDurationMinutes(module.duration);
+    return total + (Number.isFinite(minutes) ? minutes : 0);
+  }, 0);
+  const existing = parseDurationMinutes(manifest.completion?.assessmentDuration);
+  const inferred = Number.isFinite(courseMinutes) && courseMinutes > moduleMinutes ? courseMinutes - moduleMinutes : 0;
+  const assessmentMinutes = Number.isFinite(existing) && existing > 0 ? existing : inferred;
+
+  return {
+    ...manifest.completion,
+    assessmentDuration: assessmentMinutes > 0 ? `${assessmentMinutes} min` : manifest.completion?.assessmentDuration ?? null,
+    durationAccounting: assessmentMinutes > 0 ? "modules-plus-final-assessment" : "modules-only",
+  };
+}
+
 function enrichManifest(manifest) {
   const course = manifest.course ?? {};
   const releaseStatus = manifest.release?.status === "published" ? "public-release-approved" : "internal-review";
@@ -44,6 +78,7 @@ function enrichManifest(manifest) {
 
   return {
     ...manifest,
+    completion: completionPolicy(manifest),
     branding: {
       legalName: officialBrand.legalName,
       brandName: officialBrand.brandName,
@@ -76,17 +111,49 @@ function enrichManifest(manifest) {
   };
 }
 
+function allCourseIds() {
+  return fs.readdirSync(coursesRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((courseId) => fs.existsSync(path.join(coursesRoot, courseId, "course-manifest.json")))
+    .sort();
+}
+
+function governedScope(courseIds) {
+  const explicitCourseId = String(process.env.ACADEMY_COURSE_ID ?? "").trim();
+  if (explicitCourseId) {
+    if (!COURSE_ID_PATTERN.test(explicitCourseId) || !courseIds.includes(explicitCourseId)) {
+      throw new Error(`ACADEMY_COURSE_ID is not a governed course: ${explicitCourseId}`);
+    }
+    return { courseIds: [explicitCourseId], scope: "course", shardIndex: null, shardCount: null };
+  }
+
+  const shardValue = String(process.env.ACADEMY_SHARD_INDEX ?? "").trim();
+  if (!shardValue) return { courseIds, scope: "portfolio", shardIndex: null, shardCount: null };
+
+  const shardIndex = Number(shardValue);
+  const shardCount = boundedInteger(process.env.ACADEMY_SHARD_COUNT, 61, 1, 64);
+  if (!Number.isInteger(shardIndex) || shardIndex < 0 || shardIndex >= shardCount) {
+    throw new Error(`ACADEMY_SHARD_INDEX must be an integer from 0 through ${shardCount - 1}.`);
+  }
+  const selected = courseIds.filter((_courseId, index) => index % shardCount === shardIndex);
+  if (selected.length === 0) throw new Error(`Course policy shard ${shardIndex}/${shardCount} received no courses.`);
+  return { courseIds: selected, scope: "shard", shardIndex, shardCount };
+}
+
 if (!fs.existsSync(coursesRoot)) throw new Error(`Courses directory not found: ${coursesRoot}`);
 
+const portfolio = allCourseIds();
+const scope = governedScope(portfolio);
 let updated = 0;
-for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true })) {
-  if (!entry.isDirectory()) continue;
-  const manifestPath = path.join(coursesRoot, entry.name, "course-manifest.json");
-  if (!fs.existsSync(manifestPath)) continue;
+for (const courseId of scope.courseIds) {
+  const manifestPath = path.join(coursesRoot, courseId, "course-manifest.json");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   const enriched = enrichManifest(manifest);
   fs.writeFileSync(manifestPath, `${JSON.stringify(enriched, null, 2)}\n`);
   updated += 1;
 }
 
-console.log(`[Academy Studio] Applied official branding, tags, informational disclaimer, and liability terms to ${updated} course manifest(s)`);
+console.log(
+  `[Academy Studio] Applied official branding, duration accounting, tags, informational disclaimer, and liability terms to ${updated} course manifest(s) in ${scope.scope} scope.`,
+);

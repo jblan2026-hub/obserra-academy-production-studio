@@ -26,7 +26,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   try {
     if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
-    const organization = await requireOrganization(principal.organizationId);
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const existing = await prisma.release.findFirst({
       where: { id, course: { organizationId: organization.id } },
       include: { course: { select: { id: true, slug: true, title: true } } },
@@ -64,6 +64,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         priorStatus: existing.status,
         newStatus: release.status,
         role: principal.role,
+        identityProvider: principal.identityProvider,
       },
     });
 
@@ -77,7 +78,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       resourceId: id,
       correlationId,
       outcome: "failure",
-      metadata: { reason: error instanceof Error ? error.message : "unknown", clerkOrganizationId: principal.organizationId },
+      metadata: { reason: error instanceof Error ? error.message : "unknown", externalOrganizationId: principal.organizationId, identityProvider: principal.identityProvider },
     });
     return NextResponse.json({ error: "Release approval failed", correlationId }, { status: 500 });
   }

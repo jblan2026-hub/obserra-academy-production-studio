@@ -1,7 +1,13 @@
-import { PrismaClient, CourseStatus, SourceStatus } from "@prisma/client";
+import { Prisma, PrismaClient, CourseStatus, SourceStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const defaultClerkOrganizationId = process.env.STUDIO_SEED_CLERK_ORG_ID ?? "org_obserra_seed";
+const defaultOrganizationId = process.env.STUDIO_SEED_ORGANIZATION_ID ?? process.env.STUDIO_OWNER_ORGANIZATION_ID ?? "org_obserra_academy";
+const defaultIdentityProvider = (process.env.STUDIO_SEED_IDENTITY_PROVIDER ?? process.env.STUDIO_AUTH_PROVIDER ?? "supabase").trim().toLowerCase();
+const localAiModel = process.env.LOCAL_AI_MODEL ?? "qwen2.5:7b-instruct";
+
+function organizationIdentityKey(externalOrganizationId: string, identityProvider: string) {
+  return identityProvider === "clerk" ? externalOrganizationId : `${identityProvider}:${externalOrganizationId}`;
+}
 
 const experts = [
   ["Executive Leadership", "Leadership"], ["Board Governance", "Governance"],
@@ -34,15 +40,58 @@ const sources = [
 ];
 
 async function main() {
+  const identityKey = organizationIdentityKey(defaultOrganizationId, defaultIdentityProvider);
   const organization = await prisma.organization.upsert({
-    where: { clerkOrganizationId: defaultClerkOrganizationId },
+    where: { clerkOrganizationId: identityKey },
     update: { name: "Obserra Academy", slug: "obserra-academy", active: true },
     create: {
-      clerkOrganizationId: defaultClerkOrganizationId,
+      clerkOrganizationId: identityKey,
       name: "Obserra Academy",
       slug: "obserra-academy",
       active: true,
     },
+  });
+
+  await prisma.aiModelProfile.upsert({
+    where: { key: "local-ollama" },
+    update: {
+      provider: "local",
+      model: localAiModel,
+      displayName: "Local Ollama (Zero Cost)",
+      capabilities: {
+        chat: true,
+        structuredJson: true,
+        localExecution: true,
+        paidApiRequired: false,
+      } satisfies Prisma.InputJsonValue,
+      inputCostPerMillion: new Prisma.Decimal(0),
+      outputCostPerMillion: new Prisma.Decimal(0),
+      supportsStructuredOut: true,
+      supportsTools: false,
+      active: true,
+    },
+    create: {
+      key: "local-ollama",
+      provider: "local",
+      model: localAiModel,
+      displayName: "Local Ollama (Zero Cost)",
+      capabilities: {
+        chat: true,
+        structuredJson: true,
+        localExecution: true,
+        paidApiRequired: false,
+      } satisfies Prisma.InputJsonValue,
+      inputCostPerMillion: new Prisma.Decimal(0),
+      outputCostPerMillion: new Prisma.Decimal(0),
+      supportsStructuredOut: true,
+      supportsTools: false,
+      active: true,
+    },
+  });
+
+  await prisma.aiModelProfile.updateMany({
+    where: { provider: { not: "local" } },
+    data: { active: false },
   });
 
   for (const [name, domain] of experts) {
@@ -80,7 +129,16 @@ async function main() {
       action: "DATABASE_SEEDED",
       resourceType: "STUDIO",
       outcome: "SUCCEEDED",
-      metadata: { experts: experts.length, courses: courses.length, sources: sources.length },
+      metadata: {
+        experts: experts.length,
+        courses: courses.length,
+        sources: sources.length,
+        identityProvider: defaultIdentityProvider,
+        externalOrganizationId: defaultOrganizationId,
+        activeAiModelProfile: "local-ollama",
+        localAiModel,
+        paidModelProfilesEnabled: false,
+      },
     },
   });
 }

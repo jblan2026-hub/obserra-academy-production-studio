@@ -1,10 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { recordAuditEvent } from "@/lib/audit-service";
 import { requireOrganization } from "@/lib/organization-service";
 import { prisma } from "@/lib/prisma";
-import { authorizeStudioRequest } from "@/lib/studio-auth";
+import { authenticateStudioRequest, authorizeStudioRequest } from "@/lib/studio-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -36,12 +35,12 @@ export async function GET(request: Request) {
 
   try {
     if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
-    const session = await auth();
-    if (!session.isAuthenticated || !session.orgId) {
-      return NextResponse.json({ error: "An authenticated organization session is required", correlationId }, { status: 401 });
+    const authentication = await authenticateStudioRequest(request);
+    if (!authentication.principal) {
+      return NextResponse.json({ error: authentication.reason ?? "Authentication required", correlationId }, { status: 401 });
     }
-
-    const organization = await requireOrganization(session.orgId);
+    const principal = authentication.principal;
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const orchestrations = await prisma.aiExecution.findMany({
       where: {
         organizationId: organization.id,
@@ -59,16 +58,16 @@ export async function GET(request: Request) {
 
     await recordAuditEvent({
       organizationId: organization.id,
-      actorId: session.userId ?? undefined,
-      actorType: "user",
+      actorId: principal.actorId,
+      actorType: principal.actorType,
       action: "ai.orchestration.list",
       resourceType: "AiExecution",
       correlationId,
       outcome: "success",
-      metadata: { count: orchestrations.length },
+      metadata: { count: orchestrations.length, identityProvider: principal.identityProvider },
     });
 
-    return NextResponse.json({ correlationId, organizationId: session.orgId, orchestrations });
+    return NextResponse.json({ correlationId, organizationId: principal.organizationId, orchestrations });
   } catch (error) {
     return NextResponse.json({
       correlationId,
@@ -98,7 +97,7 @@ export async function POST(request: Request) {
 
   try {
     if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured");
-    const organization = await requireOrganization(principal.organizationId);
+    const organization = await requireOrganization(principal.organizationId, principal.identityProvider);
     const body = await request.json() as CreateOrchestrationBody;
     const objective = body.objective?.trim();
     const steps = body.steps ?? [];
@@ -113,10 +112,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "An orchestration may contain no more than 50 steps", correlationId }, { status: 400 });
     }
 
-    const sequences = new Set<number>();
     const normalizedSteps = steps.map((step, index) => {
       const sequence = index + 1;
-      sequences.add(sequence);
       const dependsOn = Array.from(new Set(step.dependsOn ?? [])).sort((a, b) => a - b);
       if (dependsOn.some((dependency) => dependency < 1 || dependency >= sequence)) {
         throw new Error(`Step ${sequence} contains an invalid dependency`);
@@ -218,6 +215,7 @@ export async function POST(request: Request) {
         courseId: course?.id,
         stepCount: execution.steps.length,
         role: principal.role,
+        identityProvider: principal.identityProvider,
       },
     });
 
@@ -232,7 +230,8 @@ export async function POST(request: Request) {
       outcome: "failure",
       metadata: {
         reason: error instanceof Error ? error.message : "unknown",
-        clerkOrganizationId: principal.organizationId,
+        externalOrganizationId: principal.organizationId,
+        identityProvider: principal.identityProvider,
       },
     });
 

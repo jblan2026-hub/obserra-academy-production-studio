@@ -1,0 +1,189 @@
+{
+  "schemaVersion": "1.0",
+  "courseId": "pmp-exam-prep-business-application",
+  "verifiedAt": "2026-08-06T00:00:00Z",
+  "authorityModel": {
+    "certificationOwner": "Project Management Institute, Inc.",
+    "examBlueprint": {
+      "title": "Project Management Professional (PMP) Examination Content Outline - July 2026",
+      "role": "Controls the domains, task coverage, domain weights, eligibility information, exam structure, and the professional responsibilities assessed on the PMP examination.",
+      "url": "https://www.pmi.org/-/media/pmi/documents/public/pdf/certifications/new-pmp-examination-content-outline-2026.pdf"
+    },
+    "primaryKnowledgeSpine": {
+      "title": "A Guide to the Project Management Body of Knowledge (PMBOK Guide) - Eighth Edition and The Standard for Project Management",
+      "publisher": "Project Management Institute",
+      "publicationDate": "2025-11",
+      "pages": 408,
+      "errataVerifiedThrough": "2026-04",
+      "role": "Provides the primary principles, performance-domain knowledge, value-delivery orientation, tailoring logic, and evolved process guidance used to explain why strong project decisions work.",
+      "url": "https://www.pmi.org/standards/pmbok"
+    },
+    "companionReferences": [
+      {
+        "title": "Agile Practice Guide",
+        "publisher": "Project Management Institute",
+        "role": "Supports adaptive and agile ways of working, team practices, iterative planning, feedback, and value delivery.",
+        "url": "https://www.pmi.org/standards/agile"
+      },
+      {
+        "title": "Process Groups: A Practice Guide",
+        "publisher": "Project Management Institute",
+        "publicationDate": "2022-11",
+        "role": "Supports predictive delivery through initiating, planning, executing, monitoring and controlling, and closing, including process interactions and associated project-management practices.",
+        "url": "https://www.pmi.org/standards/process-groups"
+      }
+    ]
+  },
+  "teachingRule": "Every exam objective is taught through an ECO task, a PMBOK principle or performance domain, an appropriate predictive, adaptive, or hybrid way of working, an original business scenario, a practical artifact, and original exam-style practice. The course does not treat the PMBOK Guide as a question bank and does not assume memorization alone is sufficient.",
+  "pmbokEighthEditionPublicArchitecture": {
+    "principles": [
+      {
+        "id": "pmbok-principle-holistic-view",
+        "label": "Holistic project view",
+        "courseApplication": "Evaluate the project as part of an organizational, stakeholder, product, operational, financial, regulatory, and environmental system rather than as an isolated schedule."
+      },
+      {
+        "id": "pmbok-principle-value-focus",
+        "label": "Value and outcome focus",
+        "courseApplication": "Prioritize outcomes and benefits that are worth the effort and expense, not delivery activity alone."
+      },
+      {
+        "id": "pmbok-principle-quality-embedded",
+        "label": "Quality embedded in delivery",
+        "courseApplication": "Build quality, acceptance, regulatory, assurance, and improvement practices into the work rather than relying only on final inspection."
+      },
+      {
+        "id": "pmbok-principle-accountable-leadership",
+        "label": "Accountable leadership",
+        "courseApplication": "Exercise ethical judgment, transparent communication, appropriate authority, and responsibility for project decisions and consequences."
+      },
+      {
+        "id": "pmbok-principle-sustainability",
+        "label": "Sustainability integration",
+        "courseApplication": "Consider environmental, social, economic, operational, and long-term impacts when planning and evaluating project decisions."
+      },
+      {
+        "id": "pmbok-principle-empowered-teams",
+        "label": "Empowered teams",
+        "courseApplication": "Create clear purpose, trust, decision boundaries, collaboration, learning, and appropriate autonomy."
+      }
+    ],
+    "performanceDomains": [
+      {
+        "id": "pmbok-domain-governance",
+        "label": "Governance",
+        "courseApplication": "Decision rights, policies, ethics, oversight, success measures, escalation, compliance, and change authority."
+      },
+      {
+        "id": "pmbok-domain-scope",
+        "label": "Scope",
+        "courseApplication": "Requirements, deliverables, boundaries, decomposition, backlogs, acceptance, and scope-change integrity."
+      },
+      {
+        "id": "pmbok-domain-schedule",
+        "label": "Schedule",
+        "courseApplication": "Sequencing, dependencies, estimation, critical path, adaptive forecasting, baselines, variation, and recovery."
+      },
+      {
+        "id": "pmbok-domain-finance",
+        "label": "Finance",
+        "courseApplication": "Funding needs, estimates, budgets, contingency, reserves, reporting, forecasts, and value-based financial decisions."
+      },
+      {
+        "id": "pmbok-domain-stakeholders",
+        "label": "Stakeholders",
+        "courseApplication": "Identification, analysis, engagement, expectations, customer value, communication, trust, and influence."
+      },
+      {
+        "id": "pmbok-domain-resources",
+        "label": "Resources",
+        "courseApplication": "People, capability, equipment, services, suppliers, capacity, availability, optimization, and accountability."
+      },
+      {
+        "id": "pmbok-domain-risk",
+        "label": "Risk",
+        "courseApplication": "Threats, opportunities, assumptions, uncertainty, analysis, responses, reserves, issues, and residual exposure."
+      }
+    ],
+    "emergingTopics": [
+      "artificial intelligence in project work",
+      "project management offices",
+      "procurement",
+      "sustainability",
+      "evolved non-prescriptive process guidance"
+    ]
+  },
+  "courseModuleCrosswalk": [
+    {
+      "moduleId": "orientation-modern-pmp",
+      "pmbokPrincipleIds": ["pmbok-principle-holistic-view", "pmbok-principle-value-focus", "pmbok-principle-accountable-leadership"],
+      "pmbokDomainIds": ["pmbok-domain-governance", "pmbok-domain-stakeholders", "pmbok-domain-risk"],
+      "examPurpose": "Establish the ECO, PMBOK knowledge architecture, ethics, exam expectations, and predictive-adaptive-hybrid reasoning model."
+    },
+    {
+      "moduleId": "people-vision-team-leadership",
+      "pmbokPrincipleIds": ["pmbok-principle-accountable-leadership", "pmbok-principle-empowered-teams", "pmbok-principle-holistic-view"],
+      "pmbokDomainIds": ["pmbok-domain-stakeholders", "pmbok-domain-resources", "pmbok-domain-governance"],
+      "examPurpose": "Prepare learners for vision, leadership, roles, team empowerment, diverse perspectives, problem solving, and performance scenarios."
+    },
+    {
+      "moduleId": "people-stakeholders-conflict-communication",
+      "pmbokPrincipleIds": ["pmbok-principle-accountable-leadership", "pmbok-principle-empowered-teams", "pmbok-principle-value-focus"],
+      "pmbokDomainIds": ["pmbok-domain-stakeholders", "pmbok-domain-governance", "pmbok-domain-resources"],
+      "examPurpose": "Prepare learners for stakeholder engagement, expectation alignment, conflict, communication, reporting, trust, influence, and knowledge transfer."
+    },
+    {
+      "moduleId": "process-integration-scope-value",
+      "pmbokPrincipleIds": ["pmbok-principle-holistic-view", "pmbok-principle-value-focus", "pmbok-principle-quality-embedded"],
+      "pmbokDomainIds": ["pmbok-domain-scope", "pmbok-domain-governance", "pmbok-domain-schedule", "pmbok-domain-finance", "pmbok-domain-risk"],
+      "examPurpose": "Prepare learners to tailor delivery, integrate plans, define scope, prioritize value, estimate work, analyze dependencies, and use data."
+    },
+    {
+      "moduleId": "process-resources-procurement-finance-quality",
+      "pmbokPrincipleIds": ["pmbok-principle-quality-embedded", "pmbok-principle-value-focus", "pmbok-principle-accountable-leadership", "pmbok-principle-sustainability"],
+      "pmbokDomainIds": ["pmbok-domain-resources", "pmbok-domain-finance", "pmbok-domain-risk", "pmbok-domain-governance"],
+      "examPurpose": "Prepare learners for resource planning, procurement, negotiation, contracts, supplier performance, project finance, quality, compliance, and improvement."
+    },
+    {
+      "moduleId": "process-schedule-status-closure",
+      "pmbokPrincipleIds": ["pmbok-principle-quality-embedded", "pmbok-principle-accountable-leadership", "pmbok-principle-holistic-view"],
+      "pmbokDomainIds": ["pmbok-domain-schedule", "pmbok-domain-finance", "pmbok-domain-governance", "pmbok-domain-risk", "pmbok-domain-resources"],
+      "examPurpose": "Prepare learners for schedule development and control, status evaluation, artifacts, forecasts, communication, acceptance, transition, and closure."
+    },
+    {
+      "moduleId": "business-governance-compliance-change",
+      "pmbokPrincipleIds": ["pmbok-principle-accountable-leadership", "pmbok-principle-sustainability", "pmbok-principle-holistic-view", "pmbok-principle-value-focus"],
+      "pmbokDomainIds": ["pmbok-domain-governance", "pmbok-domain-risk", "pmbok-domain-stakeholders", "pmbok-domain-scope"],
+      "examPurpose": "Prepare learners for governance, success metrics, compliance, change control, organizational change, and external business conditions."
+    },
+    {
+      "moduleId": "business-risk-improvement-exam-readiness",
+      "pmbokPrincipleIds": ["pmbok-principle-holistic-view", "pmbok-principle-value-focus", "pmbok-principle-accountable-leadership", "pmbok-principle-sustainability", "pmbok-principle-quality-embedded"],
+      "pmbokDomainIds": ["pmbok-domain-risk", "pmbok-domain-governance", "pmbok-domain-stakeholders", "pmbok-domain-resources", "pmbok-domain-finance"],
+      "examPurpose": "Prepare learners for risk, issues, impediments, improvement, organizational learning, AI, sustainability, and integrated exam readiness."
+    }
+  ],
+  "instructionalMethod": {
+    "sequence": [
+      "Identify the ECO task and professional responsibility being tested.",
+      "Explain the associated PMBOK principle and performance-domain knowledge.",
+      "Compare predictive, adaptive or agile, and hybrid application.",
+      "Analyze facts, assumptions, uncertainty, authority, value, and stakeholder consequences.",
+      "Use an original project scenario and produce a practical business artifact.",
+      "Complete original exam-style practice and explain every distractor.",
+      "Use the AI tutor for remediation outside protected graded-assessment mode."
+    ],
+    "memorizationPolicy": "Terminology, formulas, and process relationships are taught where useful, but scenario judgment and application are prioritized because the exam evaluates critical thinking in realistic situations.",
+    "examIntegrityPolicy": "No recalled examination items, exam dumps, protected test content, PMI official question banks, or misleading claims of actual exam questions are permitted."
+  },
+  "rightsAndLicensing": {
+    "learnerAccessRequirement": "Learners should obtain lawful access to the current PMBOK Guide and any companion PMI publications assigned for reading. Separate PMI membership or purchase may be required.",
+    "obserraUsage": "Obserra instruction, examples, diagrams, practice questions, and explanations must be original. PMI publications are cited and paraphrased within applicable permission and copyright limits.",
+    "prohibited": [
+      "copying substantial PMBOK text, figures, tables, process descriptions, or official courseware without permission",
+      "using PMI logos or suggesting sponsorship, endorsement, authorization, or ATP status",
+      "representing Obserra original questions as real PMP exam questions"
+    ],
+    "publicationGate": "Legal, copyright, trademark, subject-matter, and exam-integrity review must confirm the current editions and permitted use before public release."
+  }
+}

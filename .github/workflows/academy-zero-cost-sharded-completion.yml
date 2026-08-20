@@ -1,0 +1,666 @@
+name: Academy Zero Cost Resilient Completion
+run-name: zero-cost concurrent canary plus 19 course workers • ${{ github.ref_name }} • ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/academy-zero-cost-sharded-completion.yml"
+      - ".github/scripts/run-academy-zero-cost-shard.mjs"
+      - ".github/scripts/validate-zero-cost-course.mjs"
+      - "studio/academy-zero-cost-lock.mjs"
+      - "studio/render-canary-course-local-media.mjs"
+      - "studio/verify-canary-course-completion.mjs"
+      - "studio/local-ollama-keepalive-proxy.mjs"
+      - "studio/research-course-authoritative-sources.mjs"
+      - "studio/research-course-authoritative-sources-local.mjs"
+      - "studio/author-course-hollywood.mjs"
+      - "studio/author-course-hollywood-with-checkpoint.mjs"
+      - "studio/review-course-quality.mjs"
+      - "studio/fetch-free-authoritative-source-cache.mjs"
+      - "studio/build-free-course-source-context.mjs"
+      - "studio/academy-hollywood-checkpoints.mjs"
+      - "studio/restore-academy-hollywood-checkpoints.mjs"
+      - "studio/materialize-hollywood-course-assets.mjs"
+      - "studio/validate-academy-hollywood-surge.mjs"
+      - "studio/render-all-61-local-media.mjs"
+      - "studio/verify-all-61-course-completion.mjs"
+      - "studio/backup-61-courses-to-private-github.sh"
+      - "policy/academy-execution-route.json"
+      - "courses/**"
+      - "sources/**"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: academy-zero-cost-resilient-completion
+  cancel-in-progress: true
+
+env:
+  NPM_CONFIG_AUDIT: "false"
+  NPM_CONFIG_FUND: "false"
+  NPM_CONFIG_PROGRESS: "false"
+  NPM_CONFIG_UPDATE_NOTIFIER: "false"
+  OBSERRA_PORTFOLIO_WORKER_COUNT: "20"
+  OBSERRA_APPLICATION_WORKER_COUNT: "0"
+  ACADEMY_COURSE_WORKER_COUNT: "20"
+  ACADEMY_EXPECTED_SURGE_COURSES: "61"
+  ACADEMY_EXPECTED_REVIEW_COURSES: "61"
+  ACADEMY_SURGE_EXCLUDED_COURSE_IDS: __none__
+  ACADEMY_CANARY_COURSE_ID: ai-data-privacy-ip
+  ACADEMY_MINIMUM_LESSON_WORDS: "1200"
+  ACADEMY_MINIMUM_EXACT_SOURCES_PER_COURSE: "2"
+  ACADEMY_LOCAL_SHARD_MAX_ATTEMPTS: "3"
+  ACADEMY_EXECUTION_MODE: local-ollama-zero-commercial-api-cost-locked
+  ACADEMY_AUTHORING_PROVIDER: local
+  ACADEMY_RESEARCH_PROVIDER: local
+  ACADEMY_REVIEW_PROVIDER: local
+  STUDIO_AI_PROVIDER: disabled
+  STUDIO_VIDEO_PROVIDER: local
+  STUDIO_TTS_PROVIDER: local
+  STUDIO_ALLOW_PAID_AI: "false"
+  OPENAI_API_KEY: ""
+  ANTHROPIC_API_KEY: ""
+  ELEVENLABS_API_KEY: ""
+  HEYGEN_API_KEY: ""
+  SYNTHESIA_API_KEY: ""
+  DID_API_KEY: ""
+  RUNWAY_API_KEY: ""
+  REPLICATE_API_TOKEN: ""
+  GOOGLE_GENERATIVE_AI_API_KEY: ""
+  GEMINI_API_KEY: ""
+  MISTRAL_API_KEY: ""
+  COHERE_API_KEY: ""
+  GROQ_API_KEY: ""
+  TOGETHER_API_KEY: ""
+  AZURE_OPENAI_API_KEY: ""
+  AWS_BEDROCK_API_KEY: ""
+  LOCAL_AI_BASE_URL: http://127.0.0.1:11436
+  LOCAL_AI_MODEL: qwen2.5:7b-instruct
+  LOCAL_RESEARCH_MODEL: qwen2.5:7b-instruct
+  LOCAL_REVIEW_MODEL: qwen2.5:7b-instruct
+  LOCAL_AI_TIMEOUT_MS: "3600000"
+  LOCAL_REVIEW_TIMEOUT_MS: "3600000"
+  LOCAL_AI_NUM_CTX: "24576"
+  ACADEMY_LOCAL_MODEL_CONTEXT: "24576"
+  ACADEMY_LOCAL_CONTEXT_MAX_CHARS: "60000"
+  ACADEMY_SOURCE_CONTEXT_MAX_CHARS: "32000"
+  ACADEMY_SOURCE_FILE_MAX_CHARS: "5000"
+  ACADEMY_AUTHORING_REQUEST_TIMEOUT_MS: "1800000"
+  ACADEMY_AUTHORING_CHECKPOINTS_REQUIRED: "true"
+  ACADEMY_FREE_SOURCE_MAX_BYTES: "8388608"
+  ACADEMY_FREE_SOURCE_TIMEOUT_MS: "30000"
+  ACADEMY_FREE_SOURCE_EXCERPT_CHARACTERS: "3000"
+  ACADEMY_FREE_SOURCE_CACHE_TTL_HOURS: "24"
+  ACADEMY_OLLAMA_PROXY_PORT: "11436"
+  ACADEMY_OLLAMA_UPSTREAM_PORT: "11434"
+  ACADEMY_OLLAMA_PROXY_TIMEOUT_MS: "3600000"
+  ACADEMY_OLLAMA_PROXY_KEEPALIVE_MS: "15000"
+  OLLAMA_VERSION: "0.30.8"
+  OLLAMA_LINUX_AMD64_SHA256: ffe2b2c2f2f5f5b30c081ec353c2e0bb2d9ead516064a8e22663b24b8fd8dca0
+  OLLAMA_CONTEXT_LENGTH: "24576"
+  OLLAMA_FLASH_ATTENTION: "1"
+  OLLAMA_KV_CACHE_TYPE: q8_0
+  OLLAMA_NO_CLOUD: "1"
+  OLLAMA_KEEP_ALIVE: "30m"
+  OLLAMA_NUM_PARALLEL: "1"
+  OLLAMA_MAX_LOADED_MODELS: "1"
+  OLLAMA_MAX_QUEUE: "8"
+  OLLAMA_LOAD_TIMEOUT: "30m"
+  STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
+  STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
+  ACADEMY_CHECKPOINT_GATEWAY_URL: https://nwxnyqlyzyufgoadtqxs.supabase.co/functions/v1/academy-checkpoint-gateway
+  ACADEMY_LOCAL_TTS_MODEL: en_US-joe-medium
+  ACADEMY_LOCAL_TTS_DATA_DIR: /tmp/academy-piper-voices
+  ACADEMY_PRIVATE_BACKUP_REPOSITORY: jblan2026-hub/ObserraAI
+  ACADEMY_PRIVATE_BACKUP_BRANCH: academy-backups
+  ACADEMY_PRIVATE_BACKUP_ROOT: private-backups/academy/61-course-completion
+
+jobs:
+  prepare-free-runtime:
+    name: Prepare shared zero-cost runtime and 60-course matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      course_matrix: ${{ steps.course-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout governed Academy source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Prove the zero cost lock is active
+        run: node studio/academy-zero-cost-lock.mjs
+
+      - name: Preflight protected checkpoint gateway before runtime preparation
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
+
+      - name: Build exact 60-course matrix excluding canary
+        id: course-matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          matrix="$(node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const ids = fs.readdirSync('courses', { withFileTypes: true })
+            .filter((entry) => entry.isDirectory())
+            .map((entry) => entry.name)
+            .filter((id) => fs.existsSync(path.join('courses', id, 'course-manifest.json')))
+            .filter((id) => {
+              const manifest = JSON.parse(fs.readFileSync(path.join('courses', id, 'course-manifest.json'), 'utf8'));
+              return !['retired', 'archived'].includes(String(manifest.release?.status || 'draft').toLowerCase());
+            })
+            .sort();
+          if (ids.length !== 61) throw new Error(`Expected 61 active courses, found ${ids.length}.`);
+          const canary = process.env.ACADEMY_CANARY_COURSE_ID;
+          if (!ids.includes(canary)) throw new Error(`Canary ${canary} is not in the active portfolio.`);
+          const portfolio = ids.filter((id) => id !== canary);
+          if (portfolio.length !== 60) throw new Error(`Expected 60 non-canary courses, found ${portfolio.length}.`);
+          process.stdout.write(JSON.stringify(portfolio));
+          NODE
+          )"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+      - name: Restore shared governed public evidence cache
+        uses: actions/cache@v4
+        with:
+          path: .academy-cache/authoritative-sources
+          key: academy-public-evidence-v3-${{ hashFiles('sources/authoritative-sources.json', 'sources/documented-cases.json') }}
+          restore-keys: |
+            academy-public-evidence-v3-
+
+      - name: Restore shared checksum verified Ollama archive and model cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/obserra-academy/ollama
+            ~/.ollama/models
+          key: academy-ollama-${{ env.OLLAMA_VERSION }}-qwen2-5-7b-instruct-v2
+
+      - name: Activate the zero cost network lock for runtime Node processes
+        shell: bash
+        run: echo "NODE_OPTIONS=--import=${GITHUB_WORKSPACE}/studio/academy-zero-cost-lock.mjs" >> "$GITHUB_ENV"
+
+      - name: Refresh authoritative authorities and documented cases once
+        run: node studio/fetch-free-authoritative-source-cache.mjs
+
+      - name: Prepare the checksum verified local model cache once
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache_dir="${HOME}/.cache/obserra-academy/ollama"
+          archive="${cache_dir}/ollama-linux-amd64-${OLLAMA_VERSION}.tar.zst"
+          mkdir -p "$cache_dir"
+          if [ ! -s "$archive" ]; then
+            curl --fail --location --silent --show-error \
+              --retry 3 --retry-delay 2 --retry-all-errors \
+              "https://github.com/ollama/ollama/releases/download/v${OLLAMA_VERSION}/ollama-linux-amd64.tar.zst" \
+              --output "$archive"
+          fi
+          printf '%s  %s\n' "$OLLAMA_LINUX_AMD64_SHA256" "$archive" | sha256sum --check --strict
+          if ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends zstd
+          fi
+          sudo tar --zstd --extract --file "$archive" --directory /usr
+          ollama --version
+          nohup env \
+            OLLAMA_CONTEXT_LENGTH="$OLLAMA_CONTEXT_LENGTH" \
+            OLLAMA_FLASH_ATTENTION="$OLLAMA_FLASH_ATTENTION" \
+            OLLAMA_KV_CACHE_TYPE="$OLLAMA_KV_CACHE_TYPE" \
+            OLLAMA_NO_CLOUD="$OLLAMA_NO_CLOUD" \
+            OLLAMA_KEEP_ALIVE="$OLLAMA_KEEP_ALIVE" \
+            OLLAMA_NUM_PARALLEL="$OLLAMA_NUM_PARALLEL" \
+            OLLAMA_MAX_LOADED_MODELS="$OLLAMA_MAX_LOADED_MODELS" \
+            OLLAMA_MAX_QUEUE="$OLLAMA_MAX_QUEUE" \
+            OLLAMA_LOAD_TIMEOUT="$OLLAMA_LOAD_TIMEOUT" \
+            ollama serve > /tmp/academy-ollama-prepare.log 2>&1 &
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null
+          if ! ollama show "$LOCAL_AI_MODEL" >/dev/null 2>&1; then
+            ollama pull "$LOCAL_AI_MODEL"
+          fi
+          ollama show "$LOCAL_AI_MODEL" >/dev/null
+          ollama list
+          pkill -f "ollama serve" || true
+
+  canary-course:
+    name: Complete and verify ai-data-privacy-ip end to end
+    needs: prepare-free-runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      ACADEMY_COURSE_ID: ai-data-privacy-ip
+    steps:
+      - name: Checkout governed Academy source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Prove the zero cost lock is active before canary work
+        run: node studio/academy-zero-cost-lock.mjs
+
+      - name: Preflight protected checkpoint gateway before canary setup
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
+
+      - name: Restore shared governed public evidence cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .academy-cache/authoritative-sources
+          key: academy-public-evidence-v3-${{ hashFiles('sources/authoritative-sources.json', 'sources/documented-cases.json') }}
+          restore-keys: |
+            academy-public-evidence-v3-
+
+      - name: Restore shared local Ollama archive and model
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/obserra-academy/ollama
+            ~/.ollama/models
+          key: academy-ollama-${{ env.OLLAMA_VERSION }}-qwen2-5-7b-instruct-v2
+
+      - name: Activate the zero cost network lock for canary Node processes
+        shell: bash
+        run: echo "NODE_OPTIONS=--import=${GITHUB_WORKSPACE}/studio/academy-zero-cost-lock.mjs" >> "$GITHUB_ENV"
+
+      - name: Apply governed course policy
+        run: node studio/apply-course-policy.mjs
+
+      - name: Restore reusable protected canary checkpoint only
+        run: node studio/restore-academy-hollywood-checkpoints.mjs
+
+      - name: Reject stale restored canary evidence
+        run: node studio/prune-stale-restored-course-packages.mjs
+
+      - name: Build deterministic canary source context
+        run: node studio/build-free-course-source-context.mjs
+
+      - name: Start the memory bounded local canary model
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="${HOME}/.cache/obserra-academy/ollama/ollama-linux-amd64-${OLLAMA_VERSION}.tar.zst"
+          test -s "$archive"
+          printf '%s  %s\n' "$OLLAMA_LINUX_AMD64_SHA256" "$archive" | sha256sum --check --strict
+          if ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends zstd
+          fi
+          sudo tar --zstd --extract --file "$archive" --directory /usr
+          nohup env \
+            OLLAMA_CONTEXT_LENGTH="$OLLAMA_CONTEXT_LENGTH" \
+            OLLAMA_FLASH_ATTENTION="$OLLAMA_FLASH_ATTENTION" \
+            OLLAMA_KV_CACHE_TYPE="$OLLAMA_KV_CACHE_TYPE" \
+            OLLAMA_NO_CLOUD="$OLLAMA_NO_CLOUD" \
+            OLLAMA_KEEP_ALIVE="$OLLAMA_KEEP_ALIVE" \
+            OLLAMA_NUM_PARALLEL="$OLLAMA_NUM_PARALLEL" \
+            OLLAMA_MAX_LOADED_MODELS="$OLLAMA_MAX_LOADED_MODELS" \
+            OLLAMA_MAX_QUEUE="$OLLAMA_MAX_QUEUE" \
+            OLLAMA_LOAD_TIMEOUT="$OLLAMA_LOAD_TIMEOUT" \
+            ollama serve > /tmp/academy-ollama.log 2>&1 &
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null
+          ollama show "$LOCAL_AI_MODEL" >/dev/null
+          nohup node studio/local-ollama-keepalive-proxy.mjs > /tmp/academy-ollama-proxy.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:11436/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:11436/health
+
+      - name: Research author review and checkpoint the canary
+        run: node .github/scripts/run-academy-zero-cost-shard.mjs
+
+      - name: Materialize every canary learning and certificate asset
+        run: node studio/materialize-hollywood-course-assets.mjs --course "$ACADEMY_CANARY_COURSE_ID"
+
+      - name: Install local canary media tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1 || ! python3 -c 'import venv' >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ffmpeg python3 python3-venv curl ca-certificates
+          fi
+          python3 -m venv .academy-tools
+          .academy-tools/bin/python -m pip install --disable-pip-version-check --no-cache-dir "piper-tts==1.5.0"
+          echo "${GITHUB_WORKSPACE}/.academy-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Download governed local canary voice
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ACADEMY_LOCAL_TTS_DATA_DIR"
+          .academy-tools/bin/python -m piper.download_voices "$ACADEMY_LOCAL_TTS_MODEL" --data-dir "$ACADEMY_LOCAL_TTS_DATA_DIR"
+
+      - name: Render the complete canary course locally
+        run: node studio/render-canary-course-local-media.mjs --course "$ACADEMY_CANARY_COURSE_ID"
+
+      - name: Verify canary content materials certificate and every video
+        run: node studio/verify-canary-course-completion.mjs --course "$ACADEMY_CANARY_COURSE_ID"
+
+      - name: Record canary evidence summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Academy Zero Cost Canary"
+            echo "- Course: $ACADEMY_CANARY_COURSE_ID"
+            echo "- Commercial AI and media providers: hard blocked"
+            echo "- Local model context: $LOCAL_AI_NUM_CTX"
+            echo "- Other portfolio courses execute concurrently and exclude the canary"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Emit canary diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          echo "--- Ollama log tail ---"
+          tail -n 200 /tmp/academy-ollama.log || true
+          echo "--- keepalive proxy log tail ---"
+          tail -n 200 /tmp/academy-ollama-proxy.log || true
+          echo "--- memory ---"
+          free -h || true
+          echo "--- processes ---"
+          ps aux --sort=-rss | head -n 30 || true
+
+  content-shards:
+    name: Course ${{ matrix.course_id }}
+    needs: prepare-free-runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 19
+      matrix:
+        course_id: ${{ fromJSON(needs.prepare-free-runtime.outputs.course_matrix) }}
+    env:
+      ACADEMY_COURSE_ID: ${{ matrix.course_id }}
+      ACADEMY_SKIP_COURSE_ID: ai-data-privacy-ip
+    steps:
+      - name: Checkout governed Academy source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Prove the zero cost lock is active before course work
+        run: node studio/academy-zero-cost-lock.mjs
+
+      - name: Preflight protected checkpoint gateway before course setup
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); console.log('[Academy Studio] Protected checkpoint gateway ready:', r.transport); })"
+
+      - name: Restore shared governed public evidence cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .academy-cache/authoritative-sources
+          key: academy-public-evidence-v3-${{ hashFiles('sources/authoritative-sources.json', 'sources/documented-cases.json') }}
+          restore-keys: |
+            academy-public-evidence-v3-
+
+      - name: Restore shared local Ollama archive and model
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/obserra-academy/ollama
+            ~/.ollama/models
+          key: academy-ollama-${{ env.OLLAMA_VERSION }}-qwen2-5-7b-instruct-v2
+
+      - name: Activate the zero cost network lock for course Node processes
+        shell: bash
+        run: echo "NODE_OPTIONS=--import=${GITHUB_WORKSPACE}/studio/academy-zero-cost-lock.mjs" >> "$GITHUB_ENV"
+
+      - name: Apply governed course policy
+        run: node studio/apply-course-policy.mjs
+
+      - name: Restore reusable protected checkpoint for this course only
+        run: node studio/restore-academy-hollywood-checkpoints.mjs
+
+      - name: Reject stale restored course evidence
+        run: node studio/prune-stale-restored-course-packages.mjs
+
+      - name: Build deterministic source context
+        run: node studio/build-free-course-source-context.mjs
+
+      - name: Start one memory bounded local model for this course
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="${HOME}/.cache/obserra-academy/ollama/ollama-linux-amd64-${OLLAMA_VERSION}.tar.zst"
+          test -s "$archive"
+          printf '%s  %s\n' "$OLLAMA_LINUX_AMD64_SHA256" "$archive" | sha256sum --check --strict
+          if ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends zstd
+          fi
+          sudo tar --zstd --extract --file "$archive" --directory /usr
+          nohup env \
+            OLLAMA_CONTEXT_LENGTH="$OLLAMA_CONTEXT_LENGTH" \
+            OLLAMA_FLASH_ATTENTION="$OLLAMA_FLASH_ATTENTION" \
+            OLLAMA_KV_CACHE_TYPE="$OLLAMA_KV_CACHE_TYPE" \
+            OLLAMA_NO_CLOUD="$OLLAMA_NO_CLOUD" \
+            OLLAMA_KEEP_ALIVE="$OLLAMA_KEEP_ALIVE" \
+            OLLAMA_NUM_PARALLEL="$OLLAMA_NUM_PARALLEL" \
+            OLLAMA_MAX_LOADED_MODELS="$OLLAMA_MAX_LOADED_MODELS" \
+            OLLAMA_MAX_QUEUE="$OLLAMA_MAX_QUEUE" \
+            OLLAMA_LOAD_TIMEOUT="$OLLAMA_LOAD_TIMEOUT" \
+            ollama serve > /tmp/academy-ollama.log 2>&1 &
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null
+          ollama show "$LOCAL_AI_MODEL" >/dev/null
+          nohup node studio/local-ollama-keepalive-proxy.mjs > /tmp/academy-ollama-proxy.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:11436/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:11436/health
+
+      - name: Research author independently review and checkpoint this exact course
+        run: node .github/scripts/run-academy-zero-cost-shard.mjs
+
+      - name: Emit exact-course diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          echo "--- course ---"
+          echo "$ACADEMY_COURSE_ID"
+          echo "--- Ollama log tail ---"
+          tail -n 200 /tmp/academy-ollama.log || true
+          echo "--- keepalive proxy log tail ---"
+          tail -n 200 /tmp/academy-ollama-proxy.log || true
+          echo "--- memory ---"
+          free -h || true
+          ps aux --sort=-rss | head -n 30 || true
+
+  finalize-content:
+    name: Restore and validate all 61 protected course checkpoints
+    needs: [canary-course, content-shards]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout governed Academy source
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Prove the zero cost lock remains active
+        run: node studio/academy-zero-cost-lock.mjs
+
+      - name: Preflight protected checkpoint gateway
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); })"
+
+      - name: Activate the zero cost network lock for finalization
+        shell: bash
+        run: echo "NODE_OPTIONS=--import=${GITHUB_WORKSPACE}/studio/academy-zero-cost-lock.mjs" >> "$GITHUB_ENV"
+
+      - name: Apply governed course policy
+        run: node studio/apply-course-policy.mjs
+
+      - name: Restore all protected packages research and independent reviews
+        run: node studio/restore-academy-hollywood-checkpoints.mjs
+
+      - name: Reject stale restored packages
+        run: node studio/prune-stale-restored-course-packages.mjs
+
+      - name: Merge restored research into governed runtime registry
+        run: node studio/merge-61-course-research-registry.mjs
+
+      - name: Materialize all course assets
+        run: node studio/materialize-hollywood-course-assets.mjs
+
+      - name: Validate all 61 structural packages and source mappings
+        run: node studio/validate-academy-hollywood-surge.mjs
+
+      - name: Confirm 61 protected checkpoints
+        run: node studio/verify-protected-61-checkpoint-count.mjs
+
+  media-verify-backup:
+    name: Render verify and privately back up all 61 courses
+    needs: finalize-content
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      ACADEMY_PRIVATE_BACKUP_TOKEN: ${{ secrets.ACADEMY_PRIVATE_BACKUP_TOKEN || secrets.OBSERRA_GITHUB_TOKEN || secrets.GH_PAT }}
+    steps:
+      - name: Checkout governed Academy source
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Prove the zero cost lock remains active for media
+        run: node studio/academy-zero-cost-lock.mjs
+
+      - name: Preflight protected checkpoint gateway
+        run: node --input-type=module -e "import('./studio/academy-hollywood-checkpoints.mjs').then(async m => { const r = await m.bootstrapHollywoodCheckpointTable(); if (!r.bootstrapped) process.exit(2); })"
+
+      - name: Require and verify private backup destination before media setup
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${ACADEMY_PRIVATE_BACKUP_TOKEN:-}" ]; then echo "Private backup token is required."; exit 2; fi
+          export GH_TOKEN="$ACADEMY_PRIVATE_BACKUP_TOKEN"
+          visibility="$(gh repo view "$ACADEMY_PRIVATE_BACKUP_REPOSITORY" --json visibility --jq '.visibility')"
+          test "$visibility" = "PRIVATE"
+
+      - name: Activate the zero cost network lock for media Node processes
+        shell: bash
+        run: echo "NODE_OPTIONS=--import=${GITHUB_WORKSPACE}/studio/academy-zero-cost-lock.mjs" >> "$GITHUB_ENV"
+
+      - name: Apply governed course policy
+        run: node studio/apply-course-policy.mjs
+
+      - name: Restore all final protected content evidence
+        run: node studio/restore-academy-hollywood-checkpoints.mjs
+
+      - name: Reject stale restored packages
+        run: node studio/prune-stale-restored-course-packages.mjs
+
+      - name: Merge restored source research into runtime registry
+        run: node studio/merge-61-course-research-registry.mjs
+
+      - name: Materialize final learner instructor assessment accessibility rights and certificate assets
+        run: node studio/materialize-hollywood-course-assets.mjs
+
+      - name: Validate structural readiness before media tooling installation
+        run: node studio/validate-academy-hollywood-surge.mjs
+
+      - name: Install local media and private backup tooling only after content validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1 || ! command -v git-lfs >/dev/null 2>&1 || ! python3 -c 'import venv' >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ffmpeg git-lfs python3 python3-venv curl ca-certificates
+          fi
+          git lfs install --local
+          python3 -m venv .academy-tools
+          .academy-tools/bin/python -m pip install --disable-pip-version-check --no-cache-dir "piper-tts==1.5.0"
+          echo "${GITHUB_WORKSPACE}/.academy-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Download governed local Piper voice model
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ACADEMY_LOCAL_TTS_DATA_DIR"
+          .academy-tools/bin/python -m piper.download_voices "$ACADEMY_LOCAL_TTS_MODEL" --data-dir "$ACADEMY_LOCAL_TTS_DATA_DIR"
+
+      - name: Render final 1080p module media locally with Piper and FFmpeg
+        run: node studio/render-all-61-local-media.mjs
+
+      - name: Verify every course and every final module video
+        run: node studio/verify-all-61-course-completion.mjs
+
+      - name: Prove all restored course evidence used only local providers
+        shell: bash
+        run: |
+          set -euo pipefail
+          node studio/academy-zero-cost-lock.mjs
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const ids = fs.readdirSync('courses').filter(id => fs.existsSync(path.join('courses', id, 'course-manifest.json'))).sort();
+          if (ids.length !== 61) throw new Error(`Expected 61 courses, found ${ids.length}`);
+          for (const id of ids) {
+            const pkg = JSON.parse(fs.readFileSync(path.join('courses', id, 'generated/authoring/course-package.json'), 'utf8'));
+            const research = JSON.parse(fs.readFileSync(path.join('courses', id, 'generated/research/authoritative-source-research.json'), 'utf8'));
+            const review = JSON.parse(fs.readFileSync(path.join('courses', id, 'generated/quality/independent-course-quality-review.json'), 'utf8'));
+            if (pkg.provider !== 'local' || research.provider !== 'local' || review.provider !== 'local') throw new Error(`${id} contains nonlocal model provenance`);
+            if (Number(pkg.estimatedModelCostUsd) !== 0) throw new Error(`${id} does not prove zero model cost`);
+          }
+          const media = JSON.parse(fs.readFileSync('catalog/academy-61-local-media-render-summary.json', 'utf8'));
+          if (media.externalPaidMediaProviderUsed !== false || Number(media.estimatedApiCostUsd) !== 0) throw new Error('Media evidence is not zero cost.');
+          console.log('All 61 restored course records and media evidence prove local only generation.');
+          NODE
+
+      - name: Back up all protected materials videos certificates and evidence to private GitHub
+        shell: bash
+        run: bash studio/backup-61-courses-to-private-github.sh
+
+      - name: Record completion evidence gate
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Obserra Academy 61 Course Zero Cost Completion"
+            echo "- One end-to-end canary and 19 exact-course content workers run concurrently"
+            echo "- Remaining 60 courses are isolated as one-course jobs and queue immediately"
+            echo "- Protected content generation: native local Ollama only"
+            echo "- Media generation: local Piper and FFmpeg only"
+            echo "- Commercial AI and media paths: hard blocked and fail closed"
+            echo "- Public workflow artifacts containing protected course outputs: none"
+            echo "- Completion requires 61 of 61 final verifier pass plus successful private GitHub backup"
+          } >> "$GITHUB_STEP_SUMMARY"
