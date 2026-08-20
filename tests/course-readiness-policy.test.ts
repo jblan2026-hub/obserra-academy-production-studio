@@ -1,18 +1,23 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { officialBrand } from "../studio/brand-policy.mjs";
 import {
   isBlockingCourseFinding,
   resolveOfficialCourseLogoAsset,
 } from "../studio/course-readiness-policy.mjs";
 
+const ownerApprovedBrandPolicy = {
+  officialLogo: {
+    assetPath: "brand/assets/obserra-official-logo.png",
+  },
+};
+
 test("course readiness uses the owner-approved brand policy as the logo authority", () => {
   assert.equal(
-    resolveOfficialCourseLogoAsset(officialBrand),
-    officialBrand.officialLogo.assetPath,
+    resolveOfficialCourseLogoAsset(ownerApprovedBrandPolicy),
+    ownerApprovedBrandPolicy.officialLogo.assetPath,
   );
   assert.equal(
-    resolveOfficialCourseLogoAsset(officialBrand),
+    resolveOfficialCourseLogoAsset(ownerApprovedBrandPolicy),
     "brand/assets/obserra-official-logo.png",
   );
 });
