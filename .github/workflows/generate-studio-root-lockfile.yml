@@ -1,0 +1,55 @@
+name: Generate Studio root lockfile
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+    paths:
+      - ".github/workflows/generate-studio-root-lockfile.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.head_ref == 'fix/owner-command-center-lockfile-20260820'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact PR branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Configure Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+
+      - name: Generate deterministic Studio lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Prove clean Studio install and unit tests
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run test
+
+      - name: Prove clean Command Center install and governance verification
+        working-directory: owner-command-center
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run verify
+
+      - name: Commit generated Studio lockfile and self-delete this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f package-lock.json
+          test -f owner-command-center/package-lock.json
+          rm .github/workflows/generate-studio-root-lockfile.yml
+          git config user.name "Obserra CI"
+          git config user.email "obserra-ci@users.noreply.github.com"
+          git add package-lock.json .github/workflows/generate-studio-root-lockfile.yml
+          git commit -m "fix(ci): add deterministic Studio package lockfile"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
