@@ -35,7 +35,7 @@ check("publishability calculation stable", publishable.every((c) => c.releaseSta
 const ownerAi = read("owner-command-center/electron/owner-ai.cjs");
 const runtime = read("owner-command-center/electron/main.cjs");
 const scanner = read("owner-command-center/electron/vulnerability-scan.cjs");
-const discovery = read("owner-command-center/electron/site-discovery.cjs");
+const discovery = read("owner-command-center/electron/discovery.cjs");
 const trends = read("owner-command-center/electron/trend-store.cjs");
 const threat = read("owner-command-center/electron/threat-policy.cjs");
 const ui = read("owner-command-center/src/index.html");
@@ -44,7 +44,10 @@ check("15 second monitoring enabled", /MONITOR_INTERVAL_MS\s*=\s*15000/.test(run
 check("Owner AI persistent state", /ownerAi\.state/.test(ownerAi));
 check("Owner AI durable memory", /memories/.test(ownerAi) && /remember/.test(ownerAi));
 check("entire-site scanner exists", /runVulnerabilityScan/.test(scanner));
-check("500 route discovery ceiling", /500/.test(discovery));
+check("discovery is restricted to approved endpoints and local interfaces", /approved-endpoints-and-local-interfaces/.test(discovery));
+check("unrestricted port scanning is disabled", /unrestrictedPortScanning:\s*false/.test(discovery));
+check("discovery responses are bounded", /MAX_RESPONSE_BYTES/.test(discovery));
+check("discovery requests have timeouts", /DISCOVERY_TIMEOUT_MS/.test(discovery));
 check("MITRE mapping present", /MITRE ATT&CK/.test(threat));
 check("OWASP mapping present", /OWASP Top 10/.test(threat));
 check("known bad policy present", /knownBad|shouldAutoBlock/.test(threat));

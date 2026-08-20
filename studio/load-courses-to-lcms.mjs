@@ -26,6 +26,12 @@ function manifestPaths() {
     .filter((manifestPath) => fs.existsSync(manifestPath));
 }
 
+function authoredPackage(manifestPath) {
+  const courseDir = path.dirname(manifestPath);
+  const packagePath = path.join(courseDir, "generated", "authoring", "course-package.json");
+  return fs.existsSync(packagePath) ? readJson(packagePath) : null;
+}
+
 function validateManifest(manifest, manifestPath) {
   const errors = [];
   if (!manifest?.course?.id) errors.push("course.id is required");
@@ -59,6 +65,16 @@ async function resolveOrganization() {
 
 async function loadManifest(organizationId, manifest, manifestPath) {
   const course = manifest.course;
+  const authored = authoredPackage(manifestPath);
+  const authoredContent = authored?.content ?? {};
+  const authoredModules = new Map((authoredContent.modules ?? []).map((module) => [module.id, module]));
+  const workbookEntries = new Map((authoredContent.learnerWorkbook ?? []).map((entry) => [entry.moduleId, entry]));
+  const finalAssessmentByModule = new Map();
+  for (const question of authoredContent.finalAssessment ?? []) {
+    if (!finalAssessmentByModule.has(question.moduleId)) finalAssessmentByModule.set(question.moduleId, []);
+    finalAssessmentByModule.get(question.moduleId).push(question);
+  }
+
   const policyMetadata = {
     branding: manifest.branding,
     tags: manifest.tags,
@@ -67,6 +83,8 @@ async function loadManifest(organizationId, manifest, manifestPath) {
     isProfessionalCertification: false,
     isComplianceEvidence: false,
     learnerAcknowledgementRequired: true,
+    ownerReviewBypassSupported: true,
+    purchaseNotRequiredForOwnerReview: true,
   };
 
   return prisma.$transaction(async (transaction) => {
@@ -91,21 +109,67 @@ async function loadManifest(organizationId, manifest, manifestPath) {
     });
 
     await transaction.lesson.deleteMany({ where: { courseId: record.id } });
-    await transaction.lesson.createMany({
-      data: course.modules.map((module, index) => ({
-        courseId: record.id,
-        title: module.title,
-        position: index + 1,
-        objective: module.description ?? null,
-        content: {
-          manifestModuleId: module.id,
-          duration: module.duration ?? null,
-          format: module.format ?? null,
-          sourceManifest: path.relative(root, manifestPath).replaceAll("\\", "/"),
-          ...policyMetadata,
+
+    for (const [index, module] of course.modules.entries()) {
+      const authoredModule = authoredModules.get(module.id) ?? null;
+      const lesson = await transaction.lesson.create({
+        data: {
+          courseId: record.id,
+          title: module.title,
+          position: index + 1,
+          objective: module.description ?? null,
+          content: {
+            manifestModuleId: module.id,
+            duration: module.duration ?? null,
+            format: module.format ?? null,
+            sourceManifest: path.relative(root, manifestPath).replaceAll("\\", "/"),
+            sourceManifestHash: authored?.sourceManifestHash ?? null,
+            authoringReviewStatus: authored?.reviewStatus ?? "missing",
+            learningObjectives: authoredModule?.learningObjectives ?? [],
+            openingContext: authoredModule?.openingContext ?? "",
+            lessonNarrative: authoredModule?.lessonNarrative ?? "",
+            keyConcepts: authoredModule?.keyConcepts ?? [],
+            executiveExample: authoredModule?.executiveExample ?? "",
+            operationalExample: authoredModule?.operationalExample ?? "",
+            scenario: authoredModule?.scenario ?? null,
+            exercise: authoredModule?.exercise ?? null,
+            slideNarrative: authoredModule?.slideNarrative ?? [],
+            videoScript: authoredModule?.videoScript ?? null,
+            accessibilityNotes: authoredModule?.accessibilityNotes ?? [],
+            sourcePlaceholders: authoredModule?.sourcePlaceholders ?? [],
+            workbook: workbookEntries.get(module.id) ?? null,
+            ...policyMetadata,
+          },
         },
-      })),
-    });
+      });
+
+      const knowledgeChecks = authoredModule?.knowledgeChecks ?? [];
+      const finalAssessment = finalAssessmentByModule.get(module.id) ?? [];
+      for (const question of knowledgeChecks) {
+        await transaction.assessment.create({
+          data: {
+            lessonId: lesson.id,
+            kind: "knowledge-check",
+            prompt: question.question,
+            options: question.options ?? [],
+            answerKey: { correctIndex: question.correctIndex },
+            rationale: question.rationale ?? null,
+          },
+        });
+      }
+      for (const question of finalAssessment) {
+        await transaction.assessment.create({
+          data: {
+            lessonId: lesson.id,
+            kind: "final-assessment",
+            prompt: question.question,
+            options: question.options ?? [],
+            answerKey: { correctIndex: question.correctIndex },
+            rationale: question.rationale ?? null,
+          },
+        });
+      }
+    }
 
     await transaction.auditEvent.create({
       data: {
@@ -119,12 +183,16 @@ async function loadManifest(organizationId, manifest, manifestPath) {
         metadata: {
           slug: course.id,
           lessonCount: course.modules.length,
+          authoringAvailable: Boolean(authored),
+          authoredModuleCount: authoredContent.modules?.length ?? 0,
+          finalAssessmentQuestionCount: authoredContent.finalAssessment?.length ?? 0,
           releaseVersion: manifest.release?.version ?? null,
           manifestPath: path.relative(root, manifestPath).replaceAll("\\", "/"),
           officialLogo: manifest.branding.logoAsset,
           tags: manifest.tags,
           disclaimerType: manifest.disclaimer.type,
           acknowledgementRequired: true,
+          ownerReviewBypassSupported: true,
           credentialType: "certificate-of-course-completion-only",
           isProfessionalCertification: false,
           isComplianceEvidence: false,
@@ -132,7 +200,13 @@ async function loadManifest(organizationId, manifest, manifestPath) {
       },
     });
 
-    return { id: record.id, slug: record.slug, lessons: course.modules.length };
+    return {
+      id: record.id,
+      slug: record.slug,
+      lessons: course.modules.length,
+      authoredModules: authoredContent.modules?.length ?? 0,
+      finalAssessmentQuestions: authoredContent.finalAssessment?.length ?? 0,
+    };
   });
 }
 
@@ -141,7 +215,10 @@ for (const item of manifests) validateManifest(item.manifest, item.manifestPath)
 
 if (dryRun) {
   console.log(`[Academy Studio] Governed course load dry-run passed for ${manifests.length} course manifest(s).`);
-  for (const { manifest } of manifests) console.log(`- ${manifest.course.id}: ${manifest.course.modules.length} lesson(s), official branding and legal policy verified`);
+  for (const { manifestPath, manifest } of manifests) {
+    const authored = authoredPackage(manifestPath);
+    console.log(`- ${manifest.course.id}: ${manifest.course.modules.length} lesson(s), authored=${Boolean(authored)}, official branding and legal policy verified`);
+  }
   process.exit(0);
 }
 
@@ -151,7 +228,7 @@ try {
   const results = [];
   for (const item of manifests) results.push(await loadManifest(organization.id, item.manifest, item.manifestPath));
   console.log(`[Academy Studio] Loaded ${results.length} governed course(s) into organization ${organization.clerkOrganizationId}.`);
-  for (const result of results) console.log(`- ${result.slug}: ${result.lessons} lesson(s)`);
+  for (const result of results) console.log(`- ${result.slug}: ${result.lessons} lesson(s), ${result.authoredModules} authored module(s), ${result.finalAssessmentQuestions} final assessment question(s)`);
 } finally {
   if (prisma) await prisma.$disconnect();
 }
