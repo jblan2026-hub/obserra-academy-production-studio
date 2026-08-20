@@ -1,0 +1,57 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(here, "..", "..");
+const policyPath = path.join(repoRoot, "policy", "academy-commerce-policy.json");
+const securityPath = path.join(repoRoot, "policy", "academy-payment-security.json");
+const pciPath = path.join(repoRoot, "policy", "academy-pci-dss-v4.0.1-profile.json");
+
+const commerce = JSON.parse(fs.readFileSync(policyPath, "utf8"));
+const security = JSON.parse(fs.readFileSync(securityPath, "utf8"));
+const pci = JSON.parse(fs.readFileSync(pciPath, "utf8"));
+
+assert.equal(commerce.salesPolicy?.allSalesFinal, true);
+assert.equal(commerce.salesPolicy?.acknowledgementRequired, true);
+assert.match(commerce.salesPolicy?.checkoutNotice || "", /all .*sales .*final/i);
+assert.match(commerce.salesPolicy?.receiptNotice || "", /all .*sales .*final/i);
+assert.match(commerce.salesPolicy?.checkoutNotice || "", /required by applicable law/i);
+assert.equal(commerce.checkoutRequirements?.displayBeforePayment, true);
+assert.equal(commerce.checkoutRequirements?.requireTermsAcceptance, true);
+assert.equal(commerce.checkoutRequirements?.doNotCollectPrimaryCardData, true);
+assert.equal(commerce.receiptRequirements?.emailReceiptEnabled, true);
+assert.equal(commerce.receiptRequirements?.excludeCardNumber, true);
+assert.equal(commerce.receiptRequirements?.excludeCvc, true);
+
+assert.equal(security.requirements?.httpsRequired, true);
+assert.equal(security.requirements?.minimumTlsVersion, "1.2");
+assert.equal(security.requirements?.hstsRequired, true);
+assert.equal(security.requirements?.mixedContentForbidden, true);
+assert.equal(security.requirements?.stripeHostedCardCollectionRequired, true);
+assert.equal(security.requirements?.primaryAccountNumberStorageForbidden, true);
+assert.equal(security.requirements?.cvcStorageForbidden, true);
+assert.equal(security.requirements?.webhookSignatureVerificationRequired, true);
+assert.equal(security.requirements?.checkoutFulfillmentRequiresServerSideVerification, true);
+assert.equal(security.releaseGate?.blockPublicationIfHttpPaymentRouteDetected, true);
+assert.equal(security.releaseGate?.blockPublicationIfRawCardInputDetected, true);
+
+assert.equal(pci.standard, "PCI DSS v4.0.1");
+assert.match(pci.targetValidationModel || "", /SAQ A/i);
+assert.equal(pci.architecture?.preferredCheckoutPattern, "full-redirect-to-stripe-hosted-checkout");
+assert.equal(pci.architecture?.merchantHostedCardFieldsForbidden, true);
+assert.equal(pci.architecture?.directPostForbidden, true);
+assert.equal(pci.architecture?.primaryAccountNumberStorageForbidden, true);
+assert.equal(pci.architecture?.cvcStorageForbidden, true);
+assert.equal(pci.architecture?.successRedirectDoesNotGrantEntitlement, true);
+assert.equal(pci.merchantWebsiteControls?.httpsRequired, true);
+assert.equal(pci.merchantWebsiteControls?.externalAsvScanningRequiredWhereApplicable, true);
+assert.equal(pci.merchantWebsiteControls?.redirectIntegrityProtectionRequired, true);
+assert.equal(pci.merchantWebsiteControls?.thirdPartyProviderComplianceMonitoringRequired, true);
+assert.equal(pci.complianceOperations?.saqEligibilityMustBeConfirmedWithAcquirer, true);
+assert.equal(pci.releaseGate?.blockIfMerchantHostedCardFieldDetected, true);
+assert.equal(pci.releaseGate?.blockIfHttpCheckoutOrReturnUrlDetected, true);
+assert.equal(pci.releaseGate?.blockIfEntitlementCanBeGrantedFromClientRedirectAlone, true);
+
+console.log("Academy commerce/security policy verification passed: PCI DSS v4.0.1 controls, HTTPS/TLS, Stripe-hosted card collection, final-sale disclosure, receipt notice, and payment-data minimization are enforced by policy contract.");

@@ -1,0 +1,170 @@
+name: Retry Protected Academy LCMS Load
+run-name: Academy LCMS retry • ${{ github.ref_name }} • ${{ github.sha }}
+
+on:
+  push:
+    branches:
+      - agent/academy-build-acceleration
+    paths:
+      - .github/workflows/retry-protected-lcms-load.yml
+  pull_request:
+    branches:
+      - agent/academy-production-integration
+    paths:
+      - .github/workflows/retry-protected-lcms-load.yml
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: retry-protected-academy-lcms-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NPM_CONFIG_AUDIT: "false"
+  NPM_CONFIG_FUND: "false"
+  NPM_CONFIG_PROGRESS: "false"
+  NPM_CONFIG_UPDATE_NOTIFIER: "false"
+  ACADEMY_SUPABASE_PROJECT_REF: nwxnyqlyzyufgoadtqxs
+  ACADEMY_SUPABASE_REGION: us-east-1
+  ACADEMY_DATABASE_BOOTSTRAP_ALLOWED: "true"
+  STUDIO_OWNER_ORGANIZATION_ID: org_obserra_academy
+  STUDIO_OWNER_ORGANIZATION_NAME: Obserra Academy
+  SOURCE_WORKFLOW_RUN_ID: "31245418390"
+  SOURCE_ARTIFACT_NAME: protected-academy-course-packages-31245418390
+
+jobs:
+  lcms-load:
+    name: Bootstrap protected PostgreSQL and load all 61 courses
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      DATABASE_URL: ${{ secrets.ACADEMY_DATABASE_URL }}
+    steps:
+      - name: Checkout Academy Studio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-${{ runner.arch }}-academy-lcms-${{ hashFiles('package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-academy-lcms-
+            ${{ runner.os }}-${{ runner.arch }}-academy-
+
+      - name: Install Studio dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund --prefer-offline
+
+      - name: Download the verified protected course package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.SOURCE_ARTIFACT_NAME }}
+          path: .
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_WORKFLOW_RUN_ID }}
+
+      - name: Verify protected artifact inventory before database access
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f catalog/academy-learner-course-catalog.json
+          test -f catalog/learner-catalog-readiness.json
+          test -f catalog/parallel-authoring-summary.json
+          node <<'NODE'
+          const fs = require('node:fs');
+          const readiness = JSON.parse(fs.readFileSync('catalog/learner-catalog-readiness.json', 'utf8'));
+          const summary = JSON.parse(fs.readFileSync('catalog/parallel-authoring-summary.json', 'utf8'));
+          if (readiness.ready !== true || readiness.discoveredCourses !== 61 || readiness.findingCount !== 0) {
+            throw new Error('Protected learner catalog is not ready for the governed LCMS load.');
+          }
+          if (summary.successfulCourses !== 61 || summary.failedCourses !== 0 || summary.halted !== false) {
+            throw new Error('The protected authoring artifact does not contain 61 successful courses.');
+          }
+          console.log('[Academy Studio] Verified 61 successful protected course packages before database access.');
+          NODE
+
+      - name: Normalize protected database credential
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const output = process.env.GITHUB_ENV;
+
+          function trimOuterQuotes(value) {
+            const quoted = (value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"));
+            return quoted ? value.slice(1, -1).trim() : value;
+          }
+
+          let value = trimOuterQuotes(String(process.env.DATABASE_URL ?? '').trim());
+          const assignment = value.match(/^(?:ACADEMY_DATABASE_URL|DATABASE_URL)\s*=\s*(.+)$/is);
+          if (assignment) value = trimOuterQuotes(assignment[1].trim());
+          if (!value) throw new Error('ACADEMY_DATABASE_URL is required for LCMS loading.');
+          if (/\r|\n/.test(value)) throw new Error('ACADEMY_DATABASE_URL contains an unexpected newline.');
+
+          if (!/^postgres(?:ql)?:\/\//i.test(value)) {
+            const projectRef = process.env.ACADEMY_SUPABASE_PROJECT_REF;
+            const region = process.env.ACADEMY_SUPABASE_REGION;
+            const username = `postgres.${projectRef}`;
+            const host = `aws-0-${region}.pooler.supabase.com`;
+            value = `postgresql://${encodeURIComponent(username)}:${encodeURIComponent(value)}@${host}:5432/postgres?schema=public&sslmode=require&connect_timeout=30`;
+          }
+
+          const parsed = new URL(value);
+          if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) {
+            throw new Error('Invalid database protocol.');
+          }
+          if (!parsed.username.endsWith(`.${process.env.ACADEMY_SUPABASE_PROJECT_REF}`)) {
+            throw new Error('Database credential does not target the approved Academy project.');
+          }
+          fs.appendFileSync(output, `DATABASE_URL=${parsed.toString()}\n`);
+          console.log(`[Academy Studio] Protected database URL normalized for approved host ${parsed.hostname}.`);
+          NODE
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Bootstrap or verify the protected Academy schema
+        run: npm run db:bootstrap:protected
+
+      - name: Validate the protected schema
+        run: npm run db:validate
+
+      - name: Load all protected learner content into the LCMS
+        run: npm run load:courses
+
+      - name: Verify the post-load catalog remains owner-review only
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const catalog = JSON.parse(fs.readFileSync('catalog/academy-learner-course-catalog.json', 'utf8'));
+          if (!Array.isArray(catalog.courses) || catalog.courses.length !== 61) {
+            throw new Error('Expected exactly 61 courses after LCMS loading.');
+          }
+          const publicationApproved = catalog.courses.filter((course) => course.publication?.approved === true);
+          if (publicationApproved.length !== 0) {
+            throw new Error('LCMS loading must not grant publication approval.');
+          }
+          console.log('[Academy Studio] LCMS load retained owner-review and publication separation for all 61 courses.');
+          NODE
+
+      - name: Record governed LCMS retry evidence
+        if: always()
+        run: |
+          {
+            echo "## Protected Academy LCMS retry"
+            echo "- Source workflow run: $SOURCE_WORKFLOW_RUN_ID"
+            echo "- Source protected artifact: $SOURCE_ARTIFACT_NAME"
+            echo "- Expected course packages: 61"
+            echo "- Database bootstrap authorization: explicit for this governed workflow"
+            echo "- Publication approval: not granted"
+          } >> "$GITHUB_STEP_SUMMARY"

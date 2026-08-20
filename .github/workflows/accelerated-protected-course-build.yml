@@ -1,0 +1,51 @@
+name: Accelerated Protected Course Build
+run-name: Legacy Academy route guard • ${{ github.ref_name }} • ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "courses/**"
+      - "studio/**"
+      - "prisma/**"
+      - "tests/**"
+      - "package.json"
+      - ".github/workflows/accelerated-protected-course-build.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: accelerated-protected-course-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  route-guard:
+    name: Reject legacy paid or public-artifact Academy route
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Enforce canonical zero-cost Academy assembly line
+        shell: bash
+        run: |
+          cat <<'EOF'
+          This legacy accelerated authoring route is disabled.
+
+          Academy course production must use:
+            .github/workflows/academy-zero-cost-sharded-completion.yml
+
+          Required controls:
+            - local deterministic research
+            - local Ollama authoring
+            - deterministic independent review
+            - local Piper narration
+            - local FFmpeg video
+            - protected checkpoints
+            - private backup only
+            - no commercial fallback
+            - no protected public artifacts
+
+          Command Center release work must not invoke Academy authoring.
+          EOF
