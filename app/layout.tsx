@@ -1,5 +1,6 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
+import { isClerkIdentityConfigured } from "@/lib/identity-readiness";
 import "./studio.css";
 import "./auth.css";
 
@@ -17,7 +18,10 @@ function Document({ children }: Readonly<{ children: React.ReactNode }>) {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  if (process.env.NEXT_PUBLIC_APP_ENV === "ci") {
+  const ciMode = process.env.NEXT_PUBLIC_APP_ENV === "ci";
+  const identityConfigured = isClerkIdentityConfigured();
+
+  if (ciMode || !identityConfigured) {
     return <Document>{children}</Document>;
   }
 
