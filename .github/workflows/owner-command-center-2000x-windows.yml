@@ -30,6 +30,8 @@ jobs:
   validate-and-package:
     runs-on: windows-2025
     timeout-minutes: 120
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/obserra_academy_studio?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

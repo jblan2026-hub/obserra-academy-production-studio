@@ -21,7 +21,7 @@ const audiences = {
 };
 const minutes = {
   Foundation: [24, 26, 28, 30, 42],
-  Professional: [38, 44, 48, 54, 56],
+  Professional: [38, 44, 48, 54, 86],
   Advanced: [60, 72, 78, 84, 126],
   "Executive Intensive": [84, 96, 102, 114, 144],
   "CISO Masterclass": [108, 120, 132, 144, 156],

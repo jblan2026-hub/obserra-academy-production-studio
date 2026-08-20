@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { officialBrand } from "./brand-policy.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coursesRoot = path.join(root, "courses");
@@ -81,7 +82,7 @@ for (const entry of fs.readdirSync(coursesRoot, { withFileTypes: true }).filter(
   if (!manifest.completion?.assessmentRequired) courseFindings.push("assessment-not-required");
   if (!Number.isFinite(Number(manifest.completion?.passingScore)) || Number(manifest.completion.passingScore) < 1) courseFindings.push("invalid-passing-score");
   if (manifest.completion?.certificateIssued !== true) courseFindings.push("certificate-not-enabled");
-  if (manifest.branding?.logoAsset !== "/brand/obserra-logo.png") courseFindings.push("official-logo-mismatch");
+  if (manifest.branding?.logoAsset !== officialBrand.officialLogo.assetPath) courseFindings.push("official-logo-mismatch");
 
   const missingGenerated = requiredGeneratedFiles.filter((name) => !fs.existsSync(path.join(courseDir, name)));
   if (missingGenerated.length) courseFindings.push(...missingGenerated.map((name) => `missing-generated-${name}`));
