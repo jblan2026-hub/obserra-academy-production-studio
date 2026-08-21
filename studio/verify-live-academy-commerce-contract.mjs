@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const EXPECTED_ORIGIN = "https://www.obserrallc.com";
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -186,7 +188,9 @@ export async function verifyLiveAcademyCommerce({ origin = productionOrigin(), c
   }
 }
 
-if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) {
+const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : null;
+const modulePath = fileURLToPath(import.meta.url);
+if (invokedPath && modulePath === invokedPath) {
   const origin = productionOrigin();
   const checks = selectedChecks(process.argv.slice(2));
   await verifyLiveAcademyCommerce({ origin, checks });
