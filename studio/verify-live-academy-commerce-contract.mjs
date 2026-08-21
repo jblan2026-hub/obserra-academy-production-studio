@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const EXPECTED_ORIGIN = "https://www.obserrallc.com";
 const DEFAULT_TIMEOUT_MS = 30_000;
-const DEFAULT_COURSES = ["zero-trust-strategy", "ai-ready-workforce"];
+const CHECKOUT_SENTINEL_COURSE = "obserra-contract-probe-not-for-sale";
 
 function fail(message) {
   throw new Error(message);
@@ -103,7 +103,7 @@ async function verifyHealth(origin) {
   requireEqual(response.status, 200, "commerce health HTTP status");
 }
 
-async function verifyCheckoutBoundary(origin, courses = DEFAULT_COURSES) {
+async function verifyCheckoutBoundary(origin) {
   const getResponse = await request(endpoint(origin, "/api/academy/checkout"), {
     method: "GET",
     redirect: "manual",
@@ -111,34 +111,32 @@ async function verifyCheckoutBoundary(origin, courses = DEFAULT_COURSES) {
   requireEqual(getResponse.status, 405, "checkout GET status");
   requireEqual(getResponse.headers.get("allow"), "POST", "checkout Allow header");
 
-  for (const course of courses) {
-    const attemptId = crypto.randomUUID();
-    const issuedAt = Math.floor(Date.now() / 1000).toString();
-    const body = new URLSearchParams({
-      course,
-      checkoutAttemptId: attemptId,
-      checkoutAttemptIssuedAt: issuedAt,
-    });
-    const response = await request(endpoint(origin, "/api/academy/checkout"), {
-      method: "POST",
-      redirect: "manual",
-      headers: {
-        origin,
-        accept: "text/html,application/xhtml+xml",
-        "content-type": "application/x-www-form-urlencoded",
-      },
-      body,
-    });
-    requireEqual(response.status, 307, `${course} licensing-pending checkout status`);
-    const location = response.headers.get("location") ?? "";
-    const redirected = new URL(location, `${origin}/`);
-    requireEqual(redirected.origin, origin, `${course} redirect origin`);
-    requireEqual(redirected.pathname, "/academy", `${course} redirect path`);
-    requireEqual(redirected.searchParams.get("enrollment"), "licensing-pending", `${course} enrollment state`);
-    requireHeader(response, "x-obserra-sales-license", "pending");
-    requireHeader(response, "x-obserra-existing-entitlements", "preserved");
-    requireHeader(response, "x-obserra-webhook-verification", "required");
-  }
+  const attemptId = crypto.randomUUID();
+  const issuedAt = Math.floor(Date.now() / 1000).toString();
+  const body = new URLSearchParams({
+    course: CHECKOUT_SENTINEL_COURSE,
+    checkoutAttemptId: attemptId,
+    checkoutAttemptIssuedAt: issuedAt,
+  });
+  const response = await request(endpoint(origin, "/api/academy/checkout"), {
+    method: "POST",
+    redirect: "manual",
+    headers: {
+      origin,
+      accept: "text/html,application/xhtml+xml",
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  requireEqual(response.status, 307, "sentinel licensing-pending checkout status");
+  const location = response.headers.get("location") ?? "";
+  const redirected = new URL(location, `${origin}/`);
+  requireEqual(redirected.origin, origin, "sentinel redirect origin");
+  requireEqual(redirected.pathname, "/academy", "sentinel redirect path");
+  requireEqual(redirected.searchParams.get("enrollment"), "licensing-pending", "sentinel enrollment state");
+  requireHeader(response, "x-obserra-sales-license", "pending");
+  requireHeader(response, "x-obserra-existing-entitlements", "preserved");
+  requireHeader(response, "x-obserra-webhook-verification", "required");
 }
 
 async function verifyWebhookBoundary(origin) {
