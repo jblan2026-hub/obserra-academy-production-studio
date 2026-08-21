@@ -104,7 +104,8 @@ jobs:
           grep -Eqi 'Obserra Executive Protection (&|&amp;) Intelligence LLC' /tmp/academy.html
           grep -Eqi '60[^0-9]+(paid )?courses|numberOfItems[^0-9]+60' /tmp/academy.html
           grep -Eqi 'not a state license|not.*third.party professional certification|not for certification' /tmp/academy.html
-          grep -Eqi '/api/academy/checkout\?course=' /tmp/academy.html
+          grep -Eqi 'action=["'"']?/api/academy/checkout["'"']?' /tmp/academy.html
+          grep -Eqi 'method=["'"']?post["'"']?' /tmp/academy.html
 
   browser-api-and-cache-security:
     name: Browser headers, API media types, and cache controls
@@ -136,53 +137,27 @@ jobs:
           python -m json.tool /tmp/health.json >/dev/null
 
   commerce-resilience-and-boundaries:
-    name: Stripe contract, multi-course checkout, webhook, and failure containment
+    name: Stripe contract, POST checkout, webhook, and failure containment
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - name: Validate commerce contract
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate governed live commerce contract
+        run: node studio/verify-live-academy-commerce-contract.mjs --health
+      - name: Validate current POST checkout contract and licensing hold
+        run: node studio/verify-live-academy-commerce-contract.mjs --checkout
+      - name: Validate webhook and method containment
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --max-time 30 https://www.obserrallc.com/api/academy/commerce-health -o /tmp/health.json
-          python - <<'PY'
-          import json
-          with open('/tmp/health.json', encoding='utf-8') as handle:
-              data = json.load(handle)
-          assert data['contract'] == 'academy-commerce-health-v1'
-          assert data['operational'] is True
-          assert data['paymentProvider'] == 'stripe'
-          assert data['webhookVerification'] == 'required'
-          assert data['claimPolicy'] == 'purchaser-email-match-v1'
-          assert set(data['checkoutModes']) == {'authenticated', 'guest-email'}
-          assert data['fulfillment']['authenticated'] == 'immediate-entitlement'
-          assert data['fulfillment']['guest'] == 'paid-pending-account-claim'
-          assert data['fulfillment']['idempotencyKey'] == 'stripe-checkout-session-id'
-          PY
-      - name: Validate governed checkout paths
-        shell: bash
-        run: |
-          set -euo pipefail
-          for course in ai-ready-workforce zero-trust-strategy; do
-            code=$(curl --silent --show-error --max-time 45 -D /tmp/checkout-headers.txt -o /tmp/checkout-body.txt -w '%{http_code}' "https://www.obserrallc.com/api/academy/checkout?course=${course}")
-            case "$code" in 302|303|307|308) ;; *) echo "Course ${course} returned ${code}" >&2; cat /tmp/checkout-body.txt >&2; exit 1 ;; esac
-            grep -Eqi '^location: https://(checkout\.stripe\.com|buy\.stripe\.com)/' /tmp/checkout-headers.txt
-            grep -Eqi '^x-obserra-commerce-mode: (guest-email|authenticated)' /tmp/checkout-headers.txt
-            grep -Eqi '^x-obserra-claim-policy: purchaser-email-match-v1' /tmp/checkout-headers.txt
-          done
-      - name: Validate webhook and invalid input containment
-        shell: bash
-        run: |
-          set -euo pipefail
-          post_code=$(curl --silent --show-error --max-time 30 -X POST -H 'content-type: application/json' -d '{}' -o /tmp/webhook.json -w '%{http_code}' https://www.obserrallc.com/api/webhook/stripe)
-          test "$post_code" = "400"
-          grep -Eqi 'Webhook not configured|Invalid webhook signature' /tmp/webhook.json
+          node studio/verify-live-academy-commerce-contract.mjs --webhook
           for method in GET PUT DELETE; do
             code=$(curl --silent --show-error --max-time 30 -X "$method" -o /tmp/method.txt -w '%{http_code}' https://www.obserrallc.com/api/webhook/stripe)
             test "$code" -lt 500
           done
-          invalid_code=$(curl --silent --show-error --max-time 30 -o /tmp/invalid.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=not-a-real-course')
-          test "$invalid_code" -lt 500
 
   identity-and-access-containment:
     name: Identity state, protected routes, and fail-closed access
