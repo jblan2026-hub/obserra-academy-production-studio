@@ -138,58 +138,26 @@ jobs:
           grep -Eqi 'Obserra Executive Protection (&|&amp;) Intelligence LLC' /tmp/academy.html
           grep -Eqi '60[^0-9]+(paid )?courses|numberOfItems[^0-9]+60' /tmp/academy.html
           grep -Eqi 'not a state license|not.*third.party professional certification|not for certification' /tmp/academy.html
-          grep -Eqi '/api/academy/checkout\?course=' /tmp/academy.html
+          grep -Eqi 'action=["'"']?/api/academy/checkout["'"']?' /tmp/academy.html
+          grep -Eqi 'method=["'"']?post["'"']?' /tmp/academy.html
 
   commerce-contract:
     name: Live Stripe readiness, fulfillment states, and claim policy
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - name: Validate sanitized commerce health contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --max-time 30 -D /tmp/health-headers.txt https://www.obserrallc.com/api/academy/commerce-health -o /tmp/health.json
-          python - <<'PY'
-          import json
-          with open('/tmp/health.json', encoding='utf-8') as handle:
-              data = json.load(handle)
-          assert data['contract'] == 'academy-commerce-health-v1'
-          assert data['operational'] is True
-          assert data['paymentProvider'] == 'stripe'
-          assert data['webhookVerification'] == 'required'
-          assert data['claimPolicy'] == 'purchaser-email-match-v1'
-          assert set(data['checkoutModes']) == {'authenticated', 'guest-email'}
-          assert data['fulfillment']['authenticated'] == 'immediate-entitlement'
-          assert data['fulfillment']['guest'] == 'paid-pending-account-claim'
-          assert data['fulfillment']['idempotencyKey'] == 'stripe-checkout-session-id'
-          assert data['identity'] in {'operational', 'degraded'}
-          PY
-          grep -Eqi '^x-obserra-commerce-contract: academy-commerce-health-v1' /tmp/health-headers.txt
-          grep -Eqi '^x-obserra-claim-policy: purchaser-email-match-v1' /tmp/health-headers.txt
+      - uses: actions/checkout@v4
+      - name: Validate governed live commerce health contract
+        run: node studio/verify-live-academy-commerce-contract.mjs --health
 
   commerce-checkout-matrix:
-    name: Governed Stripe checkout and invalid course containment
+    name: Governed Academy checkout boundary
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Validate multiple governed course checkout paths
-        shell: bash
-        run: |
-          set -euo pipefail
-          for course in ai-ready-workforce zero-trust-strategy; do
-            code=$(curl --silent --show-error --max-time 45 -D /tmp/checkout-headers.txt -o /tmp/checkout-body.txt -w '%{http_code}' "https://www.obserrallc.com/api/academy/checkout?course=${course}")
-            case "$code" in 302|303|307|308) ;; *) cat /tmp/checkout-body.txt >&2; exit 1 ;; esac
-            grep -Eqi '^location: https://(checkout\.stripe\.com|buy\.stripe\.com)/' /tmp/checkout-headers.txt
-            grep -Eqi '^x-obserra-commerce-mode: (guest-email|authenticated)' /tmp/checkout-headers.txt
-            grep -Eqi '^x-obserra-claim-policy: purchaser-email-match-v1' /tmp/checkout-headers.txt
-          done
-      - name: Validate invalid course containment
-        shell: bash
-        run: |
-          set -euo pipefail
-          invalid_code=$(curl --silent --show-error --max-time 30 -D /tmp/invalid-headers.txt -o /tmp/invalid.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=not-a-real-course')
-          test "$invalid_code" -lt 500
+      - uses: actions/checkout@v4
+      - name: Validate current POST checkout contract and licensing hold
+        run: node studio/verify-live-academy-commerce-contract.mjs --checkout
 
   webhook-boundary:
     name: Stripe webhook signature enforcement and method containment
