@@ -104,7 +104,7 @@ jobs:
             grep -Eqi '^x-content-type-options:' /tmp/headers.txt
             grep -Eqi '^x-frame-options:' /tmp/headers.txt
           done
-      - name: Validate Academy catalog and highly available Stripe checkout
+      - name: Validate Academy catalog and current commerce contract
         shell: bash
         run: |
           set -euo pipefail
@@ -112,25 +112,11 @@ jobs:
           grep -Eqi 'Obserra Academy' /tmp/academy.html
           grep -Eqi '60[^0-9]+(paid )?courses|numberOfItems[^0-9]+60' /tmp/academy.html
           grep -Eqi 'not a state license|not.*third.party professional certification|not for certification' /tmp/academy.html
-          grep -Eqi '/api/academy/checkout\?course=' /tmp/academy.html
-          code=$(curl --silent --show-error --max-time 45 -D /tmp/checkout-headers.txt -o /tmp/checkout.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=zero-trust-strategy')
-          if [ "$code" -ge 500 ]; then cat /tmp/checkout.html >&2; exit 1; fi
-          test "$code" = "302" -o "$code" = "303" -o "$code" = "307" -o "$code" = "308"
-          location=$(grep -i '^location:' /tmp/checkout-headers.txt | tail -n 1 | tr -d '\r')
-          echo "$location"
-          echo "$location" | grep -Eqi '^location: https://(checkout\.stripe\.com|buy\.stripe\.com)/'
-          grep -Eqi '^x-obserra-commerce-mode: (guest-email|authenticated)' /tmp/checkout-headers.txt
-          if echo "$location" | grep -Eqi 'identity-configuration-required|checkout-unavailable|enrollment=not-ready'; then exit 1; fi
-      - name: Validate signed webhook boundary and failure containment
-        shell: bash
-        run: |
-          set -euo pipefail
-          webhook_code=$(curl --silent --show-error --max-time 30 -X POST -H 'content-type: application/json' -d '{}' -o /tmp/webhook.json -w '%{http_code}' https://www.obserrallc.com/api/webhook/stripe)
-          test "$webhook_code" = "400"
-          grep -Eqi 'Webhook not configured|Invalid webhook signature' /tmp/webhook.json
-          invalid_code=$(curl --silent --show-error --max-time 30 -D /tmp/invalid-headers.txt -o /tmp/invalid.html -w '%{http_code}' 'https://www.obserrallc.com/api/academy/checkout?course=not-a-real-course')
-          if [ "$invalid_code" -ge 500 ]; then cat /tmp/invalid.html >&2; exit 1; fi
-          test "$invalid_code" = "302" -o "$invalid_code" = "303" -o "$invalid_code" = "307" -o "$invalid_code" = "308"
+          grep -Eqi 'action=["'"']?/api/academy/checkout["'"']?' /tmp/academy.html
+          grep -Eqi 'method=["'"']?post["'"']?' /tmp/academy.html
+          node studio/verify-live-academy-commerce-contract.mjs --health --checkout
+      - name: Validate signed webhook and checkout method boundaries
+        run: node studio/verify-live-academy-commerce-contract.mjs --webhook --checkout
 
   command-security:
     name: Command Center local-only and owner-control security
