@@ -46,6 +46,12 @@ test("shared verifier rejects the retired checkout-session idempotency label", (
   );
 });
 
+test("live checkout verification uses only a non-sale sentinel course", () => {
+  const source = fs.readFileSync("studio/verify-live-academy-commerce-contract.mjs", "utf8");
+  assert.match(source, /obserra-contract-probe-not-for-sale/);
+  assert.doesNotMatch(source, /zero-trust-strategy|ai-ready-workforce/);
+});
+
 for (const workflow of workflows) {
   test(`${workflow} delegates live Academy commerce verification to the governed shared verifier`, () => {
     const source = fs.readFileSync(workflow, "utf8");
