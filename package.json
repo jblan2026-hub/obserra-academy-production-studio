@@ -22,6 +22,7 @@
     "media:course": "npm run apply:course-policy && node studio/generate-media.mjs",
     "load:courses:check": "npm run apply:course-policy && node studio/load-courses-to-lcms.mjs --dry-run",
     "load:courses": "npm run apply:course-policy && node studio/load-courses-to-lcms.mjs",
+    "load:courses:upload": "npm run apply:course-policy && node studio/load-courses-to-lcms.mjs --upload-assets",
     "sync:website": "npm run import:website -- ./tmp/courseData.ts && npm run build:all && npm run validate && npm run catalog",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
