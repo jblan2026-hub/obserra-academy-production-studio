@@ -1,5 +1,5 @@
 {
-  "importedAt": "2026-08-24T07:29:47.061Z",
+  "importedAt": "2026-08-30T11:56:32.955Z",
   "sourcePath": "/home/runner/work/obserra-academy-production-studio/obserra-academy-production-studio/tmp/courseData.ts",
   "courses": [
     {
@@ -31,18 +31,6 @@
       "status": "preserved-existing"
     },
     {
-      "id": "coding-for-cyber-leaders",
-      "status": "preserved-existing"
-    },
-    {
-      "id": "python-security-automation",
-      "status": "preserved-existing"
-    },
-    {
-      "id": "api-security-integration",
-      "status": "preserved-existing"
-    },
-    {
       "id": "prompt-engineering-secure-workflows",
       "status": "preserved-existing"
     },
@@ -71,10 +59,6 @@
       "status": "preserved-existing"
     },
     {
-      "id": "low-code-security-automation",
-      "status": "preserved-existing"
-    },
-    {
       "id": "cybersecurity-governance-policy",
       "status": "preserved-existing"
     },
@@ -84,10 +68,6 @@
     },
     {
       "id": "ai-data-privacy-ip",
-      "status": "preserved-existing"
-    },
-    {
-      "id": "executive-dashboards-data-ai",
       "status": "preserved-existing"
     },
     {
@@ -112,22 +92,6 @@
     },
     {
       "id": "ai-policy-responsible-use",
-      "status": "preserved-existing"
-    },
-    {
-      "id": "secure-ai-native-apps",
-      "status": "preserved-existing"
-    },
-    {
-      "id": "secure-software-development-lifecycle",
-      "status": "preserved-existing"
-    },
-    {
-      "id": "cloud-native-app-security",
-      "status": "preserved-existing"
-    },
-    {
-      "id": "devsecops-enterprise-teams",
       "status": "preserved-existing"
     },
     {
@@ -219,10 +183,6 @@
       "status": "preserved-existing"
     },
     {
-      "id": "eios-enterprise-intelligence-overview",
-      "status": "preserved-existing"
-    },
-    {
       "id": "executive-decision-making-pressure",
       "status": "preserved-existing"
     },
@@ -232,10 +192,6 @@
     },
     {
       "id": "leading-through-cyber-crisis",
-      "status": "preserved-existing"
-    },
-    {
-      "id": "custom-ai-native-app-strategy",
       "status": "preserved-existing"
     },
     {
