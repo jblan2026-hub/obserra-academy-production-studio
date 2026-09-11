@@ -2,6 +2,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { isClerkIdentityConfigured } from "@/lib/identity-readiness";
 import "./studio.css";
+import "./premium-studio.css";
 import "./auth.css";
 
 export const metadata: Metadata = {
